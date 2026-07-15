@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { UploadImage } from "@/components/UploadImage";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -116,7 +116,7 @@ export default function RegistrarAsistenciaClient() {
         <article className="card-section space-y-5">
           <div className="flex items-start gap-4">
             {dirigente.fotoUrl ? (
-              <Image
+              <UploadImage
                 src={dirigente.fotoUrl}
                 alt=""
                 width={72}

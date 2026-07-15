@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { UploadImage } from "@/components/UploadImage";
 import { useFormikContext } from "formik";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
@@ -50,7 +50,7 @@ export function ImageUploadField({ name, label, previewAlt = "Imagen" }: Props) 
       <span className="label">{label}</span>
       <div className="mt-2 flex flex-wrap items-start gap-4">
         {url ? (
-          <Image
+          <UploadImage
             src={url}
             alt={previewAlt}
             width={160}

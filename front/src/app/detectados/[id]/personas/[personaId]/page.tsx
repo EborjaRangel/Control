@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { UploadImage } from "@/components/UploadImage";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -102,7 +102,7 @@ export default function PersonaDetectadaDetallePage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="card">
           <p className="label mb-2">INE anverso</p>
-          <Image
+          <UploadImage
             src={persona.ineFrenteUrl}
             alt="INE anverso"
             width={400}
@@ -112,7 +112,7 @@ export default function PersonaDetectadaDetallePage() {
         </div>
         <div className="card">
           <p className="label mb-2">INE reverso</p>
-          <Image
+          <UploadImage
             src={persona.ineReversoUrl}
             alt="INE reverso"
             width={400}

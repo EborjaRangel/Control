@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
+import { UploadImage } from "@/components/UploadImage";
 import Link from "next/link";
 import { SueldoDesglose } from "@/components/SueldoDesglose";
 import {
@@ -76,7 +76,7 @@ export function DirigenteDetalle({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4">
           {d.fotoUrl ? (
-            <Image
+            <UploadImage
               src={d.fotoUrl}
               alt=""
               width={96}
@@ -144,7 +144,7 @@ export function DirigenteDetalle({
           <h2 className="section-title">INE</h2>
           <div className="flex flex-wrap gap-4">
             {d.ineFrenteUrl ? (
-              <Image
+              <UploadImage
                 src={d.ineFrenteUrl}
                 alt="INE frente"
                 width={160}
@@ -153,7 +153,7 @@ export function DirigenteDetalle({
               />
             ) : null}
             {d.ineReversoUrl ? (
-              <Image
+              <UploadImage
                 src={d.ineReversoUrl}
                 alt="INE reverso"
                 width={160}

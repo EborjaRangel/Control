@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { UploadImage } from "@/components/UploadImage";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -146,14 +146,14 @@ export default function DetectadoDetallePage() {
       <section className="card-section space-y-4">
         <h2 className="section-title">INE del detectado</h2>
         <div className="flex flex-wrap gap-4">
-          <Image
+          <UploadImage
             src={detectado.ineFrenteUrl}
             alt="INE anverso"
             width={320}
             height={200}
             className="max-w-xs rounded-pin object-contain ring-1 ring-line"
           />
-          <Image
+          <UploadImage
             src={detectado.ineReversoUrl}
             alt="INE reverso"
             width={320}

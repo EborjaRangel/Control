@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Form, Formik, useFormikContext } from "formik";
-import Image from "next/image";
+import { UploadImage } from "@/components/UploadImage";
 import { useEffect, useState } from "react";
 import { FormField, FormSelect } from "@/components/FormField";
 import { ComposicionSueldoFields } from "@/components/ComposicionSueldoFields";
@@ -433,7 +433,7 @@ function FotoUpload() {
       <span className="label">Fotografía</span>
       <div className="mt-2 flex flex-wrap items-center gap-4">
         {values.fotoUrl ? (
-          <Image
+          <UploadImage
             src={values.fotoUrl}
             alt="Foto del dirigente"
             width={80}

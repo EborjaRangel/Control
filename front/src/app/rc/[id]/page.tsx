@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { UploadImage } from "@/components/UploadImage";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -133,8 +133,8 @@ export default function RcDetallePage() {
                       </p>
                     </div>
                     <div className="flex shrink-0 gap-1">
-                      <Image src={r.ineFrenteUrl} alt="Frente" width={40} height={28} className="h-7 w-10 rounded object-cover ring-1 ring-line" />
-                      <Image src={r.ineReversoUrl} alt="Reverso" width={40} height={28} className="h-7 w-10 rounded object-cover ring-1 ring-line" />
+                      <UploadImage src={r.ineFrenteUrl} alt="Frente" width={40} height={28} className="h-7 w-10 rounded object-cover ring-1 ring-line" />
+                      <UploadImage src={r.ineReversoUrl} alt="Reverso" width={40} height={28} className="h-7 w-10 rounded object-cover ring-1 ring-line" />
                     </div>
                   </div>
                   <Link href={`/rc/${id}/representantes/${r.id}`} className="btn-ghost btn-sm btn-responsive">
@@ -164,8 +164,8 @@ export default function RcDetallePage() {
                     <td className="py-2.5 pr-3 text-ink-secondary">{nombreColoniaCatalogo(r.colonia)}</td>
                     <td className="py-2.5 pr-3">
                       <div className="flex gap-1">
-                        <Image src={r.ineFrenteUrl} alt="Frente" width={40} height={28} className="h-7 w-10 rounded object-cover ring-1 ring-line" />
-                        <Image src={r.ineReversoUrl} alt="Reverso" width={40} height={28} className="h-7 w-10 rounded object-cover ring-1 ring-line" />
+                        <UploadImage src={r.ineFrenteUrl} alt="Frente" width={40} height={28} className="h-7 w-10 rounded object-cover ring-1 ring-line" />
+                        <UploadImage src={r.ineReversoUrl} alt="Reverso" width={40} height={28} className="h-7 w-10 rounded object-cover ring-1 ring-line" />
                       </div>
                     </td>
                     <td className="py-2.5 text-right">

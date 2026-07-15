@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { UploadImage } from "@/components/UploadImage";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -210,7 +210,7 @@ export default function DirigentesPage() {
           >
             <div className="flex items-start gap-4">
               {d.fotoUrl ? (
-                <Image
+                <UploadImage
                   src={d.fotoUrl}
                   alt=""
                   width={64}

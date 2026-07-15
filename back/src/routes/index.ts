@@ -65,6 +65,7 @@ fs.mkdirSync(uploadDir, { recursive: true });
 
 const TIPOS_OK = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_BYTES = 5 * 1024 * 1024;
+const SAFE_UPLOAD_NAME = /^[a-f0-9-]+\.(jpg|jpeg|png|webp|gif)$/i;
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -72,6 +73,25 @@ const upload = multer({
     filename: (_req, file, cb) => {
       const ext = file.mimetype.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
       cb(null, `${randomUUID()}.${ext}`);
+    },
+  }),
+  limits: { fileSize: MAX_BYTES },
+  fileFilter: (_req, file, cb) => {
+    cb(null, TIPOS_OK.includes(file.mimetype));
+  },
+});
+
+const restoreUpload = multer({
+  storage: multer.diskStorage({
+    destination: uploadDir,
+    filename: (req, _file, cb) => {
+      const name =
+        typeof req.query.filename === "string" ? req.query.filename.trim() : "";
+      if (!name || !SAFE_UPLOAD_NAME.test(name)) {
+        cb(new Error("Nombre de archivo inválido"), "");
+        return;
+      }
+      cb(null, name);
     },
   }),
   limits: { fileSize: MAX_BYTES },
@@ -685,6 +705,29 @@ router.post("/upload", (req, res) => {
     }
     if (err) {
       res.status(400).json({ error: "Error al subir archivo" });
+      return;
+    }
+    if (!req.file) {
+      res.status(400).json({ error: "No se envió ningún archivo o formato no permitido" });
+      return;
+    }
+    res.status(201).json({ url: `/uploads/${req.file.filename}` });
+  });
+});
+
+router.post("/admin/uploads/restore", requireAdmin, (req, res) => {
+  restoreUpload.single("file")(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        res.status(400).json({ error: "La imagen supera 5 MB" });
+        return;
+      }
+      res.status(400).json({ error: "Error al subir archivo" });
+      return;
+    }
+    if (err) {
+      const message = err instanceof Error ? err.message : "Error al subir archivo";
+      res.status(400).json({ error: message });
       return;
     }
     if (!req.file) {

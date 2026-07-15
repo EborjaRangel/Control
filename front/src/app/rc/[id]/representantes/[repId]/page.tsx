@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { UploadImage } from "@/components/UploadImage";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -67,11 +67,11 @@ export default function RepresentanteRcDetallePage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="card">
           <p className="label mb-2">INE anverso</p>
-          <Image src={rep.ineFrenteUrl} alt="Anverso" width={400} height={250} className="max-w-sm rounded-pin object-contain ring-1 ring-line" />
+          <UploadImage src={rep.ineFrenteUrl} alt="Anverso" width={400} height={250} className="max-w-sm rounded-pin object-contain ring-1 ring-line" />
         </div>
         <div className="card">
           <p className="label mb-2">INE reverso</p>
-          <Image src={rep.ineReversoUrl} alt="Reverso" width={400} height={250} className="max-w-sm rounded-pin object-contain ring-1 ring-line" />
+          <UploadImage src={rep.ineReversoUrl} alt="Reverso" width={400} height={250} className="max-w-sm rounded-pin object-contain ring-1 ring-line" />
         </div>
       </div>
       {canEdit ? (
