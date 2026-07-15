@@ -1,0 +1,29 @@
+{
+  "name": "control",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "back",
+    "front"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w control-back\" \"npm run dev -w control-front\"",
+    "dev:back": "npm run dev -w control-back",
+    "dev:front": "npm run dev -w control-front",
+    "build": "npm run build -w control-back && npm run build -w control-front",
+    "build:back": "npm run build -w control-back",
+    "build:front": "npm run build -w control-front",
+    "start:back": "npm run start -w control-back",
+    "start:front": "npm run start -w control-front",
+    "db:seed": "npm run db:seed -w control-back",
+    "db:reset-admin": "npm run db:reset-admin -w control-back",
+    "db:prepare-dirigentes-carga": "npm run db:prepare-dirigentes-carga -w control-back",
+    "db:import-dirigentes": "npm run db:import-dirigentes -w control-back",
+    "geo:import-secciones": "npm run geo:import-secciones -w control-back",
+    "geo:import-colonias": "npm run geo:import-colonias -w control-back",
+    "lint": "npm run lint -w control-front"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

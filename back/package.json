@@ -1,0 +1,59 @@
+{
+  "name": "control-back",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "prisma generate",
+    "build:check": "tsc --noEmit",
+    "start": "tsx src/index.ts",
+    "start:prod": "prisma migrate deploy && tsx src/index.ts",
+    "db:migrate": "prisma migrate deploy",
+    "geo:import-secciones": "tsx scripts/import-secciones-ine.ts",
+    "geo:import-colonias": "tsx scripts/import-colonias-sepomex.ts",
+    "geo:import-uts": "tsx scripts/import-unidades-territoriales-iecm.ts",
+    "db:seed": "tsx scripts/seed-admin.ts",
+    "db:reset-admin": "tsx scripts/reset-admin.ts",
+    "db:prepare-dirigentes-carga": "tsx scripts/prepare-dirigentes-carga-sheet.ts",
+    "db:import-dirigentes": "tsx scripts/import-dirigentes-excel.ts",
+    "db:import-nomina-matriz": "tsx scripts/import-nomina-matriz-pagos.ts",
+    "db:provision-usuarios": "tsx scripts/provision-usuarios-dirigentes.ts",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@turf/circle": "^7.3.5",
+    "adm-zip": "^0.5.17",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.0.2",
+    "nodemailer": "^9.0.0",
+    "pg": "^8.21.0",
+    "prisma": "^7.8.0",
+    "proj4": "^2.20.9",
+    "shapefile": "^0.6.6",
+    "tsx": "^4.22.4",
+    "xlsx": "^0.18.5",
+    "yup": "^1.7.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^20",
+    "@types/nodemailer": "^8.0.1",
+    "@types/pg": "^8.20.0",
+    "typescript": "^5"
+  }
+}

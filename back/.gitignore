@@ -1,0 +1,11 @@
+node_modules/
+dist/
+uploads/*
+!uploads/.gitkeep
+.env
+.env.*
+!.env.example
+src/generated/
+
+# Descarga cruda del INE (~100 MB); regenerar con npm run geo:import-secciones
+data/geo/raw/

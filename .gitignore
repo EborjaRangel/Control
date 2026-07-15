@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# env
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# next (front)
+.next/
+front/.next/
+front/out/
+front/next-env.d.ts
+
+# back
+back/dist/
+back/uploads/*
+!back/uploads/.gitkeep
+back/src/generated/
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*

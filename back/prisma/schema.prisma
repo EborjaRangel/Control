@@ -1,0 +1,535 @@
+// Esquema de la base de datos del sistema de control de dirigentes
+// Documentación: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Rol de acceso al sistema
+enum RolUsuario {
+  ADMIN
+  DIRIGENTE
+  DETECTADO
+  RC
+  RG
+}
+
+/// Nivel de capacidad del dirigente: D1 (más experiencia) a D4 (principiante)
+enum TipoDirigente {
+  D1
+  D2
+  D3
+  D4
+}
+
+/// Estado operativo del dirigente (spec Excel)
+enum StatusDirigente {
+  ACTIVO
+  INACTIVO
+  BLOQUEADO
+  BAJA
+}
+
+/// Alcance geográfico del evento de asistencia
+enum AlcanceEvento {
+  COLONIA
+  SECCION
+  UNIDAD_TERRITORIAL
+  DISTRITO
+  TIPO_DIRIGENTE
+}
+
+/// Ciclo de vida del pase de lista
+enum EstadoEvento {
+  PROGRAMADO
+  ABIERTO
+  CERRADO
+}
+
+/// Canal de notificación a dirigentes
+enum CanalComunicacion {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+/// Resultado del envío
+enum EstadoEnvioComunicacion {
+  ENVIADO
+  FALLIDO
+  OMITIDO
+}
+
+/// Alcance de una notificación in-app
+enum AlcanceNotificacion {
+  TODOS
+  TIPO_DIRIGENTE
+  DISTRITO_FEDERAL
+  DISTRITO_LOCAL
+  COLONIA
+  UNIDAD_TERRITORIAL
+  SECCION
+}
+
+model Dirigente {
+  id String @id @default(cuid())
+
+  // Datos personales
+  nombre          String
+  primerApellido  String
+  segundoApellido String?
+  fechaNacimiento DateTime @db.Date
+  telefonoCelular String
+  correo          String
+  fotoUrl         String?
+  alias           String?
+  curp            String? @unique
+
+  // INE
+  tieneIne      Boolean @default(false)
+  ineFrenteUrl  String?
+  ineReversoUrl String?
+
+  // Clasificación y ubicación electoral
+  tipo             TipoDirigente
+  seccionElectoral String
+  distritoFederal  Int?
+  distritoLocal    Int?
+
+  // Dirección (Coyoacán; colonia define CP)
+  colonia          String
+  calle            String
+  numeroExterior   String
+  numeroInterior   String?
+  codigoPostal     String
+  alcaldia         String @default("Coyoacán")
+  estadoRepublica  String @default("Ciudad de México")
+
+  // Unidad territorial IECM
+  unidadTerritorialId String?
+  unidadTerritorial   UnidadTerritorial? @relation(fields: [unidadTerritorialId], references: [id], onDelete: SetNull)
+
+  // Perfil político y coordinación
+  filiacion              String?
+  aspiracionCortoPlazo   String?
+  aspiracionLargoPlazo   String?
+  referenteId            String?
+  referente              Dirigente?  @relation("DirigenteReferente", fields: [referenteId], references: [id], onDelete: SetNull)
+  referidos              Dirigente[] @relation("DirigenteReferente")
+  antecedentesPoliticos  String?
+  notasCoordinacion      String?
+
+  // Estado
+  status StatusDirigente @default(ACTIVO)
+  activo Boolean         @default(true)
+
+  /// Código único para QR de asistencia en eventos
+  codigoQr String @unique
+
+  /// Meta de detectados que debe cubrir este dirigente
+  metaDetectados Int @default(0)
+
+  nomina              Nomina?
+  usuario             Usuario?
+  detectados          Detectado[]
+  asistencias         RegistroAsistencia[]
+  enviosComunicacion  EnvioComunicacion[]
+  estudios            DirigenteEstudio[]
+  redesSociales       DirigenteRedSocial[]
+  contactosEmergencia DirigenteContactoEmergencia[]
+  ingresos            IngresoDirigente[]
+  responsableColonia  ResponsableColonia?
+  responsableGeneral  ResponsableGeneral?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([activo])
+  @@index([status])
+  @@index([tipo])
+  @@index([seccionElectoral])
+  @@index([colonia])
+  @@index([unidadTerritorialId])
+  @@index([referenteId])
+}
+
+/// Otra actividad económica del dirigente (fuera de la nómina)
+model IngresoDirigente {
+  id           String    @id @default(cuid())
+  dirigenteId  String
+  dirigente    Dirigente @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  tipoIngreso  String
+  monto        Decimal   @default(0) @db.Decimal(10, 2)
+
+  @@index([dirigenteId])
+}
+
+/// Estudios, oficios y habilidades del dirigente
+model DirigenteEstudio {
+  id          String    @id @default(cuid())
+  dirigenteId String
+  dirigente   Dirigente @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  descripcion String
+  institucion String?
+  anioEgreso  Int?
+  cedula      String?
+  certificado Boolean   @default(false)
+  otros       String?
+
+  @@index([dirigenteId])
+}
+
+/// Redes sociales y correos adicionales
+model DirigenteRedSocial {
+  id          String    @id @default(cuid())
+  dirigenteId String
+  dirigente   Dirigente @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  descripcion String
+  cuenta      String
+
+  @@index([dirigenteId])
+}
+
+/// Contactos de emergencia
+model DirigenteContactoEmergencia {
+  id          String    @id @default(cuid())
+  dirigenteId String
+  dirigente   Dirigente @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  nombre      String
+  parentesco  String
+  telefono    String
+
+  @@index([dirigenteId])
+}
+
+/// Operador de detección asignado a un dirigente (sin acceso al sistema)
+model Detectado {
+  id               String   @id @default(cuid())
+  dirigenteId      String
+  dirigente        Dirigente @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  nombre           String
+  primerApellido   String
+  segundoApellido  String?
+  telefonoCelular  String?
+  seccionElectoral String
+  ineFrenteUrl     String
+  ineReversoUrl    String
+  activo           Boolean  @default(true)
+  personas         PersonaDetectada[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([activo])
+  @@index([seccionElectoral])
+  @@index([dirigenteId])
+}
+
+/// Persona registrada por un detectado (datos generales INE)
+model PersonaDetectada {
+  id               String    @id @default(cuid())
+  detectadoId      String
+  detectado        Detectado @relation(fields: [detectadoId], references: [id], onDelete: Cascade)
+
+  nombre           String
+  primerApellido   String
+  segundoApellido  String?
+  fechaNacimiento  DateTime  @db.Date
+  sexo             String?
+  claveElector     String?
+  curp             String?
+
+  seccionElectoral String
+  colonia          String
+  calle            String
+  numeroExterior   String
+  numeroInterior   String?
+  codigoPostal     String
+
+  ineFrenteUrl     String
+  ineReversoUrl    String
+
+  activo           Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([detectadoId])
+  @@index([seccionElectoral])
+  @@index([activo])
+  @@index([claveElector])
+  @@index([curp])
+}
+
+/// Responsable de casilla — vinculado a un dirigente activo
+model ResponsableColonia {
+  id              String   @id @default(cuid())
+  dirigenteId     String?  @unique
+  dirigente       Dirigente? @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  nombre          String
+  primerApellido  String
+  segundoApellido String?
+  telefonoCelular String?
+  colonia         String
+  activo          Boolean  @default(true)
+  usuario         Usuario?
+  representantes  RepresentanteCasilla[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([activo])
+  @@index([colonia])
+  @@index([dirigenteId])
+}
+
+/// Responsable general — vinculado a un dirigente activo
+model ResponsableGeneral {
+  id              String   @id @default(cuid())
+  dirigenteId     String?  @unique
+  dirigente       Dirigente? @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  nombre          String
+  primerApellido  String
+  segundoApellido String?
+  telefonoCelular String?
+  activo          Boolean  @default(true)
+  usuario         Usuario?
+  representantes  RepresentanteCasilla[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([activo])
+  @@index([dirigenteId])
+}
+
+/// Representante de casilla registrado por RC o RG
+model RepresentanteCasilla {
+  id                   String              @id @default(cuid())
+  responsableColoniaId String?
+  responsableColonia   ResponsableColonia? @relation(fields: [responsableColoniaId], references: [id], onDelete: Cascade)
+  responsableGeneralId String?
+  responsableGeneral   ResponsableGeneral? @relation(fields: [responsableGeneralId], references: [id], onDelete: Cascade)
+
+  nombre           String
+  primerApellido   String
+  segundoApellido  String?
+  fechaNacimiento  DateTime @db.Date
+  sexo             String?
+  claveElector     String?
+  curp             String?
+  seccionElectoral String
+  colonia          String
+  calle            String
+  numeroExterior   String
+  numeroInterior   String?
+  codigoPostal     String
+  ineFrenteUrl     String
+  ineReversoUrl    String
+  activo           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([responsableColoniaId])
+  @@index([responsableGeneralId])
+  @@index([colonia])
+  @@index([seccionElectoral])
+  @@index([activo])
+}
+
+/// Unidad territorial del Marco Geográfico de Participación Ciudadana (IECM)
+model UnidadTerritorial {
+  id            String   @id @default(cuid())
+  clave         String   @unique
+  nombre        String
+  tipoUt        String?
+  distritoLocal Int?
+  lat           Float?
+  lng           Float?
+  /// Secciones exclusivas y compartidas (IECM: secciones + secciones1)
+  seccionesElectorales String[] @default([])
+  colonias      ColoniaUnidadTerritorial[]
+  dirigentes    Dirigente[]
+  eventosAsistencia EventoAsistencia[]
+  notificaciones    Notificacion[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([nombre])
+}
+
+/// Relación colonia SEPOMEX ↔ una o más unidades territoriales IECM
+model ColoniaUnidadTerritorial {
+  id                  String            @id @default(cuid())
+  coloniaNombre       String
+  unidadTerritorialId String
+  unidadTerritorial   UnidadTerritorial @relation(fields: [unidadTerritorialId], references: [id], onDelete: Cascade)
+
+  @@unique([coloniaNombre, unidadTerritorialId])
+  @@index([coloniaNombre])
+}
+
+model Usuario {
+  id           String     @id @default(cuid())
+  username     String     @unique
+  passwordHash String
+  passwordPlano String?
+  rol          RolUsuario
+  activo       Boolean    @default(true)
+  dirigenteId  String?    @unique
+  dirigente    Dirigente? @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  rcId         String?    @unique
+  rc           ResponsableColonia? @relation(fields: [rcId], references: [id], onDelete: Cascade)
+  rgId         String?    @unique
+  rg           ResponsableGeneral? @relation(fields: [rgId], references: [id], onDelete: Cascade)
+  notificacionesRecibidas NotificacionDestinatario[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([rol])
+  @@index([activo])
+}
+
+/// Concepto del catálogo de composición del sueldo
+enum ConceptoSueldo {
+  BASE
+  HONORARIOS
+  COSSOC
+  SETENTA_TREINTA
+  PF
+  NOMINA_8
+}
+
+model Chambelan {
+  id          String         @id @default(cuid())
+  nominaId    String
+  nomina      Nomina         @relation(fields: [nominaId], references: [id], onDelete: Cascade)
+  concepto    ConceptoSueldo
+  monto       Decimal        @default(0) @db.Decimal(10, 2)
+  nombre      String?
+  tipoDetalle String?
+
+  @@index([nominaId])
+}
+
+/// Nómina mensual del dirigente (composición del sueldo)
+model Nomina {
+  id               String      @id @default(cuid())
+  dirigenteId      String      @unique
+  dirigente        Dirigente   @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  /// Campos legacy (sincronizados al guardar por compatibilidad)
+  sueldoBase       Decimal     @default(0) @db.Decimal(10, 2)
+  enProgramaSocial Boolean     @default(false)
+  programaMonto    Decimal     @default(0) @db.Decimal(10, 2)
+  conceptos        Chambelan[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([dirigenteId])
+}
+
+/// Evento para pase de lista / asistencia
+model EventoAsistencia {
+  id                  String         @id @default(cuid())
+  titulo              String
+  fecha               DateTime       @db.Date
+  hora                String
+  lugar               String
+  alcance             AlcanceEvento
+  colonia             String?
+  seccionElectoral     String?
+  unidadTerritorialId String?
+  unidadTerritorial   UnidadTerritorial? @relation(fields: [unidadTerritorialId], references: [id], onDelete: SetNull)
+  /// Distrito local 26 o 30; null = ambos distritos (Coyoacán)
+  distritoLocal       Int?
+  /// D1–D4 cuando alcance = TIPO_DIRIGENTE
+  tipoDirigente       TipoDirigente?
+  estado              EstadoEvento   @default(PROGRAMADO)
+  abiertoAt           DateTime?
+  cerradoAt           DateTime?
+  creadoPorId         String?
+  asistencias         RegistroAsistencia[]
+  enviosComunicacion  EnvioComunicacion[]
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@index([estado])
+  @@index([fecha])
+  @@index([alcance])
+  @@index([colonia])
+  @@index([seccionElectoral])
+  @@index([unidadTerritorialId])
+  @@index([distritoLocal])
+  @@index([tipoDirigente])
+}
+
+/// Registro de asistencia de un dirigente a un evento
+model RegistroAsistencia {
+  id              String           @id @default(cuid())
+  eventoId        String
+  evento          EventoAsistencia @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  dirigenteId     String
+  dirigente       Dirigente        @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  registradoAt    DateTime         @default(now())
+  registradoPorId String?
+
+  @@unique([eventoId, dirigenteId])
+  @@index([eventoId])
+  @@index([dirigenteId])
+}
+
+/// Registro de convocatoria enviada a un dirigente (correo, SMS o WhatsApp)
+model EnvioComunicacion {
+  id           String                  @id @default(cuid())
+  eventoId     String
+  evento       EventoAsistencia        @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  dirigenteId  String
+  dirigente    Dirigente               @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  canal        CanalComunicacion
+  destino      String
+  estado       EstadoEnvioComunicacion
+  error        String?
+  proveedorId  String?
+  enviadoAt    DateTime                @default(now())
+
+  @@index([eventoId])
+  @@index([dirigenteId])
+  @@index([canal])
+  @@index([enviadoAt])
+}
+
+/// Notificación in-app enviada por el administrador
+model Notificacion {
+  id                  String              @id @default(cuid())
+  mensaje             String
+  alcance             AlcanceNotificacion
+  colonia             String?
+  seccionElectoral    String?
+  unidadTerritorialId String?
+  unidadTerritorial   UnidadTerritorial?  @relation(fields: [unidadTerritorialId], references: [id], onDelete: SetNull)
+  distritoLocal       Int?
+  distritoFederal     Int?
+  tipoDirigente       TipoDirigente?
+  enviadoAt           DateTime            @default(now())
+  creadoPorId         String?
+  destinatarios       NotificacionDestinatario[]
+
+  @@index([enviadoAt])
+  @@index([alcance])
+}
+
+/// Entrega de notificación a un usuario (lectura individual)
+model NotificacionDestinatario {
+  id             String       @id @default(cuid())
+  notificacionId String
+  notificacion   Notificacion @relation(fields: [notificacionId], references: [id], onDelete: Cascade)
+  usuarioId      String
+  usuario        Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  vistoAt        DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@unique([notificacionId, usuarioId])
+  @@index([usuarioId, vistoAt])
+  @@index([notificacionId])
+}
