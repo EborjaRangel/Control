@@ -96,7 +96,8 @@ const restoreUpload = multer({
   }),
   limits: { fileSize: MAX_BYTES },
   fileFilter: (_req, file, cb) => {
-    cb(null, TIPOS_OK.includes(file.mimetype));
+    const extOk = SAFE_UPLOAD_NAME.test(file.originalname);
+    cb(null, TIPOS_OK.includes(file.mimetype) || extOk);
   },
 });
 

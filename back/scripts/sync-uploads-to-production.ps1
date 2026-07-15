@@ -58,9 +58,16 @@ Write-Host ""
 
 foreach ($file in $files) {
   $encodedName = [uri]::EscapeDataString($file.Name)
+  $mime = switch ($file.Extension.ToLower()) {
+    ".webp" { "image/webp" }
+    ".png" { "image/png" }
+    ".gif" { "image/gif" }
+    default { "image/jpeg" }
+  }
+  $formField = "file=@$($file.FullName);type=$mime"
   $response = curl.exe -s -w "`n%{http_code}" -X POST `
     -H "Authorization: Bearer $token" `
-    -F "file=@$($file.FullName)" `
+    -F $formField `
     "$ApiUrl/api/admin/uploads/restore?filename=$encodedName"
 
   $lines = $response -split "`n"
