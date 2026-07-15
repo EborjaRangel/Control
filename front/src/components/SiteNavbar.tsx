@@ -23,7 +23,7 @@ const ADMIN_NAV = [
   {
     href: "/",
     label: "Dirigentes",
-    shortLabel: "Lista",
+    shortLabel: "Dirigentes",
     match: (p: string) => p === "/" || p.startsWith("/dirigentes/"),
   },
   {
@@ -35,46 +35,52 @@ const ADMIN_NAV = [
   {
     href: "/asistencia",
     label: "Asistencia",
-    shortLabel: "Asist.",
+    shortLabel: "Asistencia",
     match: (p: string) => p.startsWith("/asistencia"),
   },
   {
     href: "/convocatoria",
     label: "Convocatoria",
-    shortLabel: "Convoc.",
+    shortLabel: "Convocatoria",
     match: (p: string) => p.startsWith("/convocatoria"),
   },
   {
     href: "/nominas",
     label: "Nóminas",
-    shortLabel: "Nóm.",
+    shortLabel: "Nóminas",
     match: (p: string) => p.startsWith("/nominas"),
   },
   {
     href: "/detectados",
     label: "Detectados",
-    shortLabel: "Detec.",
+    shortLabel: "Detectados",
     match: (p: string) => p.startsWith("/detectados"),
   },
   {
     href: "/rc",
     label: "Rep. Casilla",
-    shortLabel: "Rep.",
+    shortLabel: "Rep. Casilla",
     match: (p: string) => p === "/rc" || p.startsWith("/rc/"),
   },
   {
     href: "/rg",
     label: "Rep. General",
-    shortLabel: "Gral.",
+    shortLabel: "Rep. General",
     match: (p: string) => p === "/rg" || p.startsWith("/rg/"),
   },
   {
     href: "/usuarios",
     label: "Usuarios",
-    shortLabel: "Usu.",
+    shortLabel: "Usuarios",
     match: (p: string) => p.startsWith("/usuarios"),
   },
 ] as const;
+
+function navGridColumns(count: number) {
+  if (count <= 4) return count;
+  if (count <= 6) return 3;
+  return 5;
+}
 
 type NavItemProps = {
   href: string;
@@ -106,31 +112,31 @@ function NavLink({
     compact && "nav-link-compact",
   );
 
-  const textMobile = shortLabel;
-  const textDesktop = label;
+  const text = isNotificaciones ? shortLabel : label;
 
   return (
-    <Link href={href} aria-current={active ? "page" : undefined} className={classes}>
+    <Link
+      href={href}
+      title={label}
+      aria-current={active ? "page" : undefined}
+      aria-label={isNotificaciones ? label : undefined}
+      className={classes}
+    >
       <span
         className={cn(
-          "relative inline-flex items-center gap-1",
-          compact && isNotificaciones && "flex-col gap-0.5 sm:flex-row",
+          "relative inline-flex w-full flex-col items-center justify-center gap-0.5",
+          isNotificaciones && "gap-0.5",
         )}
       >
         {isNotificaciones ? (
-          <BellIcon
-            className={cn("nav-bell", compact ? "size-[1.125rem]" : "size-[1.125rem] sm:size-4")}
-            filled={showBadge || active}
-          />
+          <BellIcon className="nav-bell size-4 shrink-0" filled={showBadge || active} />
         ) : null}
-        <span className="sm:hidden">{textMobile}</span>
-        <span className="hidden sm:inline">{textDesktop}</span>
+        <span className="nav-link-label">{text}</span>
         {showBadge ? (
           <span
             className={cn(
-              "nav-badge",
+              "nav-badge absolute -right-0.5 -top-0.5",
               isNotificaciones && "nav-badge-notificaciones",
-              compact && isNotificaciones && "absolute -right-1 -top-0.5",
             )}
             aria-label={`${badge} sin leer`}
           >
@@ -184,7 +190,13 @@ export function SiteNavbar() {
         </Link>
 
         {navItems.length > 0 ? (
-          <nav className="navbar-nav scroll-touch" aria-label="Principal">
+          <nav
+            className={cn("navbar-nav", navItems.length >= 7 && "navbar-nav-staff")}
+            style={{
+              gridTemplateColumns: `repeat(${navGridColumns(navItems.length)}, minmax(0, 1fr))`,
+            }}
+            aria-label="Principal"
+          >
             {navItems.map((item) => (
               <NavLink
                 key={item.href}
