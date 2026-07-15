@@ -115,11 +115,11 @@
 
   .navbar-shell {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     grid-template-rows: var(--navbar-h) auto;
     grid-template-areas:
-      "brand user"
-      "nav nav";
+      "brand center user"
+      "nav nav nav";
     align-items: center;
     column-gap: 0.75rem;
     row-gap: 0;
@@ -127,12 +127,34 @@
 
   .navbar-shell-no-nav {
     grid-template-rows: var(--navbar-h);
-    grid-template-areas: "brand user";
+    grid-template-areas: "brand center user";
   }
 
   .navbar-brand {
     grid-area: brand;
+    justify-self: start;
     @apply flex min-w-0 items-center gap-2 transition hover:opacity-90 sm:gap-2.5;
+  }
+
+  .navbar-center {
+    grid-area: center;
+    @apply flex items-center justify-center;
+  }
+
+  .navbar-avisos-link {
+    @apply relative inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold text-notif transition;
+  }
+
+  .navbar-avisos-link:hover {
+    @apply bg-notif-light/80;
+  }
+
+  .navbar-avisos-link-active {
+    @apply bg-notif-light text-notif;
+  }
+
+  .navbar-avisos-link-unread {
+    @apply ring-2 ring-notif/35 ring-offset-1 ring-offset-surface;
   }
 
   .navbar-nav {
@@ -151,6 +173,7 @@
 
   .navbar-user {
     grid-area: user;
+    justify-self: end;
     @apply flex shrink-0 items-center justify-end gap-2;
   }
 
@@ -172,7 +195,7 @@
 
   @media (min-width: 1024px) {
     .navbar-nav-staff {
-      grid-template-columns: repeat(10, minmax(0, 1fr)) !important;
+      grid-template-columns: repeat(9, minmax(0, 1fr)) !important;
     }
   }
 

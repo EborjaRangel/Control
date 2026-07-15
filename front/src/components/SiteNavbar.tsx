@@ -148,6 +148,36 @@ function NavLink({
   );
 }
 
+function AvisosNavLink({
+  active,
+  badge,
+}: {
+  active: boolean;
+  badge: number;
+}) {
+  const showBadge = badge > 0;
+  return (
+    <Link
+      href="/notificaciones"
+      title="Notificaciones"
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "navbar-avisos-link",
+        active && "navbar-avisos-link-active",
+        showBadge && "navbar-avisos-link-unread",
+      )}
+    >
+      <BellIcon className="nav-bell size-5 shrink-0" filled={showBadge || active} />
+      <span>Avisos</span>
+      {showBadge ? (
+        <span className="nav-badge nav-badge-notificaciones" aria-label={`${badge} sin leer`}>
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
 export function SiteNavbar() {
   const pathname = usePathname();
   const { user, isStaff, logout } = useAuth();
@@ -164,18 +194,22 @@ export function SiteNavbar() {
       .catch(() => setNoLeidas(0));
   }, [user, pathname]);
 
-  const navItems = isStaff
+  const allNavItems = isStaff
     ? [NOTIFICACIONES_NAV, ...ADMIN_NAV]
     : user
       ? navItemsForUser(user)
       : [];
+
+  const mainNavItems = allNavItems.filter((item) => item.href !== "/notificaciones");
+  const showAvisos = Boolean(user);
+  const avisosActive = pathname.startsWith("/notificaciones");
 
   return (
     <header className="navbar-top">
       <div
         className={cn(
           "page-container navbar-shell",
-          navItems.length === 0 && "navbar-shell-no-nav",
+          mainNavItems.length === 0 && "navbar-shell-no-nav",
         )}
       >
         <Link
@@ -189,15 +223,23 @@ export function SiteNavbar() {
           </span>
         </Link>
 
-        {navItems.length > 0 ? (
+        {showAvisos ? (
+          <div className="navbar-center">
+            <AvisosNavLink active={avisosActive} badge={noLeidas} />
+          </div>
+        ) : (
+          <div className="navbar-center" aria-hidden />
+        )}
+
+        {mainNavItems.length > 0 ? (
           <nav
-            className={cn("navbar-nav", navItems.length >= 7 && "navbar-nav-staff")}
+            className={cn("navbar-nav", mainNavItems.length >= 7 && "navbar-nav-staff")}
             style={{
-              gridTemplateColumns: `repeat(${navGridColumns(navItems.length)}, minmax(0, 1fr))`,
+              gridTemplateColumns: `repeat(${navGridColumns(mainNavItems.length)}, minmax(0, 1fr))`,
             }}
             aria-label="Principal"
           >
-            {navItems.map((item) => (
+            {mainNavItems.map((item) => (
               <NavLink
                 key={item.href}
                 href={item.href}
@@ -206,8 +248,6 @@ export function SiteNavbar() {
                 active={item.match(pathname)}
                 compact
                 destacado={"destacado" in item ? item.destacado : false}
-                isNotificaciones={item.href === "/notificaciones"}
-                badge={item.href === "/notificaciones" ? noLeidas : 0}
               />
             ))}
           </nav>
