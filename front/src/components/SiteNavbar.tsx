@@ -97,16 +97,18 @@ function NavLink({
     active && "nav-link-active",
     isNotificaciones ? "nav-link-notificaciones" : destacado && "nav-link-destacado",
     showBadge && "nav-link-unread",
+    compact && "nav-link-compact",
   );
 
-  const text = compact ? shortLabel : label;
+  const textMobile = shortLabel;
+  const textDesktop = label;
 
   return (
     <Link href={href} aria-current={active ? "page" : undefined} className={classes}>
       <span
         className={cn(
           "relative inline-flex items-center gap-1",
-          compact && isNotificaciones && "flex-col gap-0.5",
+          compact && isNotificaciones && "flex-col gap-0.5 sm:flex-row",
         )}
       >
         {isNotificaciones ? (
@@ -115,7 +117,8 @@ function NavLink({
             filled={showBadge || active}
           />
         ) : null}
-        <span>{text}</span>
+        <span className="sm:hidden">{textMobile}</span>
+        <span className="hidden sm:inline">{textDesktop}</span>
         {showBadge ? (
           <span
             className={cn(
@@ -156,73 +159,51 @@ export function SiteNavbar() {
       : [];
 
   return (
-    <>
-      <header className="navbar-top">
-        <div className="page-container flex h-14 items-center justify-between gap-3 sm:h-16 sm:gap-4">
-          <Link
-            href={user ? brandHrefForUser(user) : "/login"}
-            className="navbar-brand min-w-0"
-            title={APP_TITLE}
-          >
-            <CoyoteLogo size={40} badge className="shrink-0" title="Coyote de Coyoacán" />
-            <span className="truncate text-sm font-bold text-pin sm:text-base lg:text-lg">
-              {NAVBAR_TITLE}
-            </span>
-          </Link>
+    <header className="navbar-top">
+      <div
+        className={cn(
+          "page-container navbar-shell",
+          navItems.length === 0 && "navbar-shell-no-nav",
+        )}
+      >
+        <Link
+          href={user ? brandHrefForUser(user) : "/login"}
+          className="navbar-brand min-w-0"
+          title={APP_TITLE}
+        >
+          <CoyoteLogo size={40} badge className="shrink-0" title="Coyote de Coyoacán" />
+          <span className="truncate text-sm font-bold text-pin sm:text-base lg:text-lg">
+            {NAVBAR_TITLE}
+          </span>
+        </Link>
 
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3">
-            <nav
-              className="scroll-touch hidden max-w-[min(100%,42rem)] items-center gap-0.5 overflow-x-auto sm:flex lg:max-w-none lg:gap-1"
-              aria-label="Principal"
-            >
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.href}
-                  href={item.href}
-                  label={item.label}
-                  shortLabel={item.shortLabel}
-                  active={item.match(pathname)}
-                  destacado={"destacado" in item ? item.destacado : false}
-                  isNotificaciones={item.href === "/notificaciones"}
-                  badge={item.href === "/notificaciones" ? noLeidas : 0}
-                />
-              ))}
-            </nav>
-
-            {user ? (
-              <div className="hidden shrink-0 items-center gap-2 sm:flex">
-                <span className="max-w-[120px] truncate text-xs font-semibold uppercase text-ink-secondary lg:max-w-[160px]">
-                  {user.username}
-                </span>
-                <button type="button" className="btn-ghost btn-sm" onClick={() => void logout()}>
-                  Salir
-                </button>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </header>
-
-      <nav className="navbar-bottom sm:hidden" aria-label="Móvil">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.href}
-            href={item.href}
-            label={item.label}
-            shortLabel={item.shortLabel}
-            active={item.match(pathname)}
-            compact
-            destacado={"destacado" in item ? item.destacado : false}
-            isNotificaciones={item.href === "/notificaciones"}
-            badge={item.href === "/notificaciones" ? noLeidas : 0}
-          />
-        ))}
-        {user ? (
-          <button type="button" className="nav-link" onClick={() => void logout()}>
-            Salir
-          </button>
+        {navItems.length > 0 ? (
+          <nav className="navbar-nav scroll-touch" aria-label="Principal">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                shortLabel={item.shortLabel}
+                active={item.match(pathname)}
+                compact
+                destacado={"destacado" in item ? item.destacado : false}
+                isNotificaciones={item.href === "/notificaciones"}
+                badge={item.href === "/notificaciones" ? noLeidas : 0}
+              />
+            ))}
+          </nav>
         ) : null}
-      </nav>
-    </>
+
+        {user ? (
+          <div className="navbar-user">
+            <span className="navbar-username">{user.username}</span>
+            <button type="button" className="btn-ghost btn-sm" onClick={() => void logout()}>
+              Salir
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </header>
   );
 }

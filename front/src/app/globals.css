@@ -33,7 +33,7 @@
   --radius-pin: 1rem;
   --radius-pin-lg: 1.5rem;
   --navbar-h: 3.5rem;
-  --navbar-bottom-h: 4rem;
+  --navbar-nav-h: 3.25rem;
   --progress: 0%;
 }
 
@@ -110,42 +110,75 @@
 
   .navbar-top {
     @apply fixed inset-x-0 top-0 z-50 border-b border-line bg-surface/95 shadow-pin backdrop-blur-md;
-    height: calc(var(--navbar-h) + env(safe-area-inset-top, 0px));
     padding-top: env(safe-area-inset-top, 0px);
   }
 
-  .navbar-bottom {
-    @apply fixed inset-x-0 bottom-0 z-50 flex overflow-x-auto border-t border-line bg-surface/95 shadow-pin backdrop-blur-md;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    min-height: var(--navbar-bottom-h);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    scroll-snap-type: x proximity;
+  .navbar-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: var(--navbar-h) var(--navbar-nav-h);
+    grid-template-areas:
+      "brand user"
+      "nav nav";
+    align-items: center;
+    column-gap: 0.75rem;
   }
 
-  .navbar-bottom > * {
-    @apply shrink-0;
+  .navbar-shell-no-nav {
+    grid-template-rows: var(--navbar-h);
+    grid-template-areas: "brand user";
   }
 
   .navbar-brand {
+    grid-area: brand;
     @apply flex min-w-0 items-center gap-2 transition hover:opacity-90 sm:gap-2.5;
   }
 
+  .navbar-nav {
+    grid-area: nav;
+    @apply flex min-w-0 items-stretch gap-0.5 overflow-x-auto border-t border-line/80 py-0.5;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+  }
+
+  .navbar-nav > * {
+    @apply shrink-0;
+  }
+
+  .navbar-user {
+    grid-area: user;
+    @apply flex shrink-0 items-center justify-end gap-2;
+  }
+
+  .navbar-username {
+    @apply hidden max-w-[7rem] truncate text-xs font-semibold uppercase text-ink-secondary sm:inline lg:max-w-[10rem];
+  }
+
+  @media (min-width: 640px) {
+    .navbar-shell {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-rows: var(--navbar-h);
+      grid-template-areas: "brand nav user";
+      column-gap: 1rem;
+    }
+
+    .navbar-nav {
+      @apply justify-end border-t-0 py-0;
+    }
+  }
+
   .nav-link {
-    @apply inline-flex flex-col items-center justify-center gap-0.5 rounded-full px-3 py-2 text-xs font-semibold text-ink-secondary transition sm:flex-row sm:gap-2 sm:px-4 sm:py-2 sm:text-sm;
+    @apply inline-flex flex-col items-center justify-center gap-0.5 rounded-full px-3 py-2 text-xs font-semibold text-ink-secondary transition;
+  }
+
+  .nav-link-compact {
+    @apply h-full min-h-11 min-w-[3.25rem] shrink-0 rounded-full px-2 py-1.5 text-[10px] leading-tight sm:min-w-0 sm:flex-row sm:gap-2 sm:px-4 sm:py-2 sm:text-sm;
+    scroll-snap-align: start;
   }
 
   .nav-link-active {
     @apply bg-pin-light text-pin;
-  }
-
-  .navbar-bottom .nav-link {
-    @apply h-full min-h-11 min-w-[3.25rem] shrink-0 rounded-none px-1 py-2 text-[10px] leading-tight;
-    scroll-snap-align: start;
-  }
-
-  .navbar-bottom .nav-link-active {
-    @apply bg-pin-light/80 text-pin;
   }
 
   .nav-link-destacado {
@@ -158,10 +191,6 @@
 
   .nav-link-notificaciones.nav-link-active {
     @apply bg-notif-light text-notif;
-  }
-
-  .navbar-bottom .nav-link-notificaciones.nav-link-active {
-    @apply bg-notif-light/90 text-notif;
   }
 
   .nav-link-notificaciones.nav-link-unread {
@@ -189,20 +218,22 @@
   }
 
   .main-with-navbar {
-    padding-top: calc(var(--navbar-h) + env(safe-area-inset-top, 0px) + 1.25rem);
-    padding-bottom: calc(var(--navbar-bottom-h) + 1.25rem + env(safe-area-inset-bottom, 0px));
+    padding-top: calc(
+      var(--navbar-h) + var(--navbar-nav-h) + env(safe-area-inset-top, 0px) + 1.25rem
+    );
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
   }
 
   @media (min-width: 640px) {
     .main-with-navbar {
-      padding-top: calc(var(--navbar-h) + 1.5rem);
+      padding-top: calc(var(--navbar-h) + env(safe-area-inset-top, 0px) + 1.5rem);
       padding-bottom: 1.5rem;
     }
   }
 
   @media (min-width: 1024px) {
     .main-with-navbar {
-      padding-top: calc(var(--navbar-h) + 2rem);
+      padding-top: calc(var(--navbar-h) + env(safe-area-inset-top, 0px) + 2rem);
       padding-bottom: 2rem;
     }
   }
@@ -241,10 +272,6 @@
 
   .card-actions {
     @apply grid grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex sm:flex-row sm:flex-wrap;
-  }
-
-  .footer-mobile-nav {
-    padding-bottom: calc(var(--navbar-bottom-h) + env(safe-area-inset-bottom, 0px));
   }
 
   .input {
