@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { MapaCoberturaSecciones } from "@/components/MapaCoberturaSecciones";
+import { TOTAL_SECCIONES_COYOACAN } from "@/lib/secciones-electorales";
 
 export default function MapaPage() {
   const { isStaff } = useAuth();
@@ -21,7 +22,8 @@ export default function MapaPage() {
         <div>
           <h1 className="page-title">Mapa de secciones</h1>
           <p className="page-subtitle">
-            Cobertura de dirigentes activos en las 402 secciones electorales de Coyoacán.
+            Cobertura de dirigentes activos en las {TOTAL_SECCIONES_COYOACAN} secciones
+            electorales de Coyoacán.
           </p>
         </div>
       </div>

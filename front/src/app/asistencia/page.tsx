@@ -53,13 +53,10 @@ export default function AsistenciaPage() {
         <div>
           <h1 className="page-title">Pase de asistencia</h1>
           <p className="page-subtitle">
-            Captura eventos, envía convocatorias y consulta asistencias por dirigente.
+            Captura eventos y consulta asistencias por dirigente.
           </p>
         </div>
         <div className="page-actions">
-          <Link href="/convocatoria" className="btn-secondary btn-responsive">
-            Convocatoria
-          </Link>
           <Link href="/asistencia/dashboard" className="btn-secondary btn-responsive">
             Dashboard
           </Link>
