@@ -6,12 +6,11 @@ import { useEffect, useState } from "react";
 import { DirigenteDetalle } from "@/components/DirigenteDetalle";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
-import { canViewOwnDirigente } from "@/lib/mi-panel";
 import type { DirigenteDTO } from "@/lib/types";
 
 export default function ConsultarDirigentePage() {
   const { id } = useParams<{ id: string }>();
-  const { isAdmin, user } = useAuth();
+  const { isAdmin } = useAuth();
   const [dirigente, setDirigente] = useState<DirigenteDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,10 +58,9 @@ export default function ConsultarDirigentePage() {
     <DirigenteDetalle
       dirigente={dirigente}
       editHref={isAdmin ? `/dirigentes/${id}` : undefined}
-      nominaHref={
-        canViewOwnDirigente(user, id) ? `/nominas/${id}` : isAdmin ? `/nominas/${id}` : undefined
-      }
+      nominaHref={isAdmin ? `/nominas/${id}` : undefined}
       backHref={isAdmin ? "/" : undefined}
+      showComposicionSueldo={isAdmin}
     />
   );
 }

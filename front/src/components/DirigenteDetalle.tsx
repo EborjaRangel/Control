@@ -35,6 +35,7 @@ type Props = {
   editHref?: string;
   nominaHref?: string;
   backHref?: string;
+  showComposicionSueldo?: boolean;
 };
 
 function formatFecha(iso: string) {
@@ -52,7 +53,13 @@ function Campo({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-export function DirigenteDetalle({ dirigente: d, editHref, nominaHref, backHref = "/" }: Props) {
+export function DirigenteDetalle({
+  dirigente: d,
+  editHref,
+  nominaHref,
+  backHref = "/",
+  showComposicionSueldo = true,
+}: Props) {
   const direccion = [
     d.calle,
     d.numeroExterior,
@@ -269,6 +276,7 @@ export function DirigenteDetalle({ dirigente: d, editHref, nominaHref, backHref 
         </section>
       ) : null}
 
+      {showComposicionSueldo ? (
       <section className="card-section space-y-4">
         <h2 className="section-title">Composición del sueldo</h2>
 
@@ -292,6 +300,7 @@ export function DirigenteDetalle({ dirigente: d, editHref, nominaHref, backHref 
 
         <SueldoDesglose desglose={d.desglose} />
       </section>
+      ) : null}
     </div>
   );
 }
