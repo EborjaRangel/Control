@@ -21,6 +21,7 @@
     "db:import-dirigentes": "tsx scripts/import-dirigentes-excel.ts",
     "db:import-nomina-matriz": "tsx scripts/import-nomina-matriz-pagos.ts",
     "db:provision-usuarios": "tsx scripts/provision-usuarios-dirigentes.ts",
+    "db:sync-to-production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-local-to-production.ps1",
     "postinstall": "prisma generate"
   },
   "dependencies": {

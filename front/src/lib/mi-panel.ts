@@ -107,12 +107,6 @@ export function navItemsForUser(user: SessionUser): NavItem[] {
       match: (p) => p === `/dirigentes/${user.dirigenteId}/consultar`,
     });
     items.push({
-      href: `/nominas/${user.dirigenteId}`,
-      label: "Mi nómina",
-      shortLabel: "Nómina",
-      match: (p) => p === `/nominas/${user.dirigenteId}`,
-    });
-    items.push({
       href: `/detectados/dirigentes/${user.dirigenteId}`,
       label: "Mis detectados",
       shortLabel: "Detec.",
