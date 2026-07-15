@@ -14,18 +14,18 @@ import type { DetectadoFormValues } from "@/lib/validation-detectado";
 export default function DetectadoDetallePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { isAdmin, user } = useAuth();
+  const { isStaff, user } = useAuth();
   const [detectado, setDetectado] = useState<DetectadoDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const canLoad = isAdmin || Boolean(user?.dirigenteId);
+  const canLoad = isStaff || Boolean(user?.dirigenteId);
 
   const backHref = detectado?.dirigenteId
-    ? isAdmin
+    ? isStaff
       ? `/detectados/dirigentes/${detectado.dirigenteId}`
       : `/detectados/dirigentes/${detectado.dirigenteId}`
-    : isAdmin
+    : isStaff
       ? "/detectados"
       : user?.dirigenteId
         ? `/detectados/dirigentes/${user.dirigenteId}`
@@ -163,7 +163,7 @@ export default function DetectadoDetallePage() {
         </div>
       </section>
 
-      {isAdmin ? (
+      {isStaff ? (
         <>
           <DetectadoForm
             key={detectado.updatedAt}

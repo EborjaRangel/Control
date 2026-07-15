@@ -13,12 +13,12 @@ import type { RcDTO } from "@/lib/rc-rg";
 
 export default function RcDetallePage() {
   const { id } = useParams<{ id: string }>();
-  const { isAdmin, user } = useAuth();
+  const { isStaff, user } = useAuth();
   const [rc, setRc] = useState<RcDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const canAccess = isAdmin || user?.rcId === id;
+  const canAccess = isStaff || user?.rcId === id;
   const canEdit = canManageRc(user, id);
 
   const load = useCallback(async () => {
@@ -69,11 +69,11 @@ export default function RcDetallePage() {
               + Registrar representante
             </Link>
           ) : null}
-          {isAdmin ? <Link href="/rc" className="btn-ghost btn-responsive">Volver</Link> : null}
+          {isStaff ? <Link href="/rc" className="btn-ghost btn-responsive">Volver</Link> : null}
         </div>
       </div>
 
-      {isAdmin ? (
+      {isStaff ? (
         <section className="card-section space-y-4">
           <h2 className="section-title">Rep. Casilla</h2>
           <dl className="grid gap-3 text-sm sm:grid-cols-2">

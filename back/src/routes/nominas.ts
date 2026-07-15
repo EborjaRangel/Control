@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { ValidationError } from "yup";
 import { prisma } from "../lib/prisma.js";
-import { requireAdmin, requireAuth } from "../lib/auth.js";
+import { requireStaff, requireAuth } from "../lib/auth.js";
 import { canAccessDirigentePanel } from "../lib/user-panel.js";
 import { nominaInclude, upsertNomina } from "../lib/nomina-db.js";
 import { serializeNomina } from "../lib/serialize-nomina.js";
@@ -28,7 +28,7 @@ const dirigenteResumenSelect = {
   activo: true,
 } as const;
 
-router.get("/", requireAdmin, async (req, res) => {
+router.get("/", requireStaff, async (req, res) => {
   try {
     const buscar = typeof req.query.buscar === "string" ? req.query.buscar.trim() : "";
     const tipo = typeof req.query.tipo === "string" ? req.query.tipo.trim() : "";
@@ -98,7 +98,7 @@ router.get("/:dirigenteId", async (req, res) => {
   }
 });
 
-router.put("/:dirigenteId", requireAdmin, async (req, res) => {
+router.put("/:dirigenteId", requireStaff, async (req, res) => {
   try {
     const dirigenteId = paramId(req.params.dirigenteId);
     const data = await nominaSchema.validate(req.body, {

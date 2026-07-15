@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { ValidationError } from "yup";
 import { prisma } from "../lib/prisma.js";
-import { requireAdmin } from "../lib/auth.js";
+import { requireStaff } from "../lib/auth.js";
 import { codigoQrDesdeTextoQr } from "../lib/codigo-qr.js";
 import { nombreCompleto } from "../lib/dirigentes.js";
 import {
@@ -20,7 +20,7 @@ import {
 
 const router = Router();
 
-router.use(requireAdmin);
+router.use(requireStaff);
 
 function paramId(value: string | string[]) {
   return Array.isArray(value) ? value[0] : value;

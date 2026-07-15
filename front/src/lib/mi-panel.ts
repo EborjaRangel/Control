@@ -1,15 +1,16 @@
 import type { SessionUser } from "@/lib/auth";
+import { isStaffRol } from "@/lib/auth";
 
 export function canManageRc(user: SessionUser | null, rcId: string) {
   if (!user) return false;
-  if (user.rol === "ADMIN") return true;
+  if (isStaffRol(user.rol)) return true;
   if (user.rol === "RC" && user.rcId === rcId) return true;
   return user.rol === "DIRIGENTE" && user.rcId === rcId;
 }
 
 export function canManageRg(user: SessionUser | null, rgId: string) {
   if (!user) return false;
-  if (user.rol === "ADMIN") return true;
+  if (isStaffRol(user.rol)) return true;
   if (user.rol === "RG" && user.rgId === rgId) return true;
   return user.rol === "DIRIGENTE" && user.rgId === rgId;
 }
@@ -28,7 +29,7 @@ function canManageRgForUser(user: SessionUser) {
 
 export function canViewOwnDirigente(user: SessionUser | null, dirigenteId: string) {
   if (!user) return false;
-  return user.rol === "ADMIN" || user.dirigenteId === dirigenteId;
+  return isStaffRol(user.rol) || user.dirigenteId === dirigenteId;
 }
 
 function operadorAllowed(pathname: string, base: string, id: string, manage: boolean) {
@@ -43,7 +44,7 @@ function operadorAllowed(pathname: string, base: string, id: string, manage: boo
 }
 
 export function pathAllowedForUser(user: SessionUser, pathname: string) {
-  if (user.rol === "ADMIN") return true;
+  if (isStaffRol(user.rol)) return true;
 
   if (pathname === "/notificaciones" || pathname.startsWith("/notificaciones/")) {
     return true;
@@ -73,7 +74,7 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
 }
 
 export function homeForUser(user: SessionUser) {
-  if (user.rol === "ADMIN") return "/";
+  if (isStaffRol(user.rol)) return "/";
   if (user.dirigenteId) return `/dirigentes/${user.dirigenteId}/consultar`;
   if (user.rcId) return `/rc/${user.rcId}`;
   if (user.rgId) return `/rg/${user.rgId}`;

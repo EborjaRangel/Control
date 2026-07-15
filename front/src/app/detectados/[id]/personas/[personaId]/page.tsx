@@ -17,14 +17,14 @@ import type { PersonaDetectadaFormValues } from "@/lib/validation-detectado";
 
 export default function PersonaDetectadaDetallePage() {
   const { id, personaId } = useParams<{ id: string; personaId: string }>();
-  const { isAdmin } = useAuth();
+  const { isStaff } = useAuth();
   const [detectado, setDetectado] = useState<DetectadoDTO | null>(null);
   const [persona, setPersona] = useState<PersonaDetectadaDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isStaff) return;
     async function load() {
       try {
         const [detRes, perRes] = await Promise.all([
@@ -41,7 +41,7 @@ export default function PersonaDetectadaDetallePage() {
       }
     }
     void load();
-  }, [id, personaId, isAdmin]);
+  }, [id, personaId, isStaff]);
 
   async function handleSubmit(values: PersonaDetectadaFormValues) {
     const res = await apiFetch(`/api/detectados/${id}/personas/${personaId}`, {
@@ -63,7 +63,7 @@ export default function PersonaDetectadaDetallePage() {
     setPersona((await res.json()) as PersonaDetectadaDTO);
   }
 
-  if (!isAdmin) return null;
+  if (!isStaff) return null;
 
   if (loading) {
     return (

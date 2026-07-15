@@ -10,7 +10,7 @@ import type { DirigenteDTO } from "@/lib/types";
 
 export default function ConsultarDirigentePage() {
   const { id } = useParams<{ id: string }>();
-  const { isAdmin } = useAuth();
+  const { isStaff } = useAuth();
   const [dirigente, setDirigente] = useState<DirigenteDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,10 +57,10 @@ export default function ConsultarDirigentePage() {
   return (
     <DirigenteDetalle
       dirigente={dirigente}
-      editHref={isAdmin ? `/dirigentes/${id}` : undefined}
-      nominaHref={isAdmin ? `/nominas/${id}` : undefined}
-      backHref={isAdmin ? "/" : undefined}
-      showComposicionSueldo={isAdmin}
+      editHref={isStaff ? `/dirigentes/${id}` : undefined}
+      nominaHref={isStaff ? `/nominas/${id}` : undefined}
+      backHref={isStaff ? "/" : undefined}
+      showComposicionSueldo={isStaff}
     />
   );
 }

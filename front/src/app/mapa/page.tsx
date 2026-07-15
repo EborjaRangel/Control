@@ -6,14 +6,14 @@ import { useAuth } from "@/components/AuthProvider";
 import { MapaCoberturaSecciones } from "@/components/MapaCoberturaSecciones";
 
 export default function MapaPage() {
-  const { isAdmin } = useAuth();
+  const { isStaff } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAdmin) router.replace("/");
-  }, [isAdmin, router]);
+    if (!isStaff) router.replace("/");
+  }, [isStaff, router]);
 
-  if (!isAdmin) return null;
+  if (!isStaff) return null;
 
   return (
     <div className="space-y-6">

@@ -29,9 +29,9 @@ const metaSchema = Yup.object({
 
 export default function DirigenteDetectadosPage() {
   const { dirigenteId } = useParams<{ dirigenteId: string }>();
-  const { isAdmin, user } = useAuth();
-  const canAccess = isAdmin || canViewOwnDirigente(user, dirigenteId);
-  const canCreate = isAdmin || canManageDetectadosDirigente(user, dirigenteId);
+  const { isStaff, user } = useAuth();
+  const canAccess = isStaff || canViewOwnDirigente(user, dirigenteId);
+  const canCreate = isStaff || canManageDetectadosDirigente(user, dirigenteId);
   const [panel, setPanel] = useState<DirigenteDetectadosPanelDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +117,7 @@ export default function DirigenteDetectadosPage() {
               + Nuevo detectado
             </Link>
           ) : null}
-          {isAdmin ? (
+          {isStaff ? (
             <Link href="/detectados" className="btn-ghost btn-responsive">
               Volver a dirigentes
             </Link>
@@ -156,7 +156,7 @@ export default function DirigenteDetectadosPage() {
       ) : null}
       {saveError ? <div className="alert-error">{saveError}</div> : null}
 
-      {isAdmin ? (
+      {isStaff ? (
         <Formik
           initialValues={{ metaDetectados: d.metaDetectados }}
           validationSchema={metaSchema}
@@ -212,7 +212,7 @@ export default function DirigenteDetectadosPage() {
           <p className="text-sm text-ink-secondary">
             {canCreate ? (
               <>
-                {isAdmin ? "Este dirigente" : "Aún no tienes"} detectados asignados.{" "}
+                {isStaff ? "Este dirigente" : "Aún no tienes"} detectados asignados.{" "}
                 <Link
                   href={`/detectados/dirigentes/${dirigenteId}/nuevo`}
                   className="font-medium text-pin hover:underline"

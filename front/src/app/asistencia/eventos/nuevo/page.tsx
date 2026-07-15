@@ -15,11 +15,11 @@ import {
 
 export default function NuevoEventoPage() {
   const router = useRouter();
-  const { isAdmin } = useAuth();
+  const { isStaff } = useAuth();
   const [uts, setUts] = useState<UnidadTerritorialResumen[]>([]);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isStaff) return;
     void apiFetch("/api/unidades-territoriales/catalogo")
       .then(async (res) => {
         if (!res.ok) return [];
@@ -27,9 +27,9 @@ export default function NuevoEventoPage() {
       })
       .then(setUts)
       .catch(() => setUts([]));
-  }, [isAdmin]);
+  }, [isStaff]);
 
-  if (!isAdmin) return null;
+  if (!isStaff) return null;
 
   async function handleSubmit(values: EventoFormValues) {
     const res = await apiFetch("/api/asistencia/eventos", {

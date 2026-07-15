@@ -523,6 +523,14 @@
   .seccion-map-marker {
     @apply whitespace-nowrap rounded-full border-2 border-surface bg-pin px-2 py-0.5 text-[0.6875rem] font-bold leading-tight text-surface shadow-pin;
   }
+
+  .modal-backdrop {
+    @apply fixed inset-0 z-[60] flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm;
+  }
+
+  .modal-panel {
+    @apply w-full rounded-pin-lg border border-line bg-surface p-6 shadow-pin-hover;
+  }
 }
 
 @layer utilities {

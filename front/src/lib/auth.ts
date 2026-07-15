@@ -41,7 +41,7 @@ export const credencialesUpdateSchema = Yup.object({
 export type SessionUser = {
   id: string;
   username: string;
-  rol: "ADMIN" | "DIRIGENTE" | "DETECTADO" | "RC" | "RG";
+  rol: "ADMIN" | "SUPERVISOR" | "DIRIGENTE" | "DETECTADO" | "RC" | "RG";
   /** Dirigente vinculado (propio o vía RC/RG). */
   dirigenteId: string | null;
   /** RC vinculado (propio o del dirigente). */
@@ -49,3 +49,7 @@ export type SessionUser = {
   /** RG vinculado (propio o del dirigente). */
   rgId: string | null;
 };
+
+export function isStaffRol(rol: SessionUser["rol"] | undefined) {
+  return rol === "ADMIN" || rol === "SUPERVISOR";
+}

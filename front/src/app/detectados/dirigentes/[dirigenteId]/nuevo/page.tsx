@@ -15,8 +15,8 @@ import type { DetectadoFormValues } from "@/lib/validation-detectado";
 export default function NuevoDetectadoDirigentePage() {
   const { dirigenteId } = useParams<{ dirigenteId: string }>();
   const router = useRouter();
-  const { isAdmin, user } = useAuth();
-  const canAccess = isAdmin || canManageDetectadosDirigente(user, dirigenteId);
+  const { isStaff, user } = useAuth();
+  const canAccess = isStaff || canManageDetectadosDirigente(user, dirigenteId);
   const [dirigente, setDirigente] = useState<DirigenteDetectadosDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +57,7 @@ export default function NuevoDetectadoDirigentePage() {
         <div className="alert-error">{error ?? "No encontrado"}</div>
         <Link
           href={
-            isAdmin
+            isStaff
               ? "/detectados"
               : `/detectados/dirigentes/${dirigenteId}`
           }

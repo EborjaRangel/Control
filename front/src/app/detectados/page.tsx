@@ -14,7 +14,7 @@ import { etiquetaSeccion } from "@/lib/secciones-electorales";
 
 export default function DetectadosPage() {
   const pathname = usePathname();
-  const { isAdmin } = useAuth();
+  const { isStaff } = useAuth();
   const [dirigentes, setDirigentes] = useState<DirigenteDetectadosDTO[]>([]);
   const [buscar, setBuscar] = useState("");
   const [loading, setLoading] = useState(true);
@@ -40,14 +40,14 @@ export default function DetectadosPage() {
   }, [buscar]);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isStaff) return;
     const timer = setTimeout(() => {
       void load();
     }, buscar ? 300 : 0);
     return () => clearTimeout(timer);
-  }, [load, buscar, pathname, isAdmin]);
+  }, [load, buscar, pathname, isStaff]);
 
-  if (!isAdmin) return null;
+  if (!isStaff) return null;
 
   return (
     <div className="space-y-6 sm:space-y-8">

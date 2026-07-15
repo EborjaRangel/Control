@@ -25,14 +25,14 @@ function urlEventos(filtro: FiltroEventosLista): string {
 }
 
 export default function AsistenciaPage() {
-  const { isAdmin } = useAuth();
+  const { isStaff } = useAuth();
   const [eventos, setEventos] = useState<EventoAsistenciaDTO[]>([]);
   const [filtro, setFiltro] = useState<FiltroEventosLista>("activos");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isStaff) return;
     setLoading(true);
     setError(null);
     void apiFetch(urlEventos(filtro))
@@ -43,9 +43,9 @@ export default function AsistenciaPage() {
       .then(setEventos)
       .catch((err) => setError(err instanceof Error ? err.message : "Error"))
       .finally(() => setLoading(false));
-  }, [isAdmin, filtro]);
+  }, [isStaff, filtro]);
 
-  if (!isAdmin) return null;
+  if (!isStaff) return null;
 
   return (
     <div className="space-y-6 sm:space-y-8">

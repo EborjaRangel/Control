@@ -18,10 +18,10 @@ import type { RepresentanteCasillaFormValues } from "@/lib/validation-rc-rg";
 
 export default function RepresentanteRgDetallePage() {
   const { id, repId } = useParams<{ id: string; repId: string }>();
-  const { isAdmin, user } = useAuth();
+  const { isStaff, user } = useAuth();
   const [rg, setRg] = useState<RgDTO | null>(null);
   const [rep, setRep] = useState<RepresentanteCasillaDTO | null>(null);
-  const canAccess = isAdmin || user?.rgId === id;
+  const canAccess = isStaff || user?.rgId === id;
   const canEdit = canManageRg(user, id);
 
   useEffect(() => {

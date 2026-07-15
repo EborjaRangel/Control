@@ -2,7 +2,7 @@ import { Router } from "express";
 import { ValidationError } from "yup";
 import type { TipoDirigente } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
-import { requireAdmin, requireAuth } from "../lib/auth.js";
+import { requireStaff, requireAuth } from "../lib/auth.js";
 import {
   contarDestinatariosNotificacion,
   enviarNotificacion,
@@ -108,7 +108,7 @@ router.post("/:destinatarioId/visto", async (req, res) => {
 });
 
 /** Admin: estimar destinatarios antes de enviar. */
-router.post("/preview", requireAdmin, async (req, res) => {
+router.post("/preview", requireStaff, async (req, res) => {
   try {
     const data = await notificacionEnviarSchema.validate(req.body ?? {}, {
       abortEarly: false,
@@ -130,7 +130,7 @@ router.post("/preview", requireAdmin, async (req, res) => {
 });
 
 /** Admin: enviar notificación in-app. */
-router.post("/enviar", requireAdmin, async (req, res) => {
+router.post("/enviar", requireStaff, async (req, res) => {
   try {
     const data = await notificacionEnviarSchema.validate(req.body ?? {}, {
       abortEarly: false,
@@ -160,7 +160,7 @@ router.post("/enviar", requireAdmin, async (req, res) => {
 });
 
 /** Admin: historial de envíos. */
-router.get("/historial", requireAdmin, async (_req, res) => {
+router.get("/historial", requireStaff, async (_req, res) => {
   try {
     const rows = await prisma.notificacion.findMany({
       orderBy: { enviadoAt: "desc" },

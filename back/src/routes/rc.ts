@@ -6,7 +6,8 @@ import {
   canAccessRc,
   canManageRcRequest,
   hashPassword,
-  requireAdmin,
+  isStaffRol,
+  requireStaff,
   requireAuth,
 } from "../lib/auth.js";
 import {
@@ -116,7 +117,7 @@ router.get("/", async (req, res) => {
       return;
     }
 
-    if (user.rol !== "ADMIN") {
+    if (!isStaffRol(user.rol)) {
       res.status(403).json({ error: "No autorizado" });
       return;
     }
@@ -147,7 +148,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get("/dirigentes", requireAdmin, async (req, res) => {
+router.get("/dirigentes", requireStaff, async (req, res) => {
   try {
     const buscar = typeof req.query.buscar === "string" ? req.query.buscar.trim() : "";
     const coloniaQuery =
@@ -193,7 +194,7 @@ router.get("/dirigentes", requireAdmin, async (req, res) => {
   }
 });
 
-router.post("/por-dirigente/:dirigenteId", requireAdmin, async (req, res) => {
+router.post("/por-dirigente/:dirigenteId", requireStaff, async (req, res) => {
   try {
     const dirigenteId = paramId(req.params.dirigenteId);
     const existing = await prisma.responsableColonia.findFirst({
@@ -216,7 +217,7 @@ router.post("/por-dirigente/:dirigenteId", requireAdmin, async (req, res) => {
   }
 });
 
-router.post("/", requireAdmin, async (req, res) => {
+router.post("/", requireStaff, async (req, res) => {
   try {
     const data = await rcCreateSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
 
@@ -289,14 +290,14 @@ router.get("/:id", async (req, res) => {
       res.status(404).json({ error: "No encontrado" });
       return;
     }
-    res.json(serializeRc(rc, { revealPassword: req.user!.rol === "ADMIN" }));
+    res.json(serializeRc(rc, { revealPassword: isStaffRol(req.user!.rol) }));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al obtener RC" });
   }
 });
 
-router.put("/:id", requireAdmin, async (req, res) => {
+router.put("/:id", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const data = await rcUpdateSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
@@ -356,7 +357,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
   }
 });
 
-router.delete("/:id", requireAdmin, async (req, res) => {
+router.delete("/:id", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const reactivar = req.query.reactivar === "true";

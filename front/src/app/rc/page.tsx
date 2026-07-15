@@ -18,7 +18,7 @@ function enlaceRepresentantes(d: DirigenteRepresentantesDTO) {
 export default function RcPage() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAdmin, user } = useAuth();
+  const { isStaff, user } = useAuth();
   const [dirigentes, setDirigentes] = useState<DirigenteRepresentantesDTO[]>([]);
   const [buscar, setBuscar] = useState("");
   const [colonia, setColonia] = useState("");
@@ -52,10 +52,10 @@ export default function RcPage() {
   }, [buscar, colonia, user?.rol, user?.rcId, router]);
 
   useEffect(() => {
-    if (!isAdmin && user?.rol !== "RC") return;
+    if (!isStaff && user?.rol !== "RC") return;
     const t = setTimeout(() => void load(), buscar ? 300 : 0);
     return () => clearTimeout(t);
-  }, [load, buscar, colonia, pathname, isAdmin, user?.rol]);
+  }, [load, buscar, colonia, pathname, isStaff, user?.rol]);
 
   if (user?.rol === "RC") {
     return (
@@ -65,7 +65,7 @@ export default function RcPage() {
       </div>
     );
   }
-  if (!isAdmin) return null;
+  if (!isStaff) return null;
 
   return (
     <div className="space-y-6 sm:space-y-8">

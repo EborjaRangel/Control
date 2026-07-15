@@ -8,8 +8,8 @@ type Props = {
 };
 
 export function AdminSectionPage({ title, subtitle }: Props) {
-  const { isAdmin } = useAuth();
-  if (!isAdmin) return null;
+  const { isStaff } = useAuth();
+  if (!isStaff) return null;
 
   return (
     <div className="space-y-6 sm:space-y-8">

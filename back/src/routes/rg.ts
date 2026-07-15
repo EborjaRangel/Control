@@ -6,7 +6,8 @@ import {
   canAccessRg,
   canManageRgRequest,
   hashPassword,
-  requireAdmin,
+  isStaffRol,
+  requireStaff,
   requireAuth,
 } from "../lib/auth.js";
 import {
@@ -105,7 +106,7 @@ router.get("/", async (req, res) => {
       return;
     }
 
-    if (user.rol !== "ADMIN") {
+    if (!isStaffRol(user.rol)) {
       res.status(403).json({ error: "No autorizado" });
       return;
     }
@@ -134,7 +135,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", requireAdmin, async (req, res) => {
+router.post("/", requireStaff, async (req, res) => {
   try {
     const data = await rgCreateSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
 
@@ -207,14 +208,14 @@ router.get("/:id", async (req, res) => {
       res.status(404).json({ error: "No encontrado" });
       return;
     }
-    res.json(serializeRg(rg, { revealPassword: req.user!.rol === "ADMIN" }));
+    res.json(serializeRg(rg, { revealPassword: isStaffRol(req.user!.rol) }));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al obtener RG" });
   }
 });
 
-router.put("/:id", requireAdmin, async (req, res) => {
+router.put("/:id", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const data = await rgUpdateSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
@@ -273,7 +274,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
   }
 });
 
-router.delete("/:id", requireAdmin, async (req, res) => {
+router.delete("/:id", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const reactivar = req.query.reactivar === "true";

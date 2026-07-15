@@ -9,11 +9,11 @@ import { apiJson } from "@/lib/api-response";
 export default function RcPorDirigentePage() {
   const { dirigenteId } = useParams<{ dirigenteId: string }>();
   const router = useRouter();
-  const { isAdmin } = useAuth();
+  const { isStaff } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isStaff) return;
 
     void (async () => {
       try {
@@ -24,9 +24,9 @@ export default function RcPorDirigentePage() {
         setError(err instanceof Error ? err.message : "Error al abrir representantes");
       }
     })();
-  }, [dirigenteId, isAdmin, router]);
+  }, [dirigenteId, isStaff, router]);
 
-  if (!isAdmin) return null;
+  if (!isStaff) return null;
 
   if (error) {
     return (

@@ -99,6 +99,18 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+export function isStaffRol(rol: RolUsuario | undefined) {
+  return rol === "ADMIN" || rol === "SUPERVISOR";
+}
+
+export function requireStaff(req: Request, res: Response, next: NextFunction) {
+  if (!isStaffRol(req.user?.rol)) {
+    res.status(403).json({ error: "Se requiere rol de administrador o supervisor" });
+    return;
+  }
+  next();
+}
+
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.user?.rol !== "ADMIN") {
     res.status(403).json({ error: "Se requiere rol de administrador" });

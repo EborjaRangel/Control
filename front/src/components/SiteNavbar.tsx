@@ -68,6 +68,12 @@ const ADMIN_NAV = [
     shortLabel: "Gral.",
     match: (p: string) => p === "/rg" || p.startsWith("/rg/"),
   },
+  {
+    href: "/usuarios",
+    label: "Usuarios",
+    shortLabel: "Usu.",
+    match: (p: string) => p.startsWith("/usuarios"),
+  },
 ] as const;
 
 type NavItemProps = {
@@ -138,7 +144,7 @@ function NavLink({
 
 export function SiteNavbar() {
   const pathname = usePathname();
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isStaff, logout } = useAuth();
   const [noLeidas, setNoLeidas] = useState(0);
 
   useEffect(() => {
@@ -152,7 +158,7 @@ export function SiteNavbar() {
       .catch(() => setNoLeidas(0));
   }, [user, pathname]);
 
-  const navItems = isAdmin
+  const navItems = isStaff
     ? [NOTIFICACIONES_NAV, ...ADMIN_NAV]
     : user
       ? navItemsForUser(user)

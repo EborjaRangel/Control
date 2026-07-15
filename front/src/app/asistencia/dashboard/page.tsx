@@ -9,14 +9,14 @@ import { exportarDashboardAsistenciaExcel } from "@/lib/export-asistencia-excel"
 import type { DirigenteAsistenciaResumen } from "@/lib/asistencia";
 
 export default function AsistenciaDashboardPage() {
-  const { isAdmin } = useAuth();
+  const { isStaff } = useAuth();
   const [dirigentes, setDirigentes] = useState<DirigenteAsistenciaResumen[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [buscar, setBuscar] = useState("");
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isStaff) return;
     void apiFetch("/api/asistencia/dashboard/dirigentes")
       .then(async (res) => {
         if (!res.ok) throw new Error("No se pudo cargar el dashboard");
@@ -25,7 +25,7 @@ export default function AsistenciaDashboardPage() {
       .then(setDirigentes)
       .catch((err) => setError(err instanceof Error ? err.message : "Error"))
       .finally(() => setLoading(false));
-  }, [isAdmin]);
+  }, [isStaff]);
 
   const filtrados = useMemo(() => {
     const q = buscar.trim().toLowerCase();
@@ -51,7 +51,7 @@ export default function AsistenciaDashboardPage() {
     [filtrados],
   );
 
-  if (!isAdmin) return null;
+  if (!isStaff) return null;
 
   return (
     <div className="space-y-6 sm:space-y-8">

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { ValidationError } from "yup";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
-import { requireAdmin, requireAuth } from "../lib/auth.js";
+import { isStaffRol, requireStaff, requireAuth } from "../lib/auth.js";
 import { canAccessDirigentePanel } from "../lib/user-panel.js";
 import { serializeDetectado, serializePersona } from "../lib/serialize-detectado.js";
 import {
@@ -48,7 +48,7 @@ async function validarSeccionPersona(detectadoId: string, seccionElectoral: stri
   return null;
 }
 
-router.get("/", requireAdmin, async (req, res) => {
+router.get("/", requireStaff, async (req, res) => {
   try {
     const buscar = typeof req.query.buscar === "string" ? req.query.buscar.trim() : "";
     const seccion = typeof req.query.seccion === "string" ? req.query.seccion.trim() : "";
@@ -87,7 +87,7 @@ router.get("/", requireAdmin, async (req, res) => {
   }
 });
 
-router.get("/dirigentes", requireAdmin, async (req, res) => {
+router.get("/dirigentes", requireStaff, async (req, res) => {
   try {
     const buscar = typeof req.query.buscar === "string" ? req.query.buscar.trim() : "";
     const coloniaQuery =
@@ -167,7 +167,7 @@ router.get("/dirigentes/:dirigenteId", async (req, res) => {
   }
 });
 
-router.put("/dirigentes/:dirigenteId/meta", requireAdmin, async (req, res) => {
+router.put("/dirigentes/:dirigenteId/meta", requireStaff, async (req, res) => {
   try {
     const dirigenteId = paramId(req.params.dirigenteId);
     const data = await dirigenteMetaDetectadosSchema.validate(req.body, {
@@ -214,7 +214,7 @@ router.post("/", requireAuth, async (req, res) => {
       return;
     }
 
-    if (req.user.rol !== "ADMIN" && req.user.rol !== "DIRIGENTE") {
+    if (!isStaffRol(req.user.rol) && req.user.rol !== "DIRIGENTE") {
       res.status(403).json({ error: "No autorizado" });
       return;
     }
@@ -297,7 +297,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.put("/:id", requireAdmin, async (req, res) => {
+router.put("/:id", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
 
@@ -358,7 +358,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
   }
 });
 
-router.delete("/:id", requireAdmin, async (req, res) => {
+router.delete("/:id", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const reactivar = req.query.reactivar === "true";
@@ -380,7 +380,7 @@ router.delete("/:id", requireAdmin, async (req, res) => {
   }
 });
 
-router.post("/:id/personas", requireAdmin, async (req, res) => {
+router.post("/:id/personas", requireStaff, async (req, res) => {
   try {
     const detectadoId = paramId(req.params.id);
 
@@ -427,7 +427,7 @@ router.post("/:id/personas", requireAdmin, async (req, res) => {
   }
 });
 
-router.get("/:id/personas/:personaId", requireAdmin, async (req, res) => {
+router.get("/:id/personas/:personaId", requireStaff, async (req, res) => {
   try {
     const detectadoId = paramId(req.params.id);
     const personaId = paramId(req.params.personaId);
@@ -447,7 +447,7 @@ router.get("/:id/personas/:personaId", requireAdmin, async (req, res) => {
   }
 });
 
-router.put("/:id/personas/:personaId", requireAdmin, async (req, res) => {
+router.put("/:id/personas/:personaId", requireStaff, async (req, res) => {
   try {
     const detectadoId = paramId(req.params.id);
     const personaId = paramId(req.params.personaId);
@@ -503,7 +503,7 @@ router.put("/:id/personas/:personaId", requireAdmin, async (req, res) => {
   }
 });
 
-router.delete("/:id/personas/:personaId", requireAdmin, async (req, res) => {
+router.delete("/:id/personas/:personaId", requireStaff, async (req, res) => {
   try {
     const detectadoId = paramId(req.params.id);
     const personaId = paramId(req.params.personaId);

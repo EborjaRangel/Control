@@ -12,7 +12,7 @@ import { totalNomina, type NominaDTO } from "@/lib/nominas";
 
 export default function NominasPage() {
   const pathname = usePathname();
-  const { isAdmin } = useAuth();
+  const { isStaff } = useAuth();
   const [nominas, setNominas] = useState<NominaDTO[]>([]);
   const [buscar, setBuscar] = useState("");
   const [tipo, setTipo] = useState("");
@@ -44,7 +44,7 @@ export default function NominasPage() {
   }, [buscar, tipo, colonia]);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isStaff) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
       void load(controller.signal);
@@ -53,11 +53,11 @@ export default function NominasPage() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [load, buscar, tipo, colonia, pathname, isAdmin]);
+  }, [load, buscar, tipo, colonia, pathname, isStaff]);
 
   const totalMensual = useMemo(() => totalNomina(nominas), [nominas]);
 
-  if (!isAdmin) return null;
+  if (!isStaff) return null;
 
   return (
     <div className="space-y-6 sm:space-y-8">

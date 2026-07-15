@@ -14,14 +14,14 @@ import {
 import type { ConvocatoriaEstado } from "@/lib/convocatoria";
 
 export default function ConvocatoriaPage() {
-  const { isAdmin } = useAuth();
+  const { isStaff } = useAuth();
   const [eventos, setEventos] = useState<EventoAsistenciaDTO[]>([]);
   const [config, setConfig] = useState<ConvocatoriaEstado | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isStaff) return;
     setLoading(true);
     Promise.all([
       apiFetch("/api/asistencia/eventos?activos=true").then(async (res) => {
@@ -39,9 +39,9 @@ export default function ConvocatoriaPage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Error"))
       .finally(() => setLoading(false));
-  }, [isAdmin]);
+  }, [isStaff]);
 
-  if (!isAdmin) return null;
+  if (!isStaff) return null;
 
   return (
     <div className="space-y-6 sm:space-y-8">

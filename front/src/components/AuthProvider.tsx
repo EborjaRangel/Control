@@ -13,6 +13,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
 import { homeForUser, pathAllowedForUser } from "@/lib/mi-panel";
+import { isStaffRol } from "@/lib/auth";
 import { clearSessionToken, getSessionToken, setSessionToken } from "@/lib/session-token";
 
 type AuthContextValue = {
@@ -21,7 +22,7 @@ type AuthContextValue = {
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
-  isAdmin: boolean;
+  isStaff: boolean;
   isDetectado: boolean;
   isRc: boolean;
   isRg: boolean;
@@ -79,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       router.replace(homeForUser(user));
       return;
     }
-    if (user && user.rol !== "ADMIN" && pathname !== "/login" && !pathAllowedForUser(user, pathname)) {
+    if (user && !isStaffRol(user.rol) && pathname !== "/login" && !pathAllowedForUser(user, pathname)) {
       router.replace(homeForUser(user));
     }
   }, [user, loading, pathname, router]);
@@ -121,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       refresh,
-      isAdmin: user?.rol === "ADMIN",
+      isStaff: isStaffRol(user?.rol),
       isDetectado: user?.rol === "DETECTADO",
       isRc: user?.rol === "RC",
       isRg: user?.rol === "RG",

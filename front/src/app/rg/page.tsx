@@ -11,7 +11,7 @@ import type { RgDTO } from "@/lib/rc-rg";
 export default function RgPage() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAdmin, user } = useAuth();
+  const { isStaff, user } = useAuth();
   const [lista, setLista] = useState<RgDTO[]>([]);
   const [buscar, setBuscar] = useState("");
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ export default function RgPage() {
       </div>
     );
   }
-  if (!isAdmin) return null;
+  if (!isStaff) return null;
 
   return (
     <div className="space-y-6 sm:space-y-8">

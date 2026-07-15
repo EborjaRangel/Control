@@ -8,8 +8,8 @@ import { apiJson } from "@/lib/api-response";
 
 export default function NuevoRcPage() {
   const router = useRouter();
-  const { isAdmin } = useAuth();
-  if (!isAdmin) return null;
+  const { isStaff } = useAuth();
+  if (!isStaff) return null;
 
   async function handleSubmit(payload: {
     dirigenteId: string;

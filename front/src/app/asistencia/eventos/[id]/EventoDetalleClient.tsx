@@ -20,7 +20,7 @@ import type { RegistrarAsistenciaFormValues } from "@/lib/validation-asistencia"
 export default function EventoDetalleClient() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { isAdmin } = useAuth();
+  const { isStaff } = useAuth();
   const [data, setData] = useState<PaseListaResponse | null>(null);
   const [eventosActivos, setEventosActivos] = useState<EventoAsistenciaDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,11 +44,11 @@ export default function EventoDetalleClient() {
   }, [id]);
 
   useEffect(() => {
-    if (isAdmin) void load();
-  }, [isAdmin, load]);
+    if (isStaff) void load();
+  }, [isStaff, load]);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isStaff) return;
     void apiFetch("/api/asistencia/eventos?activos=true")
       .then(async (res) => {
         if (!res.ok) return [];
@@ -56,7 +56,7 @@ export default function EventoDetalleClient() {
       })
       .then(setEventosActivos)
       .catch(() => setEventosActivos([]));
-  }, [isAdmin]);
+  }, [isStaff]);
 
   async function abrirPase() {
     setAccionando(true);
@@ -107,7 +107,7 @@ export default function EventoDetalleClient() {
     await load();
   }
 
-  if (!isAdmin) return null;
+  if (!isStaff) return null;
 
   if (loading) {
     return (

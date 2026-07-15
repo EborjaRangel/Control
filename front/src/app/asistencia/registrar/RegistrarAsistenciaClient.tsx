@@ -20,13 +20,13 @@ function CampoVerificacion({ label, value }: { label: string; value: string }) {
 export default function RegistrarAsistenciaClient() {
   const searchParams = useSearchParams();
   const codigo = searchParams.get("c")?.trim() ?? "";
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { isStaff, loading: authLoading } = useAuth();
   const [dirigente, setDirigente] = useState<AsistenciaDirigenteResumen | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading || !isAdmin || !codigo) {
+    if (authLoading || !isStaff || !codigo) {
       setDirigente(null);
       setError(null);
       return;
@@ -60,7 +60,7 @@ export default function RegistrarAsistenciaClient() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAdmin, codigo]);
+  }, [authLoading, isStaff, codigo]);
 
   if (authLoading) {
     return (
@@ -71,7 +71,7 @@ export default function RegistrarAsistenciaClient() {
     );
   }
 
-  if (!isAdmin) {
+  if (!isStaff) {
     return (
       <div className="space-y-4">
         <div className="alert-warning">

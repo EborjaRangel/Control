@@ -9,8 +9,9 @@ import { prisma } from "../lib/prisma.js";
 import {
   canAccessDirigente,
   hashPassword,
-  requireAdmin,
+  isStaffRol,
   requireAuth,
+  requireStaff,
 } from "../lib/auth.js";
 import {
   normalizeUsername,
@@ -41,6 +42,7 @@ import detectadosRouter from "./detectados.js";
 import rcRouter from "./rc.js";
 import rgRouter from "./rg.js";
 import notificacionesRouter from "./notificaciones.js";
+import usuariosRouter from "./usuarios.js";
 import { TIPOS_DIRIGENTE, compararNumeroDirigente, nombreCompleto } from "../lib/dirigentes.js";
 import {
   buildFiltroBuscarDirigentes,
@@ -203,6 +205,7 @@ router.use("/detectados", detectadosRouter);
 router.use("/rc", rcRouter);
 router.use("/rg", rgRouter);
 router.use("/notificaciones", notificacionesRouter);
+router.use("/usuarios", usuariosRouter);
 
 router.get("/secciones/coyoacan/geojson", (_req, res) => {
   try {
@@ -221,7 +224,7 @@ router.get("/secciones/coyoacan/geojson", (_req, res) => {
   }
 });
 
-router.get("/secciones/coyoacan/cobertura", requireAdmin, async (_req, res) => {
+router.get("/secciones/coyoacan/cobertura", requireStaff, async (_req, res) => {
   try {
     res.json(await coberturaSeccionesCoyoacan());
   } catch (error) {
@@ -296,7 +299,7 @@ router.get("/secciones-electorales", async (req, res) => {
   }
 });
 
-router.get("/unidades-territoriales/catalogo", requireAdmin, async (_req, res) => {
+router.get("/unidades-territoriales/catalogo", requireStaff, async (_req, res) => {
   try {
     const uts = await prisma.unidadTerritorial.findMany({
       orderBy: [{ nombre: "asc" }],
@@ -353,7 +356,7 @@ router.get("/dirigentes", async (req, res) => {
       return;
     }
 
-    const revealPassword = user.rol === "ADMIN";
+    const revealPassword = isStaffRol(user.rol);
 
     const tipoValido =
       tipo && (TIPOS_DIRIGENTE as readonly string[]).includes(tipo)
@@ -392,7 +395,7 @@ router.get("/dirigentes", async (req, res) => {
   }
 });
 
-router.post("/dirigentes", requireAdmin, async (req, res) => {
+router.post("/dirigentes", requireStaff, async (req, res) => {
   try {
     const data = await dirigenteCreateSchema.validate(req.body, {
       abortEarly: false,
@@ -506,14 +509,14 @@ router.get("/dirigentes/:id", async (req, res) => {
       res.status(404).json({ error: "No encontrado" });
       return;
     }
-    res.json(serializeDirigente(dirigente, { revealPassword: req.user!.rol === "ADMIN" }));
+    res.json(serializeDirigente(dirigente, { revealPassword: isStaffRol(req.user!.rol) }));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al obtener dirigente" });
   }
 });
 
-router.put("/dirigentes/:id", requireAdmin, async (req, res) => {
+router.put("/dirigentes/:id", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
 
@@ -640,7 +643,7 @@ router.put("/dirigentes/:id", requireAdmin, async (req, res) => {
       });
     });
 
-    res.json(serializeDirigente(dirigente, { revealPassword: req.user!.rol === "ADMIN" }));
+    res.json(serializeDirigente(dirigente, { revealPassword: isStaffRol(req.user!.rol) }));
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
@@ -656,7 +659,7 @@ router.put("/dirigentes/:id", requireAdmin, async (req, res) => {
   }
 });
 
-router.delete("/dirigentes/:id", requireAdmin, async (req, res) => {
+router.delete("/dirigentes/:id", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const reactivar = req.query.reactivar === "true";
@@ -687,7 +690,7 @@ router.delete("/dirigentes/:id", requireAdmin, async (req, res) => {
       });
     });
 
-    res.json(serializeDirigente(dirigente, { revealPassword: req.user!.rol === "ADMIN" }));
+    res.json(serializeDirigente(dirigente, { revealPassword: isStaffRol(req.user!.rol) }));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al actualizar estado" });
@@ -716,7 +719,7 @@ router.post("/upload", (req, res) => {
   });
 });
 
-router.post("/admin/uploads/restore", requireAdmin, (req, res) => {
+router.post("/admin/uploads/restore", requireStaff, (req, res) => {
   restoreUpload.single("file")(req, res, (err) => {
     if (err instanceof multer.MulterError) {
       if (err.code === "LIMIT_FILE_SIZE") {

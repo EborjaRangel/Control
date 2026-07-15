@@ -17,7 +17,7 @@ import type { DirigenteDTO } from "@/lib/types";
 
 export default function DirigentesPage() {
   const pathname = usePathname();
-  const { isAdmin } = useAuth();
+  const { isStaff } = useAuth();
   const [dirigentes, setDirigentes] = useState<DirigenteDTO[]>([]);
   const [buscar, setBuscar] = useState("");
   const [tipo, setTipo] = useState("");
@@ -90,7 +90,7 @@ export default function DirigentesPage() {
     await load();
   }
 
-  if (!isAdmin) {
+  if (!isStaff) {
     return null;
   }
 

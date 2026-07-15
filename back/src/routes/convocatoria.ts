@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { ValidationError } from "yup";
-import { requireAdmin } from "../lib/auth.js";
+import { requireStaff } from "../lib/auth.js";
 import {
   convocatoriaListaParaEnvio,
   faltantesConfigConvocatoria,
@@ -15,7 +15,7 @@ import { convocatoriaEventoSchema } from "../lib/validation-convocatoria.js";
 
 const router = Router();
 
-router.use(requireAdmin);
+router.use(requireStaff);
 
 function paramId(value: string | string[]) {
   return Array.isArray(value) ? value[0] : value;

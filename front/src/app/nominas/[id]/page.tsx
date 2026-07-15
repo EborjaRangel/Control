@@ -12,7 +12,7 @@ import type { NominaFormValues } from "@/lib/validation";
 
 export default function NominaDirigentePage() {
   const { id } = useParams<{ id: string }>();
-  const { isAdmin, user } = useAuth();
+  const { isStaff, user } = useAuth();
   const [nomina, setNomina] = useState<NominaDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -20,7 +20,7 @@ export default function NominaDirigentePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  const canAccess = isAdmin || canViewOwnDirigente(user, id);
+  const canAccess = isStaff || canViewOwnDirigente(user, id);
 
   const load = useCallback(async (options?: { silent?: boolean }) => {
     if (!options?.silent) {
@@ -96,7 +96,7 @@ export default function NominaDirigentePage() {
     return (
       <div className="space-y-4">
         <div className="alert-error">{error ?? "No encontrado"}</div>
-        {isAdmin ? (
+        {isStaff ? (
           <Link href="/nominas" className="btn-secondary btn-responsive">
             Volver a nóminas
           </Link>
@@ -112,7 +112,7 @@ export default function NominaDirigentePage() {
     );
   }
 
-  const backHref = isAdmin ? "/nominas" : `/dirigentes/${user?.dirigenteId}/consultar`;
+  const backHref = isStaff ? "/nominas" : `/dirigentes/${user?.dirigenteId}/consultar`;
 
   return (
     <div className="space-y-4">
@@ -122,9 +122,9 @@ export default function NominaDirigentePage() {
       ) : null}
       <NominaDetalle
         nomina={nomina}
-        editing={isAdmin}
+        editing={isStaff}
         saving={saving}
-        onSave={isAdmin ? handleSave : undefined}
+        onSave={isStaff ? handleSave : undefined}
         backHref={backHref}
       />
     </div>
