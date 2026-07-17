@@ -2,18 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { NominaResumenGlobalPanel } from "@/components/NominaResumenGlobalPanel";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import { NOMBRES_COLONIAS_COYOACAN } from "@/lib/colonias";
 import { formatMxn, TIPO_DIRIGENTE_LABEL, TIPOS_DIRIGENTE, CONCEPTO_SUELDO_LABEL, CONCEPTOS_SUELDO_CATALOGO } from "@/lib/dirigentes";
-import { totalNomina, type NominaDTO } from "@/lib/nominas";
+import { type NominaDTO, type NominaResumenGlobalDTO } from "@/lib/nominas";
 
 export default function NominasPage() {
   const pathname = usePathname();
-  const { isStaff } = useAuth();
+  const { isStaff, isAdmin } = useAuth();
   const [nominas, setNominas] = useState<NominaDTO[]>([]);
+  const [resumen, setResumen] = useState<NominaResumenGlobalDTO | null>(null);
   const [buscar, setBuscar] = useState("");
   const [tipo, setTipo] = useState("");
   const [colonia, setColonia] = useState("");
@@ -28,12 +30,25 @@ export default function NominasPage() {
       if (buscar.trim()) params.set("buscar", buscar.trim());
       if (tipo) params.set("tipo", tipo);
       if (colonia) params.set("colonia", colonia);
-      const res = await apiFetch(`/api/nominas?${params.toString()}`, { signal });
-      if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        throw new Error(data.error ?? "Error al cargar nóminas");
+      const requests: Promise<void>[] = [
+        apiFetch(`/api/nominas?${params.toString()}`, { signal }).then(async (res) => {
+          if (!res.ok) {
+            const data = (await res.json()) as { error?: string };
+            throw new Error(data.error ?? "Error al cargar nóminas");
+          }
+          setNominas((await res.json()) as NominaDTO[]);
+        }),
+      ];
+      if (isAdmin) {
+        requests.push(
+          apiFetch("/api/nominas/resumen", { signal }).then(async (res) => {
+            if (res.ok) {
+              setResumen((await res.json()) as NominaResumenGlobalDTO);
+            }
+          }),
+        );
       }
-      setNominas((await res.json()) as NominaDTO[]);
+      await Promise.all(requests);
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
       if (signal?.aborted) return;
@@ -41,7 +56,7 @@ export default function NominasPage() {
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  }, [buscar, tipo, colonia]);
+  }, [buscar, tipo, colonia, isAdmin]);
 
   useEffect(() => {
     if (!isStaff) return;
@@ -55,8 +70,6 @@ export default function NominasPage() {
     };
   }, [load, buscar, tipo, colonia, pathname, isStaff]);
 
-  const totalMensual = useMemo(() => totalNomina(nominas), [nominas]);
-
   if (!isStaff) return null;
 
   return (
@@ -67,7 +80,9 @@ export default function NominasPage() {
           <p className="page-subtitle">
             {loading
               ? "Cargando…"
-              : `${nominas.length} nómina(s) · Total mensual ${formatMxn(totalMensual)}`}
+              : isAdmin && resumen
+                ? `${nominas.length} nómina(s) en la vista · Total general ${formatMxn(resumen.desglose.total)}`
+                : `${nominas.length} nómina(s)`}
           </p>
         </div>
       </div>
@@ -120,6 +135,8 @@ export default function NominasPage() {
       </div>
 
       {error ? <div className="alert-error">{error}</div> : null}
+
+      {isAdmin && resumen ? <NominaResumenGlobalPanel resumen={resumen} /> : null}
 
       {loading ? (
         <div className="flex items-center gap-3 text-ink-secondary">
@@ -200,6 +217,24 @@ export default function NominasPage() {
                   );
                 })}
               </tbody>
+              {isAdmin && resumen ? (
+                <tfoot>
+                  <tr className="border-t-2 border-pin/30 bg-pin/5 font-semibold">
+                    <td className="py-3 pr-3" colSpan={3}>
+                      Totales por concepto
+                    </td>
+                    {CONCEPTOS_SUELDO_CATALOGO.map((key) => (
+                      <td key={key} className="py-3 pr-3 text-right text-pin">
+                        {formatMxn(resumen.desglose[key])}
+                      </td>
+                    ))}
+                    <td className="py-3 pr-3 text-right text-lg text-pin">
+                      {formatMxn(resumen.desglose.total)}
+                    </td>
+                    <td className="py-3" />
+                  </tr>
+                </tfoot>
+              ) : null}
             </table>
             </TableWrap>
           </div>

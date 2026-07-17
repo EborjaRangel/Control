@@ -147,7 +147,7 @@ export default function RgDetallePage() {
                   <th className="py-2 pr-3">Nombre</th>
                   <th className="py-2 pr-3">Sección</th>
                   <th className="py-2 pr-3">Colonia</th>
-                  <th className="py-2 pr-3">INE</th>
+                  <th className="py-2 pr-3">Credencial</th>
                   <th className="py-2" />
                 </tr>
               </thead>

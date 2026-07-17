@@ -82,10 +82,10 @@ export function DetectadoForm({
           </section>
 
           <section className="space-y-4">
-            <h2 className="section-title">Identificación (INE)</h2>
+            <h2 className="section-title">Identificación</h2>
             <div className="grid gap-6 sm:grid-cols-2">
-              <ImageUploadField name="ineFrenteUrl" label="Anverso (frente)" previewAlt="INE anverso" />
-              <ImageUploadField name="ineReversoUrl" label="Reverso" previewAlt="INE reverso" />
+              <ImageUploadField name="ineFrenteUrl" label="Anverso (frente)" previewAlt="Credencial anverso" />
+              <ImageUploadField name="ineReversoUrl" label="Reverso" previewAlt="Credencial reverso" />
             </div>
           </section>
 

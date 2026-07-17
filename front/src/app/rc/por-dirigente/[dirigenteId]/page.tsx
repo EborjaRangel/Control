@@ -5,35 +5,48 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import { apiJson } from "@/lib/api-response";
+import { canViewOwnDirigente } from "@/lib/mi-panel";
 
 export default function RcPorDirigentePage() {
   const { dirigenteId } = useParams<{ dirigenteId: string }>();
   const router = useRouter();
-  const { isStaff } = useAuth();
+  const { isStaff, user, refresh } = useAuth();
+  const canAccess = isStaff || canViewOwnDirigente(user, dirigenteId);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isStaff) return;
+    if (!canAccess) return;
 
     void (async () => {
       try {
         const res = await apiFetch(`/api/rc/por-dirigente/${dirigenteId}`, { method: "POST" });
         const rc = await apiJson<{ id: string }>(res);
+        await refresh();
         router.replace(`/rc/${rc.id}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error al abrir representantes");
       }
     })();
-  }, [dirigenteId, isStaff, router]);
+  }, [dirigenteId, canAccess, router, refresh]);
 
-  if (!isStaff) return null;
+  if (!canAccess) return null;
 
   if (error) {
     return (
       <div className="space-y-4">
         <div className="alert-error">{error}</div>
-        <button type="button" className="btn-ghost" onClick={() => router.push("/rc")}>
-          Volver al listado
+        <button
+          type="button"
+          className="btn-ghost"
+          onClick={() =>
+            router.push(
+              user?.dirigenteId
+                ? `/dirigentes/${user.dirigenteId}/consultar`
+                : "/rc",
+            )
+          }
+        >
+          Volver
         </button>
       </div>
     );

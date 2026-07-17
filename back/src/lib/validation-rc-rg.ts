@@ -75,8 +75,8 @@ export const representanteCasillaSchema = Yup.object({
   codigoPostal: Yup.string()
     .oneOf([...CODIGOS_POSTALES_COYOACAN], "Selecciona un código postal de Coyoacán")
     .required("El código postal es obligatorio"),
-  ineFrenteUrl: Yup.string().trim().required("Sube la foto del INE (anverso)"),
-  ineReversoUrl: Yup.string().trim().required("Sube la foto del INE (reverso)"),
+  ineFrenteUrl: Yup.string().trim().required("Sube la foto del anverso de la credencial"),
+  ineReversoUrl: Yup.string().trim().required("Sube la foto del reverso de la credencial"),
 });
 
 export type RcFormValues = Yup.InferType<typeof rcBaseSchema> & {

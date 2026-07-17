@@ -292,7 +292,7 @@ export function RepresentanteCasillaForm({
       {({ isSubmitting }) => (
         <Form className="space-y-6">
           <section className="card-section space-y-4">
-            <h2 className="section-title">Datos generales (INE)</h2>
+            <h2 className="section-title">Datos generales</h2>
             {distritoLocal ? (
               <p className="text-sm text-ink-secondary">
                 Elige la colonia del <strong className="text-ink">distrito local {distritoLocal}</strong>{" "}
@@ -338,17 +338,17 @@ export function RepresentanteCasillaForm({
           </section>
 
           <section className="card-section space-y-4">
-            <h2 className="section-title">Domicilio (según INE)</h2>
+            <h2 className="section-title">Domicilio</h2>
             <div className="grid gap-4 form-grid">
               <DomicilioFields coloniaFija={coloniaAsignada} />
             </div>
           </section>
 
           <section className="card-section space-y-4">
-            <h2 className="section-title">Fotografías de la credencial INE</h2>
+            <h2 className="section-title">Fotografías de la credencial</h2>
             <div className="grid gap-6 lg:grid-cols-2">
-              <ImageUploadField name="ineFrenteUrl" label="Anverso (frente)" previewAlt="INE anverso" />
-              <ImageUploadField name="ineReversoUrl" label="Reverso (atrás)" previewAlt="INE reverso" />
+              <ImageUploadField name="ineFrenteUrl" label="Anverso (frente)" previewAlt="Credencial anverso" />
+              <ImageUploadField name="ineReversoUrl" label="Reverso (atrás)" previewAlt="Credencial reverso" />
             </div>
           </section>
 

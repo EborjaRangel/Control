@@ -1,4 +1,4 @@
-export type StaffRol = "ADMIN" | "SUPERVISOR";
+export type StaffRol = "ADMIN" | "SUPERVISOR" | "ASISTENCIA" | "CONVOCATORIA";
 
 export type StaffUserDTO = {
   id: string;
@@ -13,4 +13,6 @@ export type StaffUserDTO = {
 export const STAFF_ROL_LABEL: Record<StaffRol, string> = {
   ADMIN: "Administrador",
   SUPERVISOR: "Supervisor",
+  ASISTENCIA: "Captura de asistencia",
+  CONVOCATORIA: "Convocatorias",
 };

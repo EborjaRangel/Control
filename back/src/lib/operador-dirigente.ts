@@ -56,3 +56,19 @@ export async function ensureRcForDirigente(dirigenteId: string) {
     data: datosRcDesdeDirigente(dirigente),
   });
 }
+
+/** Crea el RG del dirigente si aún no existe (sin credenciales de acceso). */
+export async function ensureRgForDirigente(dirigenteId: string) {
+  const dirigente = await cargarDirigenteParaOperador(dirigenteId);
+  if (!dirigente) return null;
+
+  if (dirigente.responsableGeneral) {
+    return prisma.responsableGeneral.findUnique({
+      where: { id: dirigente.responsableGeneral.id },
+    });
+  }
+
+  return prisma.responsableGeneral.create({
+    data: datosRgDesdeDirigente(dirigente),
+  });
+}

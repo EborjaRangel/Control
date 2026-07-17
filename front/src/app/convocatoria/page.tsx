@@ -14,14 +14,14 @@ import {
 import type { ConvocatoriaEstado } from "@/lib/convocatoria";
 
 export default function ConvocatoriaPage() {
-  const { isStaff } = useAuth();
+  const { canManageConvocatoria, isStaff } = useAuth();
   const [eventos, setEventos] = useState<EventoAsistenciaDTO[]>([]);
   const [config, setConfig] = useState<ConvocatoriaEstado | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isStaff) return;
+    if (!canManageConvocatoria) return;
     setLoading(true);
     Promise.all([
       apiFetch("/api/asistencia/eventos?activos=true").then(async (res) => {
@@ -39,9 +39,9 @@ export default function ConvocatoriaPage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Error"))
       .finally(() => setLoading(false));
-  }, [isStaff]);
+  }, [canManageConvocatoria]);
 
-  if (!isStaff) return null;
+  if (!canManageConvocatoria) return null;
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -52,9 +52,11 @@ export default function ConvocatoriaPage() {
             Captura un mensaje y envíalo por correo, SMS, WhatsApp o notificaciones in-app.
           </p>
         </div>
-        <Link href="/asistencia" className="btn-ghost btn-responsive">
-          Volver a asistencia
-        </Link>
+        {isStaff ? (
+          <Link href="/asistencia" className="btn-ghost btn-responsive">
+            Volver a asistencia
+          </Link>
+        ) : null}
       </div>
 
       {error ? <div className="alert-error">{error}</div> : null}
@@ -136,14 +138,17 @@ export default function ConvocatoriaPage() {
               </p>
               <p className="text-sm text-ink-secondary">{ev.alcanceLabel}</p>
             </div>
-            <Link href={`/asistencia/eventos/${ev.id}`} className="btn-primary btn-sm btn-responsive shrink-0">
+            <Link
+              href={`/convocatoria/eventos/${ev.id}`}
+              className="btn-primary btn-sm btn-responsive shrink-0"
+            >
               Redactar convocatoria
             </Link>
           </article>
         ))}
       </section>
 
-      <NotificacionesAdminPanel />
+      {isStaff ? <NotificacionesAdminPanel /> : null}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import type { prisma as prismaClient } from "./prisma.js";
 import type { ConceptoSueldo } from "./composicion-sueldo.js";
+import { calcularTotalesNomina, recalcularResumenGlobalNomina } from "./nomina-resumen.js";
 
 export const nominaInclude = {
   conceptos: true,
@@ -45,8 +46,10 @@ function legacySync(conceptos: ReturnType<typeof mapConceptos>) {
 
 export function nominaCreateData(data: NominaPayload): Prisma.NominaCreateWithoutDirigenteInput {
   const conceptos = mapConceptos(data);
+  const totales = calcularTotalesNomina(conceptos);
   return {
     ...legacySync(conceptos),
+    ...totales,
     conceptos: {
       create: conceptos,
     },
@@ -59,7 +62,7 @@ export async function upsertNomina(
   data: NominaPayload,
 ) {
   const conceptos = mapConceptos(data);
-  const core = legacySync(conceptos);
+  const core = { ...legacySync(conceptos), ...calcularTotalesNomina(conceptos) };
 
   const nomina = await tx.nomina.upsert({
     where: { dirigenteId },
@@ -77,6 +80,8 @@ export async function upsertNomina(
       data: conceptos.map((c) => ({ ...c, nominaId: nomina.id })),
     });
   }
+
+  await recalcularResumenGlobalNomina(tx);
 
   return tx.nomina.findUniqueOrThrow({
     where: { id: nomina.id },

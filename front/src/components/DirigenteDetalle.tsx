@@ -133,7 +133,7 @@ export function DirigenteDetalle({
           <Campo label="Correo electrónico" value={d.correo} />
           <Campo label="Alias" value={d.alias} />
           <Campo label="CURP" value={d.curp} />
-          <Campo label="INE" value={d.tieneIne ? "Sí" : "No"} />
+          <Campo label="Credencial de elector" value={d.tieneIne ? "Sí" : "No"} />
           {d.usuario ? <Campo label="Usuario de acceso" value={d.usuario} /> : null}
           {d.password ? <Campo label="Contraseña de acceso" value={d.password} /> : null}
         </dl>
@@ -141,12 +141,12 @@ export function DirigenteDetalle({
 
       {d.tieneIne && (d.ineFrenteUrl || d.ineReversoUrl) ? (
         <section className="card-section space-y-4">
-          <h2 className="section-title">INE</h2>
+          <h2 className="section-title">Credencial de elector</h2>
           <div className="flex flex-wrap gap-4">
             {d.ineFrenteUrl ? (
               <UploadImage
                 src={d.ineFrenteUrl}
-                alt="INE frente"
+                alt="Credencial frente"
                 width={160}
                 height={100}
                 className="h-24 w-40 rounded-pin object-cover ring-2 ring-pin-light"
@@ -155,7 +155,7 @@ export function DirigenteDetalle({
             {d.ineReversoUrl ? (
               <UploadImage
                 src={d.ineReversoUrl}
-                alt="INE reverso"
+                alt="Credencial reverso"
                 width={160}
                 height={100}
                 className="h-24 w-40 rounded-pin object-cover ring-2 ring-pin-light"

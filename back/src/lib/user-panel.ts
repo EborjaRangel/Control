@@ -57,6 +57,15 @@ export async function canAccessDirigentePanel(
   return panel.dirigenteId === dirigenteId;
 }
 
+export async function canCreateOperadorForDirigente(
+  user: AuthUser,
+  dirigenteId: string,
+): Promise<boolean> {
+  if (user.rol === "ADMIN" || user.rol === "SUPERVISOR") return true;
+  if (user.rol !== "DIRIGENTE") return false;
+  return canAccessDirigentePanel(user, dirigenteId);
+}
+
 export async function canManageRc(user: AuthUser, rcId: string): Promise<boolean> {
   if (user.rol === "ADMIN" || user.rol === "SUPERVISOR") return true;
   if (user.rol === "RC" && user.rcId === rcId) return true;

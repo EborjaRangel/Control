@@ -6,11 +6,21 @@ import { useEffect, useState } from "react";
 import { DirigenteDetalle } from "@/components/DirigenteDetalle";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
+import { canViewOwnDirigente } from "@/lib/mi-panel";
 import type { DirigenteDTO } from "@/lib/types";
+
+function enlaceRc(dirigenteId: string, rcId: string | null | undefined) {
+  return rcId ? `/rc/${rcId}` : `/rc/por-dirigente/${dirigenteId}`;
+}
+
+function enlaceRg(dirigenteId: string, rgId: string | null | undefined) {
+  return rgId ? `/rg/${rgId}` : `/rg/por-dirigente/${dirigenteId}`;
+}
 
 export default function ConsultarDirigentePage() {
   const { id } = useParams<{ id: string }>();
-  const { isStaff } = useAuth();
+  const { isStaff, user } = useAuth();
+  const esPropio = canViewOwnDirigente(user, id);
   const [dirigente, setDirigente] = useState<DirigenteDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,12 +65,40 @@ export default function ConsultarDirigentePage() {
   }
 
   return (
-    <DirigenteDetalle
-      dirigente={dirigente}
-      editHref={isStaff ? `/dirigentes/${id}` : undefined}
-      nominaHref={isStaff ? `/nominas/${id}` : undefined}
-      backHref={isStaff ? "/" : undefined}
-      showComposicionSueldo={isStaff}
-    />
+    <div className="space-y-6 sm:space-y-8">
+      {esPropio && dirigente.activo ? (
+        <section className="card-section space-y-4">
+          <div>
+            <h2 className="section-title">Mis registros</h2>
+            <p className="mt-1 text-sm text-ink-secondary">
+              Administra detectados, representantes de casilla y representantes generales de tu
+              equipo.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href={`/detectados/dirigentes/${id}`}
+              className="btn-primary btn-responsive"
+            >
+              Mis detectados
+            </Link>
+            <Link href={enlaceRc(id, user?.rcId)} className="btn-secondary btn-responsive">
+              {user?.rcId ? "Rep. de casilla" : "Activar Rep. Casilla"}
+            </Link>
+            <Link href={enlaceRg(id, user?.rgId)} className="btn-secondary btn-responsive">
+              {user?.rgId ? "Rep. General" : "Activar Rep. General"}
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
+      <DirigenteDetalle
+        dirigente={dirigente}
+        editHref={isStaff ? `/dirigentes/${id}` : undefined}
+        nominaHref={isStaff ? `/nominas/${id}` : undefined}
+        backHref={isStaff ? "/" : undefined}
+        showComposicionSueldo={isStaff}
+      />
+    </div>
   );
 }

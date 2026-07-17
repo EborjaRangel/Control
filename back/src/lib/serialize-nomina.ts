@@ -17,6 +17,13 @@ type NominaCore = {
   sueldoBase?: unknown;
   enProgramaSocial?: boolean;
   programaMonto?: unknown;
+  totalBase?: unknown;
+  totalHonorarios?: unknown;
+  totalCossoc?: unknown;
+  totalSetentaTreinta?: unknown;
+  totalPf?: unknown;
+  totalNomina8?: unknown;
+  totalGeneral?: unknown;
   conceptos: ConceptoRow[];
 };
 
@@ -65,6 +72,21 @@ function desgloseFromConceptos(conceptos: ConceptoRow[]): DesgloseSueldo {
   return calcularSueldo(toConceptoInputs(conceptos));
 }
 
+function desgloseFromNomina(nomina: NominaCore): DesgloseSueldo {
+  if (nomina.totalGeneral != null) {
+    return {
+      BASE: n(nomina.totalBase),
+      HONORARIOS: n(nomina.totalHonorarios),
+      COSSOC: n(nomina.totalCossoc),
+      SETENTA_TREINTA: n(nomina.totalSetentaTreinta),
+      PF: n(nomina.totalPf),
+      NOMINA_8: n(nomina.totalNomina8),
+      total: n(nomina.totalGeneral),
+    };
+  }
+  return desgloseFromConceptos(nomina.conceptos);
+}
+
 export type NominaDTO = ReturnType<typeof serializeNomina>;
 
 export function serializeNomina(
@@ -72,7 +94,7 @@ export function serializeNomina(
   dirigente: DirigenteResumen,
 ) {
   const conceptosComposicion = serializeConceptos(nomina.conceptos);
-  const desglose = desgloseFromConceptos(nomina.conceptos);
+  const desglose = desgloseFromNomina(nomina);
 
   return {
     id: nomina.id,
@@ -107,6 +129,6 @@ export function nominaFieldsFromRow(nomina: NominaCore | null | undefined) {
   const conceptosComposicion = serializeConceptos(nomina.conceptos);
   return {
     conceptosComposicion,
-    desglose: desgloseFromConceptos(nomina.conceptos),
+    desglose: desgloseFromNomina(nomina),
   };
 }

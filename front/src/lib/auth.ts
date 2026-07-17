@@ -41,7 +41,7 @@ export const credencialesUpdateSchema = Yup.object({
 export type SessionUser = {
   id: string;
   username: string;
-  rol: "ADMIN" | "SUPERVISOR" | "DIRIGENTE" | "DETECTADO" | "RC" | "RG";
+  rol: "ADMIN" | "SUPERVISOR" | "ASISTENCIA" | "CONVOCATORIA" | "DIRIGENTE" | "DETECTADO" | "RC" | "RG";
   /** Dirigente vinculado (propio o vía RC/RG). */
   dirigenteId: string | null;
   /** RC vinculado (propio o del dirigente). */
@@ -52,4 +52,28 @@ export type SessionUser = {
 
 export function isStaffRol(rol: SessionUser["rol"] | undefined) {
   return rol === "ADMIN" || rol === "SUPERVISOR";
+}
+
+export function isAdminRol(rol: SessionUser["rol"] | undefined) {
+  return rol === "ADMIN";
+}
+
+export function isAsistenciaRol(rol: SessionUser["rol"] | undefined) {
+  return rol === "ASISTENCIA";
+}
+
+export function isConvocatoriaRol(rol: SessionUser["rol"] | undefined) {
+  return rol === "CONVOCATORIA";
+}
+
+export function canTakeAsistencia(rol: SessionUser["rol"] | undefined) {
+  return isStaffRol(rol) || isAsistenciaRol(rol);
+}
+
+export function canManageConvocatoria(rol: SessionUser["rol"] | undefined) {
+  return isStaffRol(rol) || isConvocatoriaRol(rol);
+}
+
+export function isLimitedPanelRol(rol: SessionUser["rol"] | undefined) {
+  return isAsistenciaRol(rol) || isConvocatoriaRol(rol);
 }

@@ -20,6 +20,7 @@ type RepresentanteRow = {
   ineFrenteUrl: string;
   ineReversoUrl: string;
   activo: boolean;
+  validado: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -95,6 +96,7 @@ export function serializeRepresentante(r: RepresentanteRow) {
     ineFrenteUrl: r.ineFrenteUrl,
     ineReversoUrl: r.ineReversoUrl,
     activo: r.activo,
+    validado: r.validado,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
   };

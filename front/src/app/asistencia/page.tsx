@@ -25,17 +25,17 @@ function urlEventos(filtro: FiltroEventosLista): string {
 }
 
 export default function AsistenciaPage() {
-  const { isStaff } = useAuth();
+  const { canTakeAsistencia, isStaff, isAsistencia } = useAuth();
   const [eventos, setEventos] = useState<EventoAsistenciaDTO[]>([]);
   const [filtro, setFiltro] = useState<FiltroEventosLista>("activos");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isStaff) return;
+    if (!canTakeAsistencia) return;
     setLoading(true);
     setError(null);
-    void apiFetch(urlEventos(filtro))
+    void apiFetch(urlEventos(isAsistencia ? "activos" : filtro))
       .then(async (res) => {
         if (!res.ok) throw new Error("No se pudieron cargar los eventos");
         return (await res.json()) as EventoAsistenciaDTO[];
@@ -43,9 +43,9 @@ export default function AsistenciaPage() {
       .then(setEventos)
       .catch((err) => setError(err instanceof Error ? err.message : "Error"))
       .finally(() => setLoading(false));
-  }, [isStaff, filtro]);
+  }, [canTakeAsistencia, filtro, isAsistencia]);
 
-  if (!isStaff) return null;
+  if (!canTakeAsistencia) return null;
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -53,35 +53,41 @@ export default function AsistenciaPage() {
         <div>
           <h1 className="page-title">Pase de asistencia</h1>
           <p className="page-subtitle">
-            Captura eventos y consulta asistencias por dirigente.
+            {isAsistencia
+              ? "Selecciona un evento activo para registrar asistencias con QR."
+              : "Captura eventos y consulta asistencias por dirigente."}
           </p>
         </div>
-        <div className="page-actions">
-          <Link href="/asistencia/dashboard" className="btn-secondary btn-responsive">
-            Dashboard
-          </Link>
-          <Link href="/asistencia/eventos/nuevo" className="btn-primary btn-responsive">
-            + Nuevo evento
-          </Link>
-        </div>
+        {isStaff ? (
+          <div className="page-actions">
+            <Link href="/asistencia/dashboard" className="btn-secondary btn-responsive">
+              Dashboard
+            </Link>
+            <Link href="/asistencia/eventos/nuevo" className="btn-primary btn-responsive">
+              + Nuevo evento
+            </Link>
+          </div>
+        ) : null}
       </div>
 
-      <div className="card">
-        <label className="block">
-          <span className="label">Ver eventos</span>
-          <select
-            className="input mt-1 max-w-md"
-            value={filtro}
-            onChange={(e) => setFiltro(e.target.value as FiltroEventosLista)}
-          >
-            {(Object.keys(FILTRO_EVENTOS_LABEL) as FiltroEventosLista[]).map((key) => (
-              <option key={key} value={key}>
-                {FILTRO_EVENTOS_LABEL[key]}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      {isStaff ? (
+        <div className="card">
+          <label className="block">
+            <span className="label">Ver eventos</span>
+            <select
+              className="input mt-1 max-w-md"
+              value={filtro}
+              onChange={(e) => setFiltro(e.target.value as FiltroEventosLista)}
+            >
+              {(Object.keys(FILTRO_EVENTOS_LABEL) as FiltroEventosLista[]).map((key) => (
+                <option key={key} value={key}>
+                  {FILTRO_EVENTOS_LABEL[key]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      ) : null}
 
       {error ? <div className="alert-error">{error}</div> : null}
 
@@ -102,11 +108,13 @@ export default function AsistenciaPage() {
                 : "No hay eventos capturados"}
           </p>
           <p className="mt-1 text-sm text-ink-secondary">
-            {filtro === "activos"
-              ? "Crea un evento o cambia el filtro para ver programados, abiertos o cerrados."
-              : "Crea un evento para iniciar el pase de lista por colonia, sección o unidad territorial."}
+            {isAsistencia
+              ? "Espera a que un administrador abra el pase de lista o crea un evento nuevo."
+              : filtro === "activos"
+                ? "Crea un evento o cambia el filtro para ver programados, abiertos o cerrados."
+                : "Crea un evento para iniciar el pase de lista por colonia, sección o unidad territorial."}
           </p>
-          {filtro === "activos" || filtro === "todos" ? (
+          {isStaff && (filtro === "activos" || filtro === "todos") ? (
             <Link href="/asistencia/eventos/nuevo" className="btn-primary mt-6 inline-flex">
               Crear evento
             </Link>

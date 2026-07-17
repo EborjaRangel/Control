@@ -103,9 +103,53 @@ export function isStaffRol(rol: RolUsuario | undefined) {
   return rol === "ADMIN" || rol === "SUPERVISOR";
 }
 
+export function isAsistenciaRol(rol: RolUsuario | undefined) {
+  return rol === "ASISTENCIA";
+}
+
+export function isConvocatoriaRol(rol: RolUsuario | undefined) {
+  return rol === "CONVOCATORIA";
+}
+
+export function canTakeAsistencia(rol: RolUsuario | undefined) {
+  return isStaffRol(rol) || isAsistenciaRol(rol);
+}
+
+export function canManageConvocatoria(rol: RolUsuario | undefined) {
+  return isStaffRol(rol) || isConvocatoriaRol(rol);
+}
+
+export function canReadEventosAsistencia(rol: RolUsuario | undefined) {
+  return canTakeAsistencia(rol) || isConvocatoriaRol(rol);
+}
+
 export function requireStaff(req: Request, res: Response, next: NextFunction) {
   if (!isStaffRol(req.user?.rol)) {
     res.status(403).json({ error: "Se requiere rol de administrador o supervisor" });
+    return;
+  }
+  next();
+}
+
+export function requireAsistenciaOrStaff(req: Request, res: Response, next: NextFunction) {
+  if (!canTakeAsistencia(req.user?.rol)) {
+    res.status(403).json({ error: "No tienes permiso para registrar asistencia" });
+    return;
+  }
+  next();
+}
+
+export function requireConvocatoriaOrStaff(req: Request, res: Response, next: NextFunction) {
+  if (!canManageConvocatoria(req.user?.rol)) {
+    res.status(403).json({ error: "No tienes permiso para enviar convocatorias" });
+    return;
+  }
+  next();
+}
+
+export function requireEventosAsistenciaRead(req: Request, res: Response, next: NextFunction) {
+  if (!canReadEventosAsistencia(req.user?.rol)) {
+    res.status(403).json({ error: "No tienes permiso para consultar eventos" });
     return;
   }
   next();

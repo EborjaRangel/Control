@@ -10,6 +10,7 @@ import {
   requireStaff,
   requireAuth,
 } from "../lib/auth.js";
+import { canCreateOperadorForDirigente } from "../lib/user-panel.js";
 import {
   representanteCreateData,
   serializeRg,
@@ -18,6 +19,7 @@ import {
 import {
   cargarDirigenteParaOperador,
   datosRgDesdeDirigente,
+  ensureRgForDirigente,
 } from "../lib/operador-dirigente.js";
 import {
   validarColoniaEnDistritoLocal,
@@ -135,9 +137,41 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", requireStaff, async (req, res) => {
+router.post("/por-dirigente/:dirigenteId", requireAuth, async (req, res) => {
+  try {
+    const dirigenteId = paramId(req.params.dirigenteId);
+    if (!req.user || !(await canCreateOperadorForDirigente(req.user, dirigenteId))) {
+      res.status(403).json({ error: "No autorizado" });
+      return;
+    }
+    const existing = await prisma.responsableGeneral.findFirst({
+      where: { dirigenteId },
+      select: { id: true },
+    });
+    const rg = await ensureRgForDirigente(dirigenteId);
+    if (!rg) {
+      res.status(404).json({ error: "Dirigente no encontrado o dado de baja" });
+      return;
+    }
+    const full = await prisma.responsableGeneral.findUniqueOrThrow({
+      where: { id: rg.id },
+      include: rgInclude,
+    });
+    res.status(existing ? 200 : 201).json(serializeRg(full, { revealPassword: false }));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al preparar Rep. General" });
+  }
+});
+
+router.post("/", requireAuth, async (req, res) => {
   try {
     const data = await rgCreateSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+
+    if (!req.user || !(await canCreateOperadorForDirigente(req.user, data.dirigenteId))) {
+      res.status(403).json({ error: "No autorizado" });
+      return;
+    }
 
     const dirigente = await cargarDirigenteParaOperador(data.dirigenteId);
     if (!dirigente) {
@@ -178,7 +212,7 @@ router.post("/", requireStaff, async (req, res) => {
       return tx.responsableGeneral.findUniqueOrThrow({ where: { id: created.id }, include: rgInclude });
     });
 
-    res.status(201).json(serializeRg(rg, { revealPassword: true }));
+    res.status(201).json(serializeRg(rg, { revealPassword: isStaffRol(req.user!.rol) }));
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: "Datos inválidos", detalles: error.errors });

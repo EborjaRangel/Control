@@ -14,6 +14,8 @@ datasource db {
 enum RolUsuario {
   ADMIN
   SUPERVISOR
+  ASISTENCIA
+  CONVOCATORIA
   DIRIGENTE
   DETECTADO
   RC
@@ -329,6 +331,8 @@ model RepresentanteCasilla {
   ineFrenteUrl     String
   ineReversoUrl    String
   activo           Boolean  @default(true)
+  /// Revisado por staff; necesario para asignar sección desde el mapa electoral
+  validado         Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -416,18 +420,40 @@ model Chambelan {
 
 /// Nómina mensual del dirigente (composición del sueldo)
 model Nomina {
-  id               String      @id @default(cuid())
-  dirigenteId      String      @unique
-  dirigente        Dirigente   @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  id                  String      @id @default(cuid())
+  dirigenteId         String      @unique
+  dirigente           Dirigente   @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
   /// Campos legacy (sincronizados al guardar por compatibilidad)
-  sueldoBase       Decimal     @default(0) @db.Decimal(10, 2)
-  enProgramaSocial Boolean     @default(false)
-  programaMonto    Decimal     @default(0) @db.Decimal(10, 2)
-  conceptos        Chambelan[]
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  sueldoBase          Decimal     @default(0) @db.Decimal(10, 2)
+  enProgramaSocial    Boolean     @default(false)
+  programaMonto       Decimal     @default(0) @db.Decimal(10, 2)
+  /// Totales por concepto (persistidos al guardar)
+  totalBase           Decimal     @default(0) @db.Decimal(12, 2)
+  totalHonorarios     Decimal     @default(0) @db.Decimal(12, 2)
+  totalCossoc         Decimal     @default(0) @db.Decimal(12, 2)
+  totalSetentaTreinta Decimal     @default(0) @db.Decimal(12, 2)
+  totalPf             Decimal     @default(0) @db.Decimal(12, 2)
+  totalNomina8        Decimal     @default(0) @db.Decimal(12, 2)
+  totalGeneral        Decimal     @default(0) @db.Decimal(12, 2)
+  conceptos           Chambelan[]
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   @@index([dirigenteId])
+}
+
+/// Resumen global de nóminas (totales por concepto y total general)
+model NominaResumenGlobal {
+  id                  String   @id @default("global")
+  totalBase           Decimal  @default(0) @db.Decimal(14, 2)
+  totalHonorarios     Decimal  @default(0) @db.Decimal(14, 2)
+  totalCossoc         Decimal  @default(0) @db.Decimal(14, 2)
+  totalSetentaTreinta Decimal  @default(0) @db.Decimal(14, 2)
+  totalPf             Decimal  @default(0) @db.Decimal(14, 2)
+  totalNomina8        Decimal  @default(0) @db.Decimal(14, 2)
+  totalGeneral        Decimal  @default(0) @db.Decimal(14, 2)
+  nominasActivas      Int      @default(0)
+  updatedAt           DateTime @updatedAt
 }
 
 /// Evento para pase de lista / asistencia

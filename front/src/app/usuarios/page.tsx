@@ -23,7 +23,7 @@ const createSchema = Yup.object({
     .matches(USERNAME_REGEX, "Usuario: 3–32 caracteres (letras, números, . _ -)")
     .required("El usuario es obligatorio"),
   password: Yup.string().min(6, "Mínimo 6 caracteres").required("La contraseña es obligatoria"),
-  rol: Yup.string().oneOf(["ADMIN", "SUPERVISOR"]).required(),
+  rol: Yup.string().oneOf(["ADMIN", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA"]).required(),
 });
 
 const editSchema = Yup.object({
@@ -35,7 +35,7 @@ const editSchema = Yup.object({
     .transform((v) => (v === "" || v == null ? undefined : v))
     .min(6, "Mínimo 6 caracteres")
     .optional(),
-  rol: Yup.string().oneOf(["ADMIN", "SUPERVISOR"]).required(),
+  rol: Yup.string().oneOf(["ADMIN", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA"]).required(),
   activo: Yup.boolean().required(),
 });
 
@@ -145,7 +145,7 @@ export default function UsuariosPage() {
           <p className="page-subtitle">
             {loading
               ? "Cargando…"
-              : `${usuarios.length} cuenta(s) · Administradores y supervisores del sistema`}
+              : `${usuarios.length} cuenta(s) · Administradores, supervisores y roles operativos`}
           </p>
         </div>
         <button type="button" className="btn-primary btn-responsive" onClick={openCreate}>
@@ -215,7 +215,7 @@ export default function UsuariosPage() {
             <p className="mt-1 text-sm text-ink-secondary">
               {editing
                 ? "Actualiza credenciales o estado. Deja la contraseña vacía para no cambiarla."
-                : "Crea una cuenta de administrador o supervisor."}
+                : "Crea una cuenta de administrador, supervisor o rol operativo limitado."}
             </p>
 
             <Formik
@@ -265,6 +265,8 @@ export default function UsuariosPage() {
                       disabled={editing?.id === session?.id}
                     >
                       <option value="SUPERVISOR">Supervisor</option>
+                      <option value="ASISTENCIA">Captura de asistencia</option>
+                      <option value="CONVOCATORIA">Convocatorias</option>
                       <option value="ADMIN">Administrador</option>
                     </Field>
                   </div>

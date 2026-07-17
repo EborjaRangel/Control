@@ -2,7 +2,7 @@ import { Router } from "express";
 import { ValidationError } from "yup";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
-import { isStaffRol, requireStaff, requireAuth } from "../lib/auth.js";
+import { isStaffRol, requireStaff, requireAuth, type AuthUser } from "../lib/auth.js";
 import { canAccessDirigentePanel } from "../lib/user-panel.js";
 import { serializeDetectado, serializePersona } from "../lib/serialize-detectado.js";
 import {
@@ -46,6 +46,16 @@ async function validarSeccionPersona(detectadoId: string, seccionElectoral: stri
     return `Solo puedes registrar personas de la sección ${detectado.seccionElectoral}`;
   }
   return null;
+}
+
+async function canManageDetectadoPersonas(user: AuthUser, detectadoId: string) {
+  if (isStaffRol(user.rol)) return true;
+  const detectado = await prisma.detectado.findUnique({
+    where: { id: detectadoId },
+    select: { dirigenteId: true, activo: true },
+  });
+  if (!detectado || !detectado.activo) return false;
+  return canAccessDirigentePanel(user, detectado.dirigenteId);
 }
 
 router.get("/", requireStaff, async (req, res) => {
@@ -297,7 +307,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.put("/:id", requireStaff, async (req, res) => {
+router.put("/:id", requireAuth, async (req, res) => {
   try {
     const id = paramId(req.params.id);
 
@@ -307,6 +317,16 @@ router.put("/:id", requireStaff, async (req, res) => {
     });
     if (!existing) {
       res.status(404).json({ error: "No encontrado" });
+      return;
+    }
+
+    if (!req.user || !(await canAccessDirigentePanel(req.user, existing.dirigenteId))) {
+      res.status(403).json({ error: "No autorizado" });
+      return;
+    }
+
+    if (!isStaffRol(req.user.rol) && req.user.rol !== "DIRIGENTE") {
+      res.status(403).json({ error: "No autorizado" });
       return;
     }
 
@@ -380,9 +400,14 @@ router.delete("/:id", requireStaff, async (req, res) => {
   }
 });
 
-router.post("/:id/personas", requireStaff, async (req, res) => {
+router.post("/:id/personas", requireAuth, async (req, res) => {
   try {
     const detectadoId = paramId(req.params.id);
+
+    if (!req.user || !(await canManageDetectadoPersonas(req.user, detectadoId))) {
+      res.status(403).json({ error: "No autorizado" });
+      return;
+    }
 
     const data = await personaDetectadaSchema.validate(req.body, {
       abortEarly: false,
@@ -427,10 +452,15 @@ router.post("/:id/personas", requireStaff, async (req, res) => {
   }
 });
 
-router.get("/:id/personas/:personaId", requireStaff, async (req, res) => {
+router.get("/:id/personas/:personaId", requireAuth, async (req, res) => {
   try {
     const detectadoId = paramId(req.params.id);
     const personaId = paramId(req.params.personaId);
+
+    if (!req.user || !(await canManageDetectadoPersonas(req.user, detectadoId))) {
+      res.status(403).json({ error: "No autorizado" });
+      return;
+    }
 
     const persona = await prisma.personaDetectada.findFirst({
       where: { id: personaId, detectadoId },
@@ -447,10 +477,15 @@ router.get("/:id/personas/:personaId", requireStaff, async (req, res) => {
   }
 });
 
-router.put("/:id/personas/:personaId", requireStaff, async (req, res) => {
+router.put("/:id/personas/:personaId", requireAuth, async (req, res) => {
   try {
     const detectadoId = paramId(req.params.id);
     const personaId = paramId(req.params.personaId);
+
+    if (!req.user || !(await canManageDetectadoPersonas(req.user, detectadoId))) {
+      res.status(403).json({ error: "No autorizado" });
+      return;
+    }
 
     const data = await personaDetectadaSchema.validate(req.body, {
       abortEarly: false,
@@ -503,10 +538,15 @@ router.put("/:id/personas/:personaId", requireStaff, async (req, res) => {
   }
 });
 
-router.delete("/:id/personas/:personaId", requireStaff, async (req, res) => {
+router.delete("/:id/personas/:personaId", requireAuth, async (req, res) => {
   try {
     const detectadoId = paramId(req.params.id);
     const personaId = paramId(req.params.personaId);
+
+    if (!req.user || !(await canManageDetectadoPersonas(req.user, detectadoId))) {
+      res.status(403).json({ error: "No autorizado" });
+      return;
+    }
 
     const existing = await prisma.personaDetectada.findFirst({
       where: { id: personaId, detectadoId },

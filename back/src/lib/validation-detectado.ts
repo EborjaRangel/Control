@@ -15,8 +15,8 @@ export const detectadoBaseSchema = Yup.object({
   seccionElectoral: Yup.string()
     .oneOf([...SECCIONES_ELECTORALES_COYOACAN], "Selecciona una sección electoral de Coyoacán")
     .required("La sección electoral es obligatoria"),
-  ineFrenteUrl: Yup.string().trim().required("Sube la foto del INE (anverso)"),
-  ineReversoUrl: Yup.string().trim().required("Sube la foto del INE (reverso)"),
+  ineFrenteUrl: Yup.string().trim().required("Sube la foto del anverso de la credencial"),
+  ineReversoUrl: Yup.string().trim().required("Sube la foto del reverso de la credencial"),
 });
 
 export const detectadoCreateSchema = detectadoBaseSchema.concat(
@@ -79,8 +79,8 @@ export const personaDetectadaSchema = Yup.object({
   codigoPostal: Yup.string()
     .oneOf([...CODIGOS_POSTALES_COYOACAN], "Selecciona un código postal de Coyoacán")
     .required("El código postal es obligatorio"),
-  ineFrenteUrl: Yup.string().trim().required("Sube la foto del INE (anverso)"),
-  ineReversoUrl: Yup.string().trim().required("Sube la foto del INE (reverso)"),
+  ineFrenteUrl: Yup.string().trim().required("Sube la foto del anverso de la credencial"),
+  ineReversoUrl: Yup.string().trim().required("Sube la foto del reverso de la credencial"),
 });
 
 export type DetectadoFormValues = Yup.InferType<typeof detectadoBaseSchema>;

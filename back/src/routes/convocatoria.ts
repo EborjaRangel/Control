@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { ValidationError } from "yup";
-import { requireStaff } from "../lib/auth.js";
+import { requireAuth, requireConvocatoriaOrStaff } from "../lib/auth.js";
 import {
   convocatoriaListaParaEnvio,
   faltantesConfigConvocatoria,
@@ -15,13 +15,13 @@ import { convocatoriaEventoSchema } from "../lib/validation-convocatoria.js";
 
 const router = Router();
 
-router.use(requireStaff);
+router.use(requireAuth);
 
 function paramId(value: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-router.get("/estado", (_req, res) => {
+router.get("/estado", requireConvocatoriaOrStaff, (_req, res) => {
   const config = obtenerConfigConvocatoria();
   res.json({
     listo: convocatoriaListaParaEnvio(),
@@ -33,7 +33,7 @@ router.get("/estado", (_req, res) => {
   });
 });
 
-router.post("/eventos/:id/enviar", async (req, res) => {
+router.post("/eventos/:id/enviar", requireConvocatoriaOrStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const data = await convocatoriaEventoSchema.validate(req.body ?? {}, {
@@ -61,7 +61,7 @@ router.post("/eventos/:id/enviar", async (req, res) => {
   }
 });
 
-router.get("/eventos/:id/envios", async (req, res) => {
+router.get("/eventos/:id/envios", requireConvocatoriaOrStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const resumen = await resumenEnviosEvento(id);

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { ValidationError } from "yup";
 import { prisma } from "../lib/prisma.js";
-import { requireStaff } from "../lib/auth.js";
+import { isAsistenciaRol, isConvocatoriaRol, requireAsistenciaOrStaff, requireAuth, requireEventosAsistenciaRead, requireStaff } from "../lib/auth.js";
 import { codigoQrDesdeTextoQr } from "../lib/codigo-qr.js";
 import { nombreCompleto } from "../lib/dirigentes.js";
 import {
@@ -20,13 +20,13 @@ import {
 
 const router = Router();
 
-router.use(requireStaff);
+router.use(requireAuth);
 
 function paramId(value: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-router.get("/dirigente/:codigoQr", async (req, res) => {
+router.get("/dirigente/:codigoQr", requireAsistenciaOrStaff, async (req, res) => {
   try {
     const codigoQr = paramId(req.params.codigoQr).trim();
     if (!codigoQr) {
@@ -64,13 +64,14 @@ router.get("/dirigente/:codigoQr", async (req, res) => {
   }
 });
 
-router.get("/eventos", async (req, res) => {
+router.get("/eventos", requireEventosAsistenciaRead, async (req, res) => {
   try {
-    const activos = req.query.activos === "true";
-    const cerrados = req.query.cerrados === "true";
+    const rolLimitado = isAsistenciaRol(req.user?.rol) || isConvocatoriaRol(req.user?.rol);
+    const soloActivos = rolLimitado || req.query.activos === "true";
+    const cerrados = !rolLimitado && req.query.cerrados === "true";
 
     const eventos = await prisma.eventoAsistencia.findMany({
-      where: activos
+      where: soloActivos
         ? { estado: { in: ["PROGRAMADO", "ABIERTO"] } }
         : cerrados
           ? { estado: "CERRADO" }
@@ -90,7 +91,7 @@ router.get("/eventos", async (req, res) => {
   }
 });
 
-router.post("/eventos", async (req, res) => {
+router.post("/eventos", requireStaff, async (req, res) => {
   try {
     const data = await eventoCreateSchema.validate(req.body, {
       abortEarly: false,
@@ -140,7 +141,7 @@ router.post("/eventos", async (req, res) => {
   }
 });
 
-router.get("/eventos/:id", async (req, res) => {
+router.get("/eventos/:id", requireEventosAsistenciaRead, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const evento = await obtenerEvento(id);
@@ -155,7 +156,7 @@ router.get("/eventos/:id", async (req, res) => {
   }
 });
 
-router.get("/eventos/:id/pase", async (req, res) => {
+router.get("/eventos/:id/pase", requireAsistenciaOrStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const evento = await obtenerEvento(id);
@@ -229,7 +230,7 @@ router.get("/eventos/:id/pase", async (req, res) => {
   }
 });
 
-router.post("/eventos/:id/abrir", async (req, res) => {
+router.post("/eventos/:id/abrir", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const evento = await obtenerEvento(id);
@@ -262,7 +263,7 @@ router.post("/eventos/:id/abrir", async (req, res) => {
   }
 });
 
-router.post("/eventos/:id/cerrar", async (req, res) => {
+router.post("/eventos/:id/cerrar", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const evento = await obtenerEvento(id);
@@ -295,7 +296,7 @@ router.post("/eventos/:id/cerrar", async (req, res) => {
   }
 });
 
-router.post("/eventos/:id/registrar", async (req, res) => {
+router.post("/eventos/:id/registrar", requireAsistenciaOrStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const rawCodigo =
@@ -398,7 +399,7 @@ router.post("/eventos/:id/registrar", async (req, res) => {
   }
 });
 
-router.get("/dashboard/dirigentes", async (_req, res) => {
+router.get("/dashboard/dirigentes", requireStaff, async (_req, res) => {
   try {
     const resumen = await resumenAsistenciaDirigentes();
     res.json(resumen);
@@ -408,7 +409,7 @@ router.get("/dashboard/dirigentes", async (_req, res) => {
   }
 });
 
-router.get("/dashboard/dirigentes/:id", async (req, res) => {
+router.get("/dashboard/dirigentes/:id", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const detalle = await detalleAsistenciaDirigente(id);

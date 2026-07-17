@@ -37,6 +37,7 @@ export type RepresentanteCasillaDTO = {
   ineFrenteUrl: string;
   ineReversoUrl: string;
   activo: boolean;
+  validado: boolean;
   createdAt: string;
   updatedAt: string;
 };

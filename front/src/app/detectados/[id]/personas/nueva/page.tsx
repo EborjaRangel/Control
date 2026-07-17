@@ -12,12 +12,13 @@ import type { PersonaDetectadaFormValues } from "@/lib/validation-detectado";
 export default function NuevaPersonaDetectadaPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { isStaff } = useAuth();
+  const { isStaff, user } = useAuth();
+  const canAccess = isStaff || Boolean(user?.dirigenteId);
   const [detectado, setDetectado] = useState<DetectadoDTO | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isStaff) return;
+    if (!canAccess) return;
     void apiFetch(`/api/detectados/${id}`)
       .then(async (res) => {
         if (!res.ok) throw new Error("No encontrado");
@@ -25,7 +26,7 @@ export default function NuevaPersonaDetectadaPage() {
       })
       .then(setDetectado)
       .finally(() => setLoading(false));
-  }, [id, isStaff]);
+  }, [id, canAccess]);
 
   async function handleSubmit(values: PersonaDetectadaFormValues) {
     const res = await apiFetch(`/api/detectados/${id}/personas`, {
@@ -47,7 +48,7 @@ export default function NuevaPersonaDetectadaPage() {
     router.push(`/detectados/${id}`);
   }
 
-  if (!isStaff) return null;
+  if (!canAccess) return null;
 
   if (loading) {
     return (

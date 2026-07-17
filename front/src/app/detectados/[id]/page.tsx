@@ -6,8 +6,10 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { DetectadoForm } from "@/components/DetectadoForm";
+import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import { detectadoToFormValues, type DetectadoDTO } from "@/lib/detectados";
+import { canManageDetectadosDirigente } from "@/lib/mi-panel";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
 import type { DetectadoFormValues } from "@/lib/validation-detectado";
 
@@ -20,6 +22,11 @@ export default function DetectadoDetallePage() {
   const [error, setError] = useState<string | null>(null);
 
   const canLoad = isStaff || Boolean(user?.dirigenteId);
+  const canManage =
+    isStaff ||
+    (detectado?.dirigenteId
+      ? canManageDetectadosDirigente(user, detectado.dirigenteId)
+      : Boolean(user?.dirigenteId));
 
   const backHref = detectado?.dirigenteId
     ? isStaff
@@ -128,6 +135,14 @@ export default function DetectadoDetallePage() {
           </p>
         </div>
         <div className="page-actions">
+          {canManage && detectado.activo ? (
+            <Link
+              href={`/detectados/${id}/personas/nueva`}
+              className="btn-primary btn-responsive"
+            >
+              + Registrar persona
+            </Link>
+          ) : null}
           <Link href={backHref} className="btn-ghost btn-responsive">
             Volver al listado
           </Link>
@@ -138,24 +153,30 @@ export default function DetectadoDetallePage() {
         <p className="alert-warning">Este detectado está dado de baja.</p>
       ) : null}
 
-      <div className="card max-w-sm text-center">
-        <p className="text-2xl font-bold text-ink">{detectado.telefonoCelular ?? "—"}</p>
-        <p className="text-xs text-ink-secondary">Celular</p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="card max-w-sm text-center">
+          <p className="text-2xl font-bold text-ink">{detectado.telefonoCelular ?? "—"}</p>
+          <p className="text-xs text-ink-secondary">Celular</p>
+        </div>
+        <div className="card max-w-sm text-center">
+          <p className="text-2xl font-bold text-pin">{detectado.personasRegistradas}</p>
+          <p className="text-xs text-ink-secondary">Personas registradas</p>
+        </div>
       </div>
 
       <section className="card-section space-y-4">
-        <h2 className="section-title">INE del detectado</h2>
+        <h2 className="section-title">Credencial del detectado</h2>
         <div className="flex flex-wrap gap-4">
           <UploadImage
             src={detectado.ineFrenteUrl}
-            alt="INE anverso"
+            alt="Credencial anverso"
             width={320}
             height={200}
             className="max-w-xs rounded-pin object-contain ring-1 ring-line"
           />
           <UploadImage
             src={detectado.ineReversoUrl}
-            alt="INE reverso"
+            alt="Credencial reverso"
             width={320}
             height={200}
             className="max-w-xs rounded-pin object-contain ring-1 ring-line"
@@ -163,7 +184,97 @@ export default function DetectadoDetallePage() {
         </div>
       </section>
 
-      {isStaff ? (
+      <section className="card-section space-y-4">
+        <h2 className="section-title">Personas detectadas</h2>
+        {(detectado.personas?.length ?? 0) === 0 ? (
+          <p className="text-sm text-ink-secondary">
+            {canManage ? (
+              <>
+                Aún no hay personas registradas.{" "}
+                <Link
+                  href={`/detectados/${id}/personas/nueva`}
+                  className="font-medium text-pin hover:underline"
+                >
+                  Registrar la primera
+                </Link>
+              </>
+            ) : (
+              "Sin personas registradas."
+            )}
+          </p>
+        ) : (
+          <>
+            <ul className="mobile-only-list">
+              {(detectado.personas ?? []).map((persona) => (
+                <li key={persona.id} className="list-card">
+                  <div className="list-card-header">
+                    <div className="min-w-0">
+                      <Link
+                        href={`/detectados/${id}/personas/${persona.id}`}
+                        className="break-words font-bold text-pin hover:underline"
+                      >
+                        {persona.nombreCompleto}
+                      </Link>
+                      <p className="mt-1 text-xs text-ink-secondary">
+                        {etiquetaSeccion(persona.seccionElectoral)} · {persona.colonia}
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href={`/detectados/${id}/personas/${persona.id}`}
+                    className="btn-ghost btn-sm btn-responsive"
+                  >
+                    Ver / editar
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            <div className="desktop-only-table">
+              <TableWrap>
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-line text-xs text-ink-secondary">
+                      <th className="py-2 pr-3">Persona</th>
+                      <th className="py-2 pr-3">Sección</th>
+                      <th className="py-2 pr-3">Colonia</th>
+                      <th className="py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(detectado.personas ?? []).map((persona) => (
+                      <tr key={persona.id} className="border-b border-line/60">
+                        <td className="py-2.5 pr-3">
+                          <Link
+                            href={`/detectados/${id}/personas/${persona.id}`}
+                            className="font-medium text-pin hover:underline"
+                          >
+                            {persona.nombreCompleto}
+                          </Link>
+                        </td>
+                        <td className="py-2.5 pr-3 text-ink-secondary">
+                          {etiquetaSeccion(persona.seccionElectoral)}
+                        </td>
+                        <td className="py-2.5 pr-3 text-ink-secondary">{persona.colonia}</td>
+                        <td className="py-2.5 text-right">
+                          <Link
+                            href={`/detectados/${id}/personas/${persona.id}`}
+                            className="btn-ghost btn-sm"
+                          >
+                            Ver / editar
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableWrap>
+            </div>
+          </>
+        )}
+      </section>
+
+      {canManage ? (
         <>
           <DetectadoForm
             key={detectado.updatedAt}
@@ -175,25 +286,27 @@ export default function DetectadoDetallePage() {
             seccionFija={detectado.seccionElectoral}
           />
 
-          <div className="flex justify-end">
-            {detectado.activo ? (
-              <button
-                type="button"
-                className="btn-danger btn-responsive"
-                onClick={() => void toggleActivo(false)}
-              >
-                Dar de baja detectado
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn-primary btn-responsive"
-                onClick={() => void toggleActivo(true)}
-              >
-                Reactivar detectado
-              </button>
-            )}
-          </div>
+          {isStaff ? (
+            <div className="flex justify-end">
+              {detectado.activo ? (
+                <button
+                  type="button"
+                  className="btn-danger btn-responsive"
+                  onClick={() => void toggleActivo(false)}
+                >
+                  Dar de baja detectado
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-primary btn-responsive"
+                  onClick={() => void toggleActivo(true)}
+                >
+                  Reactivar detectado
+                </button>
+              )}
+            </div>
+          ) : null}
         </>
       ) : null}
     </div>

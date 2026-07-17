@@ -1,7 +1,7 @@
 import * as Yup from "yup";
 import { USERNAME_REGEX } from "./auth-validation.js";
 
-const STAFF_ROLES = ["ADMIN", "SUPERVISOR"] as const;
+const PANEL_USER_ROLES = ["ADMIN", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA"] as const;
 
 export const staffUserCreateSchema = Yup.object({
   username: Yup.string()
@@ -10,7 +10,7 @@ export const staffUserCreateSchema = Yup.object({
     .required("El usuario es obligatorio"),
   password: Yup.string().min(6, "Mínimo 6 caracteres").required("La contraseña es obligatoria"),
   rol: Yup.string()
-    .oneOf([...STAFF_ROLES], "Rol inválido")
+    .oneOf([...PANEL_USER_ROLES], "Rol inválido")
     .required("El rol es obligatorio"),
 });
 
@@ -23,6 +23,6 @@ export const staffUserUpdateSchema = Yup.object({
     .transform((value) => (value === "" || value == null ? undefined : value))
     .min(6, "Mínimo 6 caracteres")
     .optional(),
-  rol: Yup.string().oneOf([...STAFF_ROLES], "Rol inválido").optional(),
+  rol: Yup.string().oneOf([...PANEL_USER_ROLES], "Rol inválido").optional(),
   activo: Yup.boolean().optional(),
 });

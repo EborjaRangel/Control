@@ -10,6 +10,7 @@ import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { APP_TITLE, NAVBAR_TITLE } from "@/lib/site";
 import { brandHrefForUser, navItemsForUser } from "@/lib/mi-panel";
+import { isLimitedPanelRol } from "@/lib/auth";
 
 const NOTIFICACIONES_NAV = {
   href: "/notificaciones",
@@ -31,6 +32,12 @@ const ADMIN_NAV = [
     label: "Mapa",
     shortLabel: "Mapa",
     match: (p: string) => p.startsWith("/mapa"),
+  },
+  {
+    href: "/electoral",
+    label: "Electoral",
+    shortLabel: "Electoral",
+    match: (p: string) => p.startsWith("/electoral"),
   },
   {
     href: "/asistencia",
@@ -201,7 +208,7 @@ export function SiteNavbar() {
       : [];
 
   const mainNavItems = allNavItems.filter((item) => item.href !== "/notificaciones");
-  const showAvisos = Boolean(user);
+  const showAvisos = Boolean(user) && !isLimitedPanelRol(user?.rol);
   const avisosActive = pathname.startsWith("/notificaciones");
 
   return (

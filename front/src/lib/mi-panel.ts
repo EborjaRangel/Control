@@ -1,5 +1,5 @@
 import type { SessionUser } from "@/lib/auth";
-import { isStaffRol } from "@/lib/auth";
+import { isAsistenciaRol, isConvocatoriaRol, isStaffRol } from "@/lib/auth";
 
 export function canManageRc(user: SessionUser | null, rcId: string) {
   if (!user) return false;
@@ -46,6 +46,18 @@ function operadorAllowed(pathname: string, base: string, id: string, manage: boo
 export function pathAllowedForUser(user: SessionUser, pathname: string) {
   if (isStaffRol(user.rol)) return true;
 
+  if (isAsistenciaRol(user.rol)) {
+    if (pathname === "/asistencia") return true;
+    if (/^\/asistencia\/eventos\/[^/]+$/.test(pathname)) return true;
+    return false;
+  }
+
+  if (isConvocatoriaRol(user.rol)) {
+    if (pathname === "/convocatoria") return true;
+    if (/^\/convocatoria\/eventos\/[^/]+$/.test(pathname)) return true;
+    return false;
+  }
+
   if (pathname === "/notificaciones" || pathname.startsWith("/notificaciones/")) {
     return true;
   }
@@ -57,7 +69,15 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
     if (pathname === `/nominas/${dirigenteId}`) return true;
     if (pathname === `/detectados/dirigentes/${dirigenteId}`) return true;
     if (pathname === `/detectados/dirigentes/${dirigenteId}/nuevo`) return true;
+    if (pathname === `/rc/por-dirigente/${dirigenteId}`) return true;
+    if (pathname === `/rg/por-dirigente/${dirigenteId}`) return true;
     if (/^\/detectados\/[^/]+$/.test(pathname) && !pathname.startsWith("/detectados/dirigentes")) {
+      return true;
+    }
+    if (
+      /^\/detectados\/[^/]+\/personas\//.test(pathname) &&
+      !pathname.startsWith("/detectados/dirigentes")
+    ) {
       return true;
     }
   }
@@ -75,6 +95,8 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
 
 export function homeForUser(user: SessionUser) {
   if (isStaffRol(user.rol)) return "/";
+  if (isAsistenciaRol(user.rol)) return "/asistencia";
+  if (isConvocatoriaRol(user.rol)) return "/convocatoria";
   if (user.dirigenteId) return `/dirigentes/${user.dirigenteId}/consultar`;
   if (user.rcId) return `/rc/${user.rcId}`;
   if (user.rgId) return `/rg/${user.rgId}`;
@@ -90,6 +112,28 @@ type NavItem = {
 };
 
 export function navItemsForUser(user: SessionUser): NavItem[] {
+  if (isConvocatoriaRol(user.rol)) {
+    return [
+      {
+        href: "/convocatoria",
+        label: "Convocatoria",
+        shortLabel: "Convocatoria",
+        match: (p) => p.startsWith("/convocatoria"),
+      },
+    ];
+  }
+
+  if (isAsistenciaRol(user.rol)) {
+    return [
+      {
+        href: "/asistencia",
+        label: "Asistencia",
+        shortLabel: "Asistencia",
+        match: (p) => p.startsWith("/asistencia"),
+      },
+    ];
+  }
+
   const items: NavItem[] = [
     {
       href: "/notificaciones",

@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { ValidationError } from "yup";
 import { prisma } from "../lib/prisma.js";
-import { requireStaff, requireAuth } from "../lib/auth.js";
+import { requireStaff, requireAuth, requireAdmin } from "../lib/auth.js";
 import { canAccessDirigentePanel } from "../lib/user-panel.js";
 import { nominaInclude, upsertNomina } from "../lib/nomina-db.js";
+import { serializeResumenGlobal, recalcularResumenGlobalNomina } from "../lib/nomina-resumen.js";
 import { serializeNomina } from "../lib/serialize-nomina.js";
 import { nominaSchema } from "../lib/validation-nomina.js";
 import { normalizarNominaParaGuardado } from "../lib/normalizar-dirigente.js";
@@ -27,6 +28,19 @@ const dirigenteResumenSelect = {
   seccionElectoral: true,
   activo: true,
 } as const;
+
+router.get("/resumen", requireAdmin, async (_req, res) => {
+  try {
+    let row = await prisma.nominaResumenGlobal.findUnique({ where: { id: "global" } });
+    if (!row) {
+      row = await prisma.$transaction((tx) => recalcularResumenGlobalNomina(tx));
+    }
+    res.json(serializeResumenGlobal(row));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener resumen de nóminas" });
+  }
+});
 
 router.get("/", requireStaff, async (req, res) => {
   try {

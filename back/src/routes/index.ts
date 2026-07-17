@@ -34,6 +34,17 @@ import {
 } from "../lib/unidades-territoriales.js";
 import { mapaDeSeccion, geojsonAlcaldiaCoyoacan, geojsonSeccionesCoyoacan } from "../lib/seccion-mapa.js";
 import { coberturaSeccionesCoyoacan } from "../lib/seccion-cobertura.js";
+import {
+  casillasDatasetDisponible,
+  casillasDeSeccion,
+  cargarCasillasCoyoacan,
+  resumenCasillasPorSeccion,
+} from "../lib/casillas-electorales.js";
+import {
+  asignarSeccionARepresentantes,
+  listarRepresentantesParaAsignacion,
+  marcarRepresentanteValidado,
+} from "../lib/representante-asignacion.js";
 import authRouter from "./auth.js";
 import asistenciaRouter from "./asistencia.js";
 import convocatoriaRouter from "./convocatoria.js";
@@ -52,6 +63,7 @@ import {
 } from "../lib/filtro-dirigentes.js";
 import { generarCodigoQr } from "../lib/codigo-qr.js";
 import { nominaCreateData, nominaInclude, upsertNomina } from "../lib/nomina-db.js";
+import { recalcularResumenGlobalNomina } from "../lib/nomina-resumen.js";
 import { normalizarDirigenteParaGuardado } from "../lib/normalizar-dirigente.js";
 import { normalizarTextoGuardado } from "../lib/normalizar-texto.js";
 import {
@@ -213,7 +225,7 @@ router.get("/secciones/coyoacan/geojson", (_req, res) => {
     if (!geojson.features.length) {
       res.status(503).json({
         error:
-          "Polígonos INE no importados. Ejecuta npm run geo:import-secciones -w control-back",
+          "Polígonos oficiales no importados. Ejecuta npm run geo:import-secciones -w control-back",
       });
       return;
     }
@@ -256,6 +268,135 @@ router.get("/secciones/:numero/mapa", (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al cargar mapa de la sección" });
+  }
+});
+
+router.get("/electoral/casillas/catalogo", (_req, res) => {
+  try {
+    if (!casillasDatasetDisponible()) {
+      res.status(503).json({
+        error:
+          "Catálogo de casillas no importado. Ejecuta npm run electoral:import-casillas -w control-back",
+      });
+      return;
+    }
+    const data = cargarCasillasCoyoacan();
+    res.json({
+      vigencia: data.vigencia,
+      fuente: data.fuente,
+      urlFuente: data.urlFuente,
+      totalCasillas: data.totalCasillas,
+      totalSecciones: data.totalSecciones,
+      porSeccion: data.porSeccion,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al cargar catálogo de casillas" });
+  }
+});
+
+router.get("/electoral/casillas/resumen", (_req, res) => {
+  try {
+    if (!casillasDatasetDisponible()) {
+      res.status(503).json({
+        error:
+          "Catálogo de casillas no importado. Ejecuta npm run electoral:import-casillas -w control-back",
+      });
+      return;
+    }
+    const data = cargarCasillasCoyoacan();
+    res.json({
+      vigencia: data.vigencia,
+      fuente: data.fuente,
+      urlFuente: data.urlFuente,
+      totalCasillas: data.totalCasillas,
+      totalSecciones: data.totalSecciones,
+      porSeccion: resumenCasillasPorSeccion(),
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al cargar resumen de casillas" });
+  }
+});
+
+router.get("/electoral/casillas/seccion/:numero", (req, res) => {
+  try {
+    if (!casillasDatasetDisponible()) {
+      res.status(503).json({
+        error:
+          "Catálogo de casillas no importado. Ejecuta npm run electoral:import-casillas -w control-back",
+      });
+      return;
+    }
+    const numero = paramId(req.params.numero);
+    const info = casillasDeSeccion(numero);
+    if (!info) {
+      res.status(404).json({ error: "Sección no válida o sin casillas registradas" });
+      return;
+    }
+    res.json(info);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al cargar casillas de la sección" });
+  }
+});
+
+router.get("/electoral/asignacion/representantes", requireStaff, async (req, res) => {
+  try {
+    const seccion =
+      typeof req.query.seccion === "string" ? req.query.seccion.trim() : "";
+    if (!seccion) {
+      res.status(400).json({ error: "Indica el parámetro seccion" });
+      return;
+    }
+    const data = await listarRepresentantesParaAsignacion(seccion);
+    if (!data) {
+      res.status(400).json({ error: "Sección electoral no válida" });
+      return;
+    }
+    res.json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al listar representantes" });
+  }
+});
+
+router.post("/electoral/asignacion/representantes", requireStaff, async (req, res) => {
+  try {
+    const seccionElectoral =
+      typeof req.body?.seccionElectoral === "string" ? req.body.seccionElectoral.trim() : "";
+    const ids = Array.isArray(req.body?.representanteIds)
+      ? (req.body.representanteIds as unknown[]).filter((id): id is string => typeof id === "string")
+      : [];
+    const result = await asignarSeccionARepresentantes(seccionElectoral, ids);
+    if ("error" in result && result.error) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al asignar sección" });
+  }
+});
+
+router.patch("/electoral/asignacion/representantes/:id/validado", requireStaff, async (req, res) => {
+  try {
+    const id = paramId(req.params.id);
+    const validado = req.body?.validado === true;
+    const result = await marcarRepresentanteValidado(id, validado);
+    if (!result) {
+      res.status(404).json({ error: "Representante no encontrado" });
+      return;
+    }
+    if ("error" in result && result.error) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true, validado });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al actualizar validación" });
   }
 });
 
@@ -460,6 +601,8 @@ router.post("/dirigentes", requireStaff, async (req, res) => {
       });
 
       await syncDirigenteRelaciones(tx, created.id, guardado);
+
+      await recalcularResumenGlobalNomina(tx);
 
       await tx.usuario.create({
         data: {

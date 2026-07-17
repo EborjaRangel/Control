@@ -106,11 +106,11 @@ export const dirigenteExtraSchema = Yup.object({
   tieneIne: Yup.boolean().required(),
   ineFrenteUrl: Yup.string().nullable().when("tieneIne", {
     is: true,
-    then: (s) => s.required("Sube el frente del INE"),
+    then: (s) => s.required("Sube el frente de la credencial"),
   }),
   ineReversoUrl: Yup.string().nullable().when("tieneIne", {
     is: true,
-    then: (s) => s.required("Sube el reverso del INE"),
+    then: (s) => s.required("Sube el reverso de la credencial"),
   }),
   distritoFederal: Yup.number()
     .transform((_v, o) => (o === "" || o == null ? null : Number(o)))

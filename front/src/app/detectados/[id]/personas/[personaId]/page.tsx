@@ -17,14 +17,15 @@ import type { PersonaDetectadaFormValues } from "@/lib/validation-detectado";
 
 export default function PersonaDetectadaDetallePage() {
   const { id, personaId } = useParams<{ id: string; personaId: string }>();
-  const { isStaff } = useAuth();
+  const { isStaff, user } = useAuth();
+  const canAccess = isStaff || Boolean(user?.dirigenteId);
   const [detectado, setDetectado] = useState<DetectadoDTO | null>(null);
   const [persona, setPersona] = useState<PersonaDetectadaDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isStaff) return;
+    if (!canAccess) return;
     async function load() {
       try {
         const [detRes, perRes] = await Promise.all([
@@ -41,7 +42,7 @@ export default function PersonaDetectadaDetallePage() {
       }
     }
     void load();
-  }, [id, personaId, isStaff]);
+  }, [id, personaId, canAccess]);
 
   async function handleSubmit(values: PersonaDetectadaFormValues) {
     const res = await apiFetch(`/api/detectados/${id}/personas/${personaId}`, {
@@ -63,7 +64,7 @@ export default function PersonaDetectadaDetallePage() {
     setPersona((await res.json()) as PersonaDetectadaDTO);
   }
 
-  if (!isStaff) return null;
+  if (!canAccess) return null;
 
   if (loading) {
     return (
@@ -101,20 +102,20 @@ export default function PersonaDetectadaDetallePage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="card">
-          <p className="label mb-2">INE anverso</p>
+          <p className="label mb-2">Credencial anverso</p>
           <UploadImage
             src={persona.ineFrenteUrl}
-            alt="INE anverso"
+            alt="Credencial anverso"
             width={400}
             height={250}
             className="w-full max-w-sm rounded-pin object-contain ring-1 ring-line"
           />
         </div>
         <div className="card">
-          <p className="label mb-2">INE reverso</p>
+          <p className="label mb-2">Credencial reverso</p>
           <UploadImage
             src={persona.ineReversoUrl}
-            alt="INE reverso"
+            alt="Credencial reverso"
             width={400}
             height={250}
             className="w-full max-w-sm rounded-pin object-contain ring-1 ring-line"

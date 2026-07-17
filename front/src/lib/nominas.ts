@@ -28,6 +28,12 @@ export type NominaDTO = {
   };
 };
 
+export type NominaResumenGlobalDTO = {
+  desglose: DesgloseSueldo;
+  nominasActivas: number;
+  updatedAt: string;
+};
+
 export function totalNomina(nominas: NominaDTO[]): number {
   return nominas.reduce((sum, n) => sum + n.desglose.total, 0);
 }

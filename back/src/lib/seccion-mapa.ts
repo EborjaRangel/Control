@@ -101,7 +101,7 @@ export function mapaDeSeccion(seccion: string, colonia?: string | null): MapaSec
       colonia: colonia ?? null,
       geometria: oficial,
       alcaldia,
-      nota: "Polígono oficial de la sección electoral (INE, marco geográfico 2024).",
+      nota: "Polígono oficial de la sección electoral.",
     };
   }
 
@@ -132,10 +132,10 @@ export function mapaDeSeccion(seccion: string, colonia?: string | null): MapaSec
   };
 
   const nota = tieneGeometriaOficial()
-    ? "No se encontró el polígono INE de esta sección; se muestra un área aproximada."
+    ? "No se encontró el polígono oficial de esta sección; se muestra un área aproximada."
     : fuenteCentro === "colonia"
-      ? "Área aproximada centrada en la colonia. Ejecuta npm run geo:import-secciones -w control-back para cargar polígonos oficiales del INE."
-      : "Ejecuta npm run geo:import-secciones -w control-back para importar los polígonos oficiales del INE.";
+      ? "Área aproximada centrada en la colonia. Ejecuta npm run geo:import-secciones -w control-back para cargar polígonos oficiales."
+      : "Ejecuta npm run geo:import-secciones -w control-back para importar los polígonos oficiales.";
 
   return {
     seccion,

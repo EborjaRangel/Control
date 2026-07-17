@@ -53,8 +53,8 @@ const ETIQUETAS_CAMPO: Record<string, string> = {
   distritoLocal: "Distrito local",
   distritoFederal: "Distrito federal",
   curp: "CURP",
-  ineFrenteUrl: "INE (frente)",
-  ineReversoUrl: "INE (reverso)",
+  ineFrenteUrl: "Credencial (frente)",
+  ineReversoUrl: "Credencial (reverso)",
   status: "Estatus",
   unidadTerritorialId: "Unidad territorial",
 };

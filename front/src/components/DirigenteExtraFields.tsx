@@ -57,12 +57,12 @@ export function DirigenteExtraFields({ excludeReferenteId }: Props) {
         <div className="grid gap-4 form-grid">
           <FormField label="Alias" name="alias" className="sm:col-span-2" />
           <FormField label="CURP" name="curp" className="sm:col-span-2" />
-          <FormCheckbox label="Cuenta con INE" name="tieneIne" />
+          <FormCheckbox label="Cuenta con credencial de elector" name="tieneIne" />
         </div>
         {values.tieneIne ? (
           <div className="grid gap-4 form-grid sm:grid-cols-2">
-            <ImageUploadField name="ineFrenteUrl" label="INE — frente" previewAlt="INE frente" />
-            <ImageUploadField name="ineReversoUrl" label="INE — reverso" previewAlt="INE reverso" />
+            <ImageUploadField name="ineFrenteUrl" label="Credencial — frente" previewAlt="Credencial frente" />
+            <ImageUploadField name="ineReversoUrl" label="Credencial — reverso" previewAlt="Credencial reverso" />
           </div>
         ) : null}
       </section>

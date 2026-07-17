@@ -291,7 +291,7 @@ export function SeccionElectoralMap({ seccion, colonia }: Props) {
         const onClick = (event: import("mapbox-gl").MapLayerMouseEvent) => {
           const html = [
             `<strong>${etiquetaSeccion(mapa.seccion)}</strong>`,
-            mapa.fuenteGeometria === "ine-oficial" ? "Polígono oficial INE 2024" : "Área aproximada",
+            mapa.fuenteGeometria === "ine-oficial" ? "Polígono oficial" : "Área aproximada",
             mapa.distritoLocal ? `Distrito local ${mapa.distritoLocal}` : "",
             mapa.colonia ?? "",
           ]
@@ -376,7 +376,7 @@ export function SeccionElectoralMap({ seccion, colonia }: Props) {
         <h3 className="text-sm font-bold text-ink">Mapa de la sección electoral</h3>
         <div className="flex flex-wrap gap-2">
           {data?.fuenteGeometria === "ine-oficial" ? (
-            <span className="badge-pin">Polígono INE 2024</span>
+            <span className="badge-pin">Polígono oficial</span>
           ) : null}
           {data?.distritoLocal ? (
             <span className="badge-pin">Distrito local {data.distritoLocal}</span>

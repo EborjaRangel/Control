@@ -10,6 +10,7 @@ import {
   requireStaff,
   requireAuth,
 } from "../lib/auth.js";
+import { canCreateOperadorForDirigente } from "../lib/user-panel.js";
 import {
   representanteCreateData,
   serializeRc,
@@ -194,9 +195,13 @@ router.get("/dirigentes", requireStaff, async (req, res) => {
   }
 });
 
-router.post("/por-dirigente/:dirigenteId", requireStaff, async (req, res) => {
+router.post("/por-dirigente/:dirigenteId", requireAuth, async (req, res) => {
   try {
     const dirigenteId = paramId(req.params.dirigenteId);
+    if (!req.user || !(await canCreateOperadorForDirigente(req.user, dirigenteId))) {
+      res.status(403).json({ error: "No autorizado" });
+      return;
+    }
     const existing = await prisma.responsableColonia.findFirst({
       where: { dirigenteId },
       select: { id: true },
@@ -217,9 +222,14 @@ router.post("/por-dirigente/:dirigenteId", requireStaff, async (req, res) => {
   }
 });
 
-router.post("/", requireStaff, async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   try {
     const data = await rcCreateSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+
+    if (!req.user || !(await canCreateOperadorForDirigente(req.user, data.dirigenteId))) {
+      res.status(403).json({ error: "No autorizado" });
+      return;
+    }
 
     const dirigente = await cargarDirigenteParaOperador(data.dirigenteId);
     if (!dirigente) {
@@ -260,7 +270,7 @@ router.post("/", requireStaff, async (req, res) => {
       return tx.responsableColonia.findUniqueOrThrow({ where: { id: created.id }, include: rcInclude });
     });
 
-    res.status(201).json(serializeRc(rc, { revealPassword: true }));
+    res.status(201).json(serializeRc(rc, { revealPassword: isStaffRol(req.user!.rol) }));
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: "Datos inválidos", detalles: error.errors });

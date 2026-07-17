@@ -11,7 +11,7 @@ import {
 
 const router = Router();
 
-const STAFF_ROLES = ["ADMIN", "SUPERVISOR"] as const;
+const PANEL_USER_ROLES = ["ADMIN", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA"] as const;
 
 function paramId(value: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
@@ -52,7 +52,7 @@ router.use(requireStaff);
 router.get("/", async (_req, res) => {
   try {
     const usuarios = await prisma.usuario.findMany({
-      where: { rol: { in: [...STAFF_ROLES] } },
+      where: { rol: { in: [...PANEL_USER_ROLES] } },
       orderBy: [{ rol: "asc" }, { username: "asc" }],
     });
     res.json(usuarios.map(serializeStaffUser));
@@ -107,7 +107,7 @@ router.put("/:id", async (req, res) => {
     });
 
     const actual = await prisma.usuario.findFirst({
-      where: { id, rol: { in: [...STAFF_ROLES] } },
+      where: { id, rol: { in: [...PANEL_USER_ROLES] } },
     });
     if (!actual) {
       res.status(404).json({ error: "Usuario no encontrado" });

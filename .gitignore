@@ -17,7 +17,8 @@ front/next-env.d.ts
 back/dist/
 back/uploads/*
 !back/uploads/.gitkeep
-back/src/generated/
+# back geo / electoral raw downloads (generated JSON is committed)
+back/data/electoral/raw/
 
 # misc
 .DS_Store

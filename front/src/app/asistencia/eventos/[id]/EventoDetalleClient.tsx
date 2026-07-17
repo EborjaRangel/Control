@@ -20,7 +20,7 @@ import type { RegistrarAsistenciaFormValues } from "@/lib/validation-asistencia"
 export default function EventoDetalleClient() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { isStaff } = useAuth();
+  const { canTakeAsistencia, isStaff } = useAuth();
   const [data, setData] = useState<PaseListaResponse | null>(null);
   const [eventosActivos, setEventosActivos] = useState<EventoAsistenciaDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,11 +44,11 @@ export default function EventoDetalleClient() {
   }, [id]);
 
   useEffect(() => {
-    if (isStaff) void load();
-  }, [isStaff, load]);
+    if (canTakeAsistencia) void load();
+  }, [canTakeAsistencia, load]);
 
   useEffect(() => {
-    if (!isStaff) return;
+    if (!canTakeAsistencia) return;
     void apiFetch("/api/asistencia/eventos?activos=true")
       .then(async (res) => {
         if (!res.ok) return [];
@@ -56,7 +56,7 @@ export default function EventoDetalleClient() {
       })
       .then(setEventosActivos)
       .catch(() => setEventosActivos([]));
-  }, [isStaff]);
+  }, [canTakeAsistencia]);
 
   async function abrirPase() {
     setAccionando(true);
@@ -107,7 +107,7 @@ export default function EventoDetalleClient() {
     await load();
   }
 
-  if (!isStaff) return null;
+  if (!canTakeAsistencia) return null;
 
   if (loading) {
     return (
@@ -172,7 +172,9 @@ export default function EventoDetalleClient() {
         </div>
       ) : null}
 
-      <ConvocatoriaEventoPanel eventoId={evento.id} totalElegibles={lista.length} />
+      {isStaff ? (
+        <ConvocatoriaEventoPanel eventoId={evento.id} totalElegibles={lista.length} />
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="card text-center">
@@ -191,28 +193,37 @@ export default function EventoDetalleClient() {
         </div>
       </div>
 
-      <div className="page-actions">
-        {evento.estado === "PROGRAMADO" ? (
-          <button
-            type="button"
-            className="btn-primary btn-responsive"
-            disabled={accionando}
-            onClick={() => void abrirPase()}
-          >
-            Iniciar pase de lista
-          </button>
-        ) : null}
-        {evento.estado === "ABIERTO" ? (
-          <button
-            type="button"
-            className="btn-danger btn-responsive"
-            disabled={accionando}
-            onClick={() => void cerrarPase()}
-          >
-            Terminar pase de lista
-          </button>
-        ) : null}
-      </div>
+      {isStaff ? (
+        <div className="page-actions">
+          {evento.estado === "PROGRAMADO" ? (
+            <button
+              type="button"
+              className="btn-primary btn-responsive"
+              disabled={accionando}
+              onClick={() => void abrirPase()}
+            >
+              Iniciar pase de lista
+            </button>
+          ) : null}
+          {evento.estado === "ABIERTO" ? (
+            <button
+              type="button"
+              className="btn-danger btn-responsive"
+              disabled={accionando}
+              onClick={() => void cerrarPase()}
+            >
+              Terminar pase de lista
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!isStaff && evento.estado === "PROGRAMADO" ? (
+        <div className="alert-warning">
+          El pase de lista aún no está abierto. Un administrador debe iniciarlo para registrar
+          asistencias.
+        </div>
+      ) : null}
 
       {evento.estado === "ABIERTO" ? (
         <section className="card-section space-y-4">
