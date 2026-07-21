@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { ValidationError } from "yup";
 import { Prisma } from "../generated/prisma/client.js";
-import { hashPassword, requireStaff } from "../lib/auth.js";
+import { hashPassword, requireAdminPrivileges } from "../lib/auth.js";
 import { normalizeUsername } from "../lib/credenciales-usuario.js";
 import { prisma } from "../lib/prisma.js";
 import {
@@ -52,7 +52,7 @@ async function countActiveAdmins(excludeId?: string) {
   });
 }
 
-router.use(requireStaff);
+router.use(requireAdminPrivileges);
 
 router.get("/", async (_req, res) => {
   try {

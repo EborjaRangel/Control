@@ -113,9 +113,12 @@ export type DirigenteDTO = ReturnType<typeof serializeDirigente>;
 
 export function serializeDirigente(
   d: DirigenteRow,
-  options?: { revealPassword?: boolean },
+  options?: { revealPassword?: boolean; includeComposicionSueldo?: boolean },
 ) {
-  const nomina = nominaFieldsFromRow(d.nomina ?? null);
+  const includeComposicionSueldo = options?.includeComposicionSueldo !== false;
+  const nomina = includeComposicionSueldo
+    ? nominaFieldsFromRow(d.nomina ?? null)
+    : nominaFieldsFromRow(null);
 
   return {
     id: d.id,

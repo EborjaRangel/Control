@@ -514,7 +514,7 @@ export function DirigenteForm({
   cancelHref,
   modo = "crear",
   dirigenteId,
-  showComposicionSueldo = true,
+  showComposicionSueldo = false,
 }: Props) {
   const [apiError, setApiError] = useState<string | null>(null);
   const validationSchema =

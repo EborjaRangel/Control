@@ -13,6 +13,7 @@ import {
   requireAuth,
   requireStaff,
   hasAdminPrivilegesRol,
+  type AuthUser,
 } from "../lib/auth.js";
 import {
   normalizeUsername,
@@ -205,6 +206,17 @@ async function validarUnicosDirigente(
   }
 
   return null;
+}
+
+function serializeDirigenteForUser(
+  dirigente: Parameters<typeof serializeDirigente>[0],
+  user: AuthUser | undefined,
+  options?: { revealPassword?: boolean },
+) {
+  return serializeDirigente(dirigente, {
+    revealPassword: options?.revealPassword ?? isStaffRol(user?.rol),
+    includeComposicionSueldo: hasAdminPrivilegesRol(user?.rol),
+  });
 }
 
 router.use("/auth", authRouter);
@@ -494,7 +506,7 @@ router.get("/dirigentes", async (req, res) => {
         where: { id: user.dirigenteId },
         include: dirigenteInclude(),
       });
-      res.json(dirigente ? [serializeDirigente(dirigente)] : []);
+      res.json(dirigente ? [serializeDirigenteForUser(dirigente, user)] : []);
       return;
     }
 
@@ -530,7 +542,7 @@ router.get("/dirigentes", async (req, res) => {
 
     dirigentes.sort(compararNumeroDirigente);
 
-    res.json(dirigentes.map((d) => serializeDirigente(d, { revealPassword })));
+    res.json(dirigentes.map((d) => serializeDirigenteForUser(d, user, { revealPassword })));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al listar dirigentes" });
@@ -623,7 +635,7 @@ router.post("/dirigentes", requireStaff, async (req, res) => {
       });
     });
 
-    res.status(201).json(serializeDirigente(dirigente, { revealPassword: true }));
+    res.status(201).json(serializeDirigenteForUser(dirigente, req.user, { revealPassword: true }));
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
@@ -655,7 +667,7 @@ router.get("/dirigentes/:id", async (req, res) => {
       res.status(404).json({ error: "No encontrado" });
       return;
     }
-    res.json(serializeDirigente(dirigente, { revealPassword: isStaffRol(req.user!.rol) }));
+    res.json(serializeDirigenteForUser(dirigente, req.user));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al obtener dirigente" });
@@ -791,7 +803,7 @@ router.put("/dirigentes/:id", requireStaff, async (req, res) => {
       });
     });
 
-    res.json(serializeDirigente(dirigente, { revealPassword: isStaffRol(req.user!.rol) }));
+    res.json(serializeDirigenteForUser(dirigente, req.user));
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
@@ -838,7 +850,7 @@ router.delete("/dirigentes/:id", requireStaff, async (req, res) => {
       });
     });
 
-    res.json(serializeDirigente(dirigente, { revealPassword: isStaffRol(req.user!.rol) }));
+    res.json(serializeDirigenteForUser(dirigente, req.user));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al actualizar estado" });

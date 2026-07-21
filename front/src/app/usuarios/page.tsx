@@ -52,7 +52,7 @@ function emptyForm(): FormValues {
 
 export default function UsuariosPage() {
   const pathname = usePathname();
-  const { isStaff, user: session } = useAuth();
+  const { hasAdminPrivileges, user: session } = useAuth();
   const [usuarios, setUsuarios] = useState<StaffUserDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,9 +78,9 @@ export default function UsuariosPage() {
   }, []);
 
   useEffect(() => {
-    if (!isStaff) return;
+    if (!hasAdminPrivileges) return;
     void load();
-  }, [isStaff, load, pathname]);
+  }, [hasAdminPrivileges, load, pathname]);
 
   function openCreate() {
     setEditing(null);
@@ -133,7 +133,7 @@ export default function UsuariosPage() {
     }
   }
 
-  if (!isStaff) return null;
+  if (!hasAdminPrivileges) return null;
 
   const actorRol = session?.rol as StaffRol | undefined;
 

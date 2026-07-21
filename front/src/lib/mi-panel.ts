@@ -48,6 +48,9 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
     if (!hasAdminPrivilegesRol(user.rol) && pathname.startsWith("/nominas")) {
       return false;
     }
+    if (!hasAdminPrivilegesRol(user.rol) && pathname.startsWith("/usuarios")) {
+      return false;
+    }
     return true;
   }
 

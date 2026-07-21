@@ -83,8 +83,10 @@ const ADMIN_NAV = [
   },
 ] as const;
 
-/** Staff sin acceso a nóminas (p. ej. supervisor). */
-const STAFF_NAV_WITHOUT_NOMINAS = ADMIN_NAV.filter((item) => item.href !== "/nominas");
+/** Menú staff para supervisor (sin nóminas ni usuarios). */
+const STAFF_NAV_SUPERVISOR = ADMIN_NAV.filter(
+  (item) => item.href !== "/nominas" && item.href !== "/usuarios",
+);
 
 function navGridColumns(count: number) {
   if (count <= 4) return count;
@@ -207,7 +209,7 @@ export function SiteNavbar() {
   const allNavItems = isStaff
     ? [
         NOTIFICACIONES_NAV,
-        ...(hasAdminPrivileges ? ADMIN_NAV : STAFF_NAV_WITHOUT_NOMINAS),
+        ...(hasAdminPrivileges ? ADMIN_NAV : STAFF_NAV_SUPERVISOR),
       ]
     : user
       ? navItemsForUser(user)

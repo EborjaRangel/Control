@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       router.replace(homeForUser(user));
       return;
     }
-    if (user && !isStaffRol(user.rol) && pathname !== "/login" && !pathAllowedForUser(user, pathname)) {
+    if (user && pathname !== "/login" && !pathAllowedForUser(user, pathname)) {
       router.replace(homeForUser(user));
     }
   }, [user, loading, pathname, router]);

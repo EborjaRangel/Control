@@ -58,7 +58,7 @@ export function DirigenteDetalle({
   editHref,
   nominaHref,
   backHref = "/",
-  showComposicionSueldo = true,
+  showComposicionSueldo = false,
 }: Props) {
   const direccion = [
     d.calle,
