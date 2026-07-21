@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { ValidationError } from "yup";
 import { prisma } from "../lib/prisma.js";
-import { requireStaff, requireAuth, requireAdmin } from "../lib/auth.js";
-import { canAccessDirigentePanel } from "../lib/user-panel.js";
+import { requireAuth, requireAdminPrivileges } from "../lib/auth.js";
+import { canViewNomina } from "../lib/user-panel.js";
 import { nominaInclude, upsertNomina } from "../lib/nomina-db.js";
 import { serializeResumenGlobal, recalcularResumenGlobalNomina } from "../lib/nomina-resumen.js";
 import { serializeNomina } from "../lib/serialize-nomina.js";
@@ -29,7 +29,7 @@ const dirigenteResumenSelect = {
   activo: true,
 } as const;
 
-router.get("/resumen", requireAdmin, async (_req, res) => {
+router.get("/resumen", requireAdminPrivileges, async (_req, res) => {
   try {
     let row = await prisma.nominaResumenGlobal.findUnique({ where: { id: "global" } });
     if (!row) {
@@ -42,7 +42,7 @@ router.get("/resumen", requireAdmin, async (_req, res) => {
   }
 });
 
-router.get("/", requireStaff, async (req, res) => {
+router.get("/", requireAdminPrivileges, async (req, res) => {
   try {
     const buscar = typeof req.query.buscar === "string" ? req.query.buscar.trim() : "";
     const tipo = typeof req.query.tipo === "string" ? req.query.tipo.trim() : "";
@@ -87,7 +87,7 @@ router.get("/", requireStaff, async (req, res) => {
 router.get("/:dirigenteId", async (req, res) => {
   try {
     const dirigenteId = paramId(req.params.dirigenteId);
-    if (!req.user || !(await canAccessDirigentePanel(req.user, dirigenteId))) {
+    if (!req.user || !(await canViewNomina(req.user, dirigenteId))) {
       res.status(403).json({ error: "No autorizado" });
       return;
     }
@@ -112,7 +112,7 @@ router.get("/:dirigenteId", async (req, res) => {
   }
 });
 
-router.put("/:dirigenteId", requireStaff, async (req, res) => {
+router.put("/:dirigenteId", requireAdminPrivileges, async (req, res) => {
   try {
     const dirigenteId = paramId(req.params.dirigenteId);
     const data = await nominaSchema.validate(req.body, {

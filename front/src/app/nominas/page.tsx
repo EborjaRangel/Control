@@ -13,7 +13,7 @@ import { type NominaDTO, type NominaResumenGlobalDTO } from "@/lib/nominas";
 
 export default function NominasPage() {
   const pathname = usePathname();
-  const { isStaff, isAdmin } = useAuth();
+  const { hasAdminPrivileges } = useAuth();
   const [nominas, setNominas] = useState<NominaDTO[]>([]);
   const [resumen, setResumen] = useState<NominaResumenGlobalDTO | null>(null);
   const [buscar, setBuscar] = useState("");
@@ -39,7 +39,7 @@ export default function NominasPage() {
           setNominas((await res.json()) as NominaDTO[]);
         }),
       ];
-      if (isAdmin) {
+      if (hasAdminPrivileges) {
         requests.push(
           apiFetch("/api/nominas/resumen", { signal }).then(async (res) => {
             if (res.ok) {
@@ -56,10 +56,10 @@ export default function NominasPage() {
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  }, [buscar, tipo, colonia, isAdmin]);
+  }, [buscar, tipo, colonia, hasAdminPrivileges]);
 
   useEffect(() => {
-    if (!isStaff) return;
+    if (!hasAdminPrivileges) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
       void load(controller.signal);
@@ -68,9 +68,9 @@ export default function NominasPage() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [load, buscar, tipo, colonia, pathname, isStaff]);
+  }, [load, buscar, tipo, colonia, pathname, hasAdminPrivileges]);
 
-  if (!isStaff) return null;
+  if (!hasAdminPrivileges) return null;
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -80,7 +80,7 @@ export default function NominasPage() {
           <p className="page-subtitle">
             {loading
               ? "Cargando…"
-              : isAdmin && resumen
+              : hasAdminPrivileges && resumen
                 ? `${nominas.length} nómina(s) en la vista · Total general ${formatMxn(resumen.desglose.total)}`
                 : `${nominas.length} nómina(s)`}
           </p>
@@ -136,7 +136,7 @@ export default function NominasPage() {
 
       {error ? <div className="alert-error">{error}</div> : null}
 
-      {isAdmin && resumen ? <NominaResumenGlobalPanel resumen={resumen} /> : null}
+      {hasAdminPrivileges && resumen ? <NominaResumenGlobalPanel resumen={resumen} /> : null}
 
       {loading ? (
         <div className="flex items-center gap-3 text-ink-secondary">
@@ -217,7 +217,7 @@ export default function NominasPage() {
                   );
                 })}
               </tbody>
-              {isAdmin && resumen ? (
+              {hasAdminPrivileges && resumen ? (
                 <tfoot>
                   <tr className="border-t-2 border-pin/30 bg-pin/5 font-semibold">
                     <td className="py-3 pr-3" colSpan={3}>

@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "prisma generate",
-    "build:check": "tsc --noEmit",
+    "build:check": "npm run typecheck",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json",
     "start": "tsx src/index.ts",
     "start:prod": "prisma migrate deploy && tsx src/index.ts",
     "db:migrate": "prisma migrate deploy",

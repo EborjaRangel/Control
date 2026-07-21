@@ -52,7 +52,17 @@ export async function canAccessDirigentePanel(
   user: AuthUser,
   dirigenteId: string,
 ): Promise<boolean> {
-  if (user.rol === "ADMIN" || user.rol === "SUPERVISOR") return true;
+  if (user.rol === "ADMIN" || user.rol === "COORDINADOR" || user.rol === "SUPERVISOR") return true;
+  const panel = await resolveUserPanel(user);
+  return panel.dirigenteId === dirigenteId;
+}
+
+export async function canViewNomina(
+  user: AuthUser,
+  dirigenteId: string,
+): Promise<boolean> {
+  if (user.rol === "ADMIN" || user.rol === "COORDINADOR") return true;
+  if (user.rol !== "DIRIGENTE") return false;
   const panel = await resolveUserPanel(user);
   return panel.dirigenteId === dirigenteId;
 }
@@ -61,13 +71,13 @@ export async function canCreateOperadorForDirigente(
   user: AuthUser,
   dirigenteId: string,
 ): Promise<boolean> {
-  if (user.rol === "ADMIN" || user.rol === "SUPERVISOR") return true;
+  if (user.rol === "ADMIN" || user.rol === "COORDINADOR" || user.rol === "SUPERVISOR") return true;
   if (user.rol !== "DIRIGENTE") return false;
   return canAccessDirigentePanel(user, dirigenteId);
 }
 
 export async function canManageRc(user: AuthUser, rcId: string): Promise<boolean> {
-  if (user.rol === "ADMIN" || user.rol === "SUPERVISOR") return true;
+  if (user.rol === "ADMIN" || user.rol === "COORDINADOR" || user.rol === "SUPERVISOR") return true;
   if (user.rol === "RC" && user.rcId === rcId) return true;
   if (user.rol === "DIRIGENTE") {
     const panel = await resolveUserPanel(user);
@@ -77,14 +87,14 @@ export async function canManageRc(user: AuthUser, rcId: string): Promise<boolean
 }
 
 export async function canViewRc(user: AuthUser, rcId: string): Promise<boolean> {
-  if (user.rol === "ADMIN" || user.rol === "SUPERVISOR") return true;
+  if (user.rol === "ADMIN" || user.rol === "COORDINADOR" || user.rol === "SUPERVISOR") return true;
   if (user.rol === "RC" && user.rcId === rcId) return true;
   const panel = await resolveUserPanel(user);
   return panel.rcId === rcId;
 }
 
 export async function canManageRg(user: AuthUser, rgId: string): Promise<boolean> {
-  if (user.rol === "ADMIN" || user.rol === "SUPERVISOR") return true;
+  if (user.rol === "ADMIN" || user.rol === "COORDINADOR" || user.rol === "SUPERVISOR") return true;
   if (user.rol === "RG" && user.rgId === rgId) return true;
   if (user.rol === "DIRIGENTE") {
     const panel = await resolveUserPanel(user);
@@ -94,7 +104,7 @@ export async function canManageRg(user: AuthUser, rgId: string): Promise<boolean
 }
 
 export async function canViewRg(user: AuthUser, rgId: string): Promise<boolean> {
-  if (user.rol === "ADMIN" || user.rol === "SUPERVISOR") return true;
+  if (user.rol === "ADMIN" || user.rol === "COORDINADOR" || user.rol === "SUPERVISOR") return true;
   if (user.rol === "RG" && user.rgId === rgId) return true;
   const panel = await resolveUserPanel(user);
   return panel.rgId === rgId;

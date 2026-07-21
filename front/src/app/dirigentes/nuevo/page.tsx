@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { DirigenteForm } from "@/components/DirigenteForm";
+import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import { apiJson } from "@/lib/api-response";
 import { EMPTY_DIRIGENTE } from "@/lib/types";
@@ -9,6 +10,7 @@ import type { DirigenteFormValues } from "@/lib/validation";
 
 export default function NuevoDirigentePage() {
   const router = useRouter();
+  const { hasAdminPrivileges } = useAuth();
 
   async function handleSubmit(values: DirigenteFormValues) {
     const res = await apiFetch("/api/dirigentes", {
@@ -33,6 +35,7 @@ export default function NuevoDirigentePage() {
         submitLabel="Crear dirigente"
         cancelHref="/"
         modo="crear"
+        showComposicionSueldo={hasAdminPrivileges}
       />
     </div>
   );

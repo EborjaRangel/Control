@@ -96,6 +96,8 @@ type Props = {
   modo?: "crear" | "editar";
   /** Excluir este ID del selector de referente (edición). */
   dirigenteId?: string;
+  /** Composición del sueldo (solo administrador). */
+  showComposicionSueldo?: boolean;
 };
 
 function SeccionSelect() {
@@ -512,6 +514,7 @@ export function DirigenteForm({
   cancelHref,
   modo = "crear",
   dirigenteId,
+  showComposicionSueldo = true,
 }: Props) {
   const [apiError, setApiError] = useState<string | null>(null);
   const validationSchema =
@@ -625,11 +628,13 @@ export function DirigenteForm({
             />
           </section>
 
-          <section className="card-section space-y-4">
-            <h2 className="section-title">Composición del sueldo</h2>
-            <ComposicionSueldoFields />
-            <SueldoPreview />
-          </section>
+          {showComposicionSueldo ? (
+            <section className="card-section space-y-4">
+              <h2 className="section-title">Composición del sueldo</h2>
+              <ComposicionSueldoFields />
+              <SueldoPreview />
+            </section>
+          ) : null}
 
           {(apiError || (submitCount > 0 && Object.keys(errors).length > 0)) ? (
             <div className="space-y-3">

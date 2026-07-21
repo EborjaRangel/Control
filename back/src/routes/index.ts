@@ -12,6 +12,7 @@ import {
   isStaffRol,
   requireAuth,
   requireStaff,
+  hasAdminPrivilegesRol,
 } from "../lib/auth.js";
 import {
   normalizeUsername,
@@ -595,7 +596,9 @@ router.post("/dirigentes", requireStaff, async (req, res) => {
           codigoQr: generarCodigoQr(),
           unidadTerritorialId,
           nomina: {
-            create: nominaCreateData(guardado),
+            create: nominaCreateData(
+              hasAdminPrivilegesRol(req.user!.rol) ? guardado : { conceptosComposicion: [] },
+            ),
           },
         },
       });
@@ -741,7 +744,9 @@ router.put("/dirigentes/:id", requireStaff, async (req, res) => {
         throw new Error(`VALIDACION:${duplicado}`);
       }
 
-      await upsertNomina(tx, id, guardado);
+      if (hasAdminPrivilegesRol(req.user!.rol)) {
+        await upsertNomina(tx, id, guardado);
+      }
       await syncDirigenteRelaciones(tx, id, guardado);
       const updated = await tx.dirigente.update({
         where: { id },

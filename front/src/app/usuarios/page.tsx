@@ -7,7 +7,14 @@ import { useAuth } from "@/components/AuthProvider";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import { USERNAME_REGEX } from "@/lib/auth";
-import { STAFF_ROL_LABEL, type StaffRol, type StaffUserDTO } from "@/lib/usuarios";
+import {
+  STAFF_ROL_LABEL,
+  puedeAsignarRolStaff,
+  puedeDarDeBajaUsuarioStaff,
+  puedeEditarUsuarioStaff,
+  type StaffRol,
+  type StaffUserDTO,
+} from "@/lib/usuarios";
 import * as Yup from "yup";
 
 type FormValues = {
@@ -23,7 +30,7 @@ const createSchema = Yup.object({
     .matches(USERNAME_REGEX, "Usuario: 3–32 caracteres (letras, números, . _ -)")
     .required("El usuario es obligatorio"),
   password: Yup.string().min(6, "Mínimo 6 caracteres").required("La contraseña es obligatoria"),
-  rol: Yup.string().oneOf(["ADMIN", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA"]).required(),
+  rol: Yup.string().oneOf(["ADMIN", "COORDINADOR", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA"]).required(),
 });
 
 const editSchema = Yup.object({
@@ -35,7 +42,7 @@ const editSchema = Yup.object({
     .transform((v) => (v === "" || v == null ? undefined : v))
     .min(6, "Mínimo 6 caracteres")
     .optional(),
-  rol: Yup.string().oneOf(["ADMIN", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA"]).required(),
+  rol: Yup.string().oneOf(["ADMIN", "COORDINADOR", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA"]).required(),
   activo: Yup.boolean().required(),
 });
 
@@ -128,6 +135,10 @@ export default function UsuariosPage() {
 
   if (!isStaff) return null;
 
+  const actorRol = session?.rol as StaffRol | undefined;
+
+  const rolOptions: StaffRol[] = ["SUPERVISOR", "ASISTENCIA", "CONVOCATORIA", "COORDINADOR", "ADMIN"];
+
   const initialValues: FormValues = editing
     ? {
         username: editing.username,
@@ -190,9 +201,13 @@ export default function UsuariosPage() {
                   </td>
                   <td className="font-mono text-sm text-ink-secondary">{u.password ?? "—"}</td>
                   <td>
-                    <button type="button" className="btn-ghost btn-sm" onClick={() => openEdit(u)}>
-                      Editar
-                    </button>
+                    {puedeEditarUsuarioStaff(actorRol, u.rol) ? (
+                      <button type="button" className="btn-ghost btn-sm" onClick={() => openEdit(u)}>
+                        Editar
+                      </button>
+                    ) : (
+                      <span className="text-xs text-ink-secondary">Sin permiso</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -262,12 +277,15 @@ export default function UsuariosPage() {
                       id="rol"
                       name="rol"
                       className="input"
-                      disabled={editing?.id === session?.id}
+                      disabled={editing?.id === session?.id || (editing ? !puedeEditarUsuarioStaff(actorRol, editing.rol) : false)}
                     >
-                      <option value="SUPERVISOR">Supervisor</option>
-                      <option value="ASISTENCIA">Captura de asistencia</option>
-                      <option value="CONVOCATORIA">Convocatorias</option>
-                      <option value="ADMIN">Administrador</option>
+                      {rolOptions
+                        .filter((rol) => puedeAsignarRolStaff(actorRol, rol))
+                        .map((rol) => (
+                          <option key={rol} value={rol}>
+                            {STAFF_ROL_LABEL[rol]}
+                          </option>
+                        ))}
                     </Field>
                   </div>
 
@@ -276,7 +294,10 @@ export default function UsuariosPage() {
                       <input
                         type="checkbox"
                         checked={values.activo}
-                        disabled={editing.id === session?.id}
+                        disabled={
+                          editing.id === session?.id ||
+                          !puedeDarDeBajaUsuarioStaff(actorRol, editing.rol)
+                        }
                         onChange={(e) => void setFieldValue("activo", e.target.checked)}
                       />
                       Cuenta activa

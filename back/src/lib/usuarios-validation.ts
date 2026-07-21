@@ -1,7 +1,6 @@
 import * as Yup from "yup";
 import { USERNAME_REGEX } from "./auth-validation.js";
-
-const PANEL_USER_ROLES = ["ADMIN", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA"] as const;
+import { PANEL_USER_ROLES } from "./usuarios-permisos.js";
 
 export const staffUserCreateSchema = Yup.object({
   username: Yup.string()

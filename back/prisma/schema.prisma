@@ -13,6 +13,7 @@ datasource db {
 /// Rol de acceso al sistema
 enum RolUsuario {
   ADMIN
+  COORDINADOR
   SUPERVISOR
   ASISTENCIA
   CONVOCATORIA

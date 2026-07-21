@@ -13,7 +13,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
 import { homeForUser, pathAllowedForUser } from "@/lib/mi-panel";
-import { canManageConvocatoria, canTakeAsistencia, isAdminRol, isAsistenciaRol, isConvocatoriaRol, isStaffRol } from "@/lib/auth";
+import { canManageConvocatoria, canTakeAsistencia, hasAdminPrivilegesRol, isAdminRol, isAsistenciaRol, isConvocatoriaRol, isCoordinadorRol, isStaffRol } from "@/lib/auth";
 import { clearSessionToken, getSessionToken, setSessionToken } from "@/lib/session-token";
 
 type AuthContextValue = {
@@ -24,6 +24,8 @@ type AuthContextValue = {
   refresh: () => Promise<void>;
   isStaff: boolean;
   isAdmin: boolean;
+  isCoordinador: boolean;
+  hasAdminPrivileges: boolean;
   isAsistencia: boolean;
   isConvocatoria: boolean;
   canTakeAsistencia: boolean;
@@ -129,6 +131,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refresh,
       isStaff: isStaffRol(user?.rol),
       isAdmin: isAdminRol(user?.rol),
+      isCoordinador: isCoordinadorRol(user?.rol),
+      hasAdminPrivileges: hasAdminPrivilegesRol(user?.rol),
       isAsistencia: isAsistenciaRol(user?.rol),
       isConvocatoria: isConvocatoriaRol(user?.rol),
       canTakeAsistencia: canTakeAsistencia(user?.rol),

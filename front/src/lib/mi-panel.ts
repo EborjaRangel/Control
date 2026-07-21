@@ -1,5 +1,5 @@
 import type { SessionUser } from "@/lib/auth";
-import { isAsistenciaRol, isConvocatoriaRol, isStaffRol } from "@/lib/auth";
+import { hasAdminPrivilegesRol, isAsistenciaRol, isConvocatoriaRol, isStaffRol } from "@/lib/auth";
 
 export function canManageRc(user: SessionUser | null, rcId: string) {
   if (!user) return false;
@@ -44,7 +44,12 @@ function operadorAllowed(pathname: string, base: string, id: string, manage: boo
 }
 
 export function pathAllowedForUser(user: SessionUser, pathname: string) {
-  if (isStaffRol(user.rol)) return true;
+  if (isStaffRol(user.rol)) {
+    if (!hasAdminPrivilegesRol(user.rol) && pathname.startsWith("/nominas")) {
+      return false;
+    }
+    return true;
+  }
 
   if (isAsistenciaRol(user.rol)) {
     if (pathname === "/asistencia") return true;

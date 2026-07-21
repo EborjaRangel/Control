@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DirigenteForm } from "@/components/DirigenteForm";
+import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import { apiJson } from "@/lib/api-response";
 import { nombreCompleto } from "@/lib/dirigentes";
@@ -13,6 +14,7 @@ import type { DirigenteFormValues } from "@/lib/validation";
 export default function EditarDirigentePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { hasAdminPrivileges } = useAuth();
   const [dirigente, setDirigente] = useState<DirigenteDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +88,7 @@ export default function EditarDirigentePage() {
         cancelHref="/"
         modo="editar"
         dirigenteId={id}
+        showComposicionSueldo={hasAdminPrivileges}
       />
     </div>
   );

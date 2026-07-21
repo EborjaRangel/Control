@@ -187,7 +187,7 @@ function AvisosNavLink({
 
 export function SiteNavbar() {
   const pathname = usePathname();
-  const { user, isStaff, logout } = useAuth();
+  const { user, isStaff, hasAdminPrivileges, logout } = useAuth();
   const [noLeidas, setNoLeidas] = useState(0);
 
   useEffect(() => {
@@ -202,7 +202,10 @@ export function SiteNavbar() {
   }, [user, pathname]);
 
   const allNavItems = isStaff
-    ? [NOTIFICACIONES_NAV, ...ADMIN_NAV]
+    ? [
+        NOTIFICACIONES_NAV,
+        ...ADMIN_NAV.filter((item) => hasAdminPrivileges || item.href !== "/nominas"),
+      ]
     : user
       ? navItemsForUser(user)
       : [];

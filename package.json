@@ -11,6 +11,7 @@
     "dev:back": "npm run dev -w control-back",
     "dev:front": "npm run dev -w control-front",
     "build": "npm run build -w control-back && npm run build -w control-front",
+    "typecheck": "npm run typecheck -w control-back && npm run typecheck -w control-front",
     "build:back": "npm run build -w control-back",
     "build:front": "npm run build -w control-front",
     "start:back": "npm run start -w control-back",

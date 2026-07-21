@@ -19,7 +19,7 @@ function enlaceRg(dirigenteId: string, rgId: string | null | undefined) {
 
 export default function ConsultarDirigentePage() {
   const { id } = useParams<{ id: string }>();
-  const { isStaff, user } = useAuth();
+  const { isStaff, hasAdminPrivileges, user } = useAuth();
   const esPropio = canViewOwnDirigente(user, id);
   const [dirigente, setDirigente] = useState<DirigenteDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,9 +95,9 @@ export default function ConsultarDirigentePage() {
       <DirigenteDetalle
         dirigente={dirigente}
         editHref={isStaff ? `/dirigentes/${id}` : undefined}
-        nominaHref={isStaff ? `/nominas/${id}` : undefined}
+        nominaHref={hasAdminPrivileges ? `/nominas/${id}` : undefined}
         backHref={isStaff ? "/" : undefined}
-        showComposicionSueldo={isStaff}
+        showComposicionSueldo={hasAdminPrivileges}
       />
     </div>
   );

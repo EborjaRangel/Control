@@ -1,4 +1,4 @@
-import { calcularSueldo, type DesgloseSueldo } from "./dirigentes";
+import { calcularSueldo, type DesgloseSueldo } from "./dirigentes.js";
 import { urlQrAsistencia, payloadQrDirigente } from "./codigo-qr.js";
 import { nominaFieldsFromRow } from "./serialize-nomina.js";
 

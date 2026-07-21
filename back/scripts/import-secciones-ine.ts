@@ -100,6 +100,7 @@ async function main() {
     if (result.done) break;
     total++;
     const feature = result.value;
+    if (!feature) continue;
     const props = (feature.properties ?? {}) as Record<string, unknown>;
     if (!muestraProps && Object.keys(props).length) muestraProps = props;
     if (!esCoyoacan(props)) continue;

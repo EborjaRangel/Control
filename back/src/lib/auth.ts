@@ -100,7 +100,19 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 export function isStaffRol(rol: RolUsuario | undefined) {
-  return rol === "ADMIN" || rol === "SUPERVISOR";
+  return rol === "ADMIN" || rol === "COORDINADOR" || rol === "SUPERVISOR";
+}
+
+export function isAdminRol(rol: RolUsuario | undefined) {
+  return rol === "ADMIN";
+}
+
+export function isCoordinadorRol(rol: RolUsuario | undefined) {
+  return rol === "COORDINADOR";
+}
+
+export function hasAdminPrivilegesRol(rol: RolUsuario | undefined) {
+  return isAdminRol(rol) || isCoordinadorRol(rol);
 }
 
 export function isAsistenciaRol(rol: RolUsuario | undefined) {
@@ -155,8 +167,16 @@ export function requireEventosAsistenciaRead(req: Request, res: Response, next: 
   next();
 }
 
+export function requireAdminPrivileges(req: Request, res: Response, next: NextFunction) {
+  if (!hasAdminPrivilegesRol(req.user?.rol)) {
+    res.status(403).json({ error: "Se requiere rol de administrador o coordinador" });
+    return;
+  }
+  next();
+}
+
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (req.user?.rol !== "ADMIN") {
+  if (!isAdminRol(req.user?.rol)) {
     res.status(403).json({ error: "Se requiere rol de administrador" });
     return;
   }

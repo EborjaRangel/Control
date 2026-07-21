@@ -1,5 +1,5 @@
 import * as Yup from "yup";
-import { TIPOS_DIRIGENTE } from "./dirigentes";
+import { TIPOS_DIRIGENTE } from "./dirigentes.js";
 import { COLONIAS_COYOACAN, coloniaCoincideConCp, CODIGOS_POSTALES_COYOACAN, esColoniaValida } from "./colonias.js";
 import { esSeccionValida } from "./secciones-electorales.js";
 import { credencialesCreateSchema, credencialesUpdateSchema } from "./auth-validation.js";

@@ -8,10 +8,15 @@ import {
   staffUserCreateSchema,
   staffUserUpdateSchema,
 } from "../lib/usuarios-validation.js";
+import {
+  PANEL_USER_ROLES,
+  esRolPanel,
+  puedeAsignarRol,
+  puedeModificarUsuarioStaff,
+  type PanelUserRol,
+} from "../lib/usuarios-permisos.js";
 
 const router = Router();
-
-const PANEL_USER_ROLES = ["ADMIN", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA"] as const;
 
 function paramId(value: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
@@ -69,6 +74,11 @@ router.post("/", async (req, res) => {
       stripUnknown: true,
     });
 
+    if (!puedeAsignarRol(req.user?.rol, body.rol as PanelUserRol)) {
+      res.status(403).json({ error: "Solo un administrador puede crear cuentas de administrador" });
+      return;
+    }
+
     const username = normalizeUsername(body.username);
     const existente = await prisma.usuario.findUnique({ where: { username } });
     if (existente) {
@@ -109,16 +119,25 @@ router.put("/:id", async (req, res) => {
     const actual = await prisma.usuario.findFirst({
       where: { id, rol: { in: [...PANEL_USER_ROLES] } },
     });
-    if (!actual) {
+    if (!actual || !esRolPanel(actual.rol)) {
       res.status(404).json({ error: "Usuario no encontrado" });
       return;
     }
 
     const esYo = req.user!.sub === id;
-    const nuevoRol = body.rol ?? actual.rol;
+    const nuevoRol = (body.rol ?? actual.rol) as PanelUserRol;
     const nuevoActivo = body.activo ?? actual.activo;
 
-    if (esYo && nuevoRol !== "ADMIN") {
+    const permisoError = puedeModificarUsuarioStaff(req.user?.rol, actual.rol, {
+      rol: body.rol as PanelUserRol | undefined,
+      activo: body.activo,
+    });
+    if (permisoError) {
+      res.status(403).json({ error: permisoError });
+      return;
+    }
+
+    if (esYo && nuevoRol !== actual.rol) {
       res.status(400).json({ error: "No puedes cambiar tu propio rol" });
       return;
     }
@@ -129,7 +148,7 @@ router.put("/:id", async (req, res) => {
 
     const otrosAdminsActivos = await countActiveAdmins(id);
     const quedaActivoAdmin = nuevoRol === "ADMIN" && nuevoActivo;
-    if (!quedaActivoAdmin && otrosAdminsActivos < 1) {
+    if (!quedaActivoAdmin && actual.rol === "ADMIN" && otrosAdminsActivos < 1) {
       res.status(400).json({ error: "Debe permanecer al menos un administrador activo" });
       return;
     }
