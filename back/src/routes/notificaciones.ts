@@ -10,6 +10,7 @@ import {
   serializeNotificacionUsuario,
 } from "../lib/notificaciones.js";
 import { notificacionEnviarSchema } from "../lib/validation-notificacion.js";
+import { registrarAuditoria } from "../lib/audit.js";
 
 const router = Router();
 
@@ -147,6 +148,19 @@ router.post("/enviar", requireStaff, async (req, res) => {
       res.status(400).json({ error: resultado.error });
       return;
     }
+
+    await registrarAuditoria(req, {
+      accion: "SEND",
+      entidad: "Notificacion",
+      entidadId: resultado.notificacionId,
+      entidadLabel: resultado.alcanceLabel,
+      despues: {
+        mensaje: data.mensaje.trim().toUpperCase(),
+        alcance: data.alcance,
+        destinatarios: resultado.destinatarios,
+        dirigentes: resultado.dirigentes,
+      },
+    });
 
     res.status(201).json(resultado);
   } catch (error) {

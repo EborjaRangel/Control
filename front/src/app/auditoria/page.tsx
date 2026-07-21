@@ -8,7 +8,8 @@ import { apiFetch } from "@/lib/api";
 import {
   AUDIT_ACCION_OPTIONS,
   formatAuditFecha,
-  resumenCambios,
+  labelEntidadAuditoria,
+  resumenAuditoria,
   type AuditLogDTO,
 } from "@/lib/auditoria";
 
@@ -77,7 +78,7 @@ export default function AuditoriaPage() {
           <p className="page-subtitle">
             {loading
               ? "Cargando…"
-              : `${logs.length} registro(s) · altas, cambios, bajas y acciones del sistema`}
+              : `${logs.length} registro(s) · altas, cambios, bajas, sesiones y acciones del sistema`}
           </p>
         </div>
       </div>
@@ -110,7 +111,7 @@ export default function AuditoriaPage() {
             <option value="">Todas</option>
             {entidades.map((e) => (
               <option key={e} value={e}>
-                {e}
+                {labelEntidadAuditoria(e)}
               </option>
             ))}
           </select>
@@ -193,14 +194,14 @@ export default function AuditoriaPage() {
                     <td>
                       <span className="badge-pin">{log.accionLabel}</span>
                     </td>
-                    <td>{log.entidad}</td>
+                    <td>{labelEntidadAuditoria(log.entidad)}</td>
                     <td>
                       <div className="font-medium">{log.entidadLabel ?? log.entidadId ?? "—"}</div>
                       {log.entidadId ? (
                         <div className="font-mono text-xs text-ink-secondary">{log.entidadId}</div>
                       ) : null}
                     </td>
-                    <td className="text-sm text-ink-secondary">{resumenCambios(log.cambios)}</td>
+                    <td className="text-sm text-ink-secondary">{resumenAuditoria(log)}</td>
                     <td>
                       {log.cambios || log.metadata ? (
                         <button

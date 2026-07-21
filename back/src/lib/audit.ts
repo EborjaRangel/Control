@@ -184,3 +184,184 @@ export function snapshotNomina(n: {
     })),
   });
 }
+
+export function snapshotDetectado(d: {
+  id: string;
+  dirigenteId: string;
+  nombre: string;
+  primerApellido: string;
+  segundoApellido: string | null;
+  telefonoCelular: string | null;
+  seccionElectoral: string;
+  activo: boolean;
+}) {
+  return sanitizarObjeto({
+    id: d.id,
+    dirigenteId: d.dirigenteId,
+    nombre: d.nombre,
+    primerApellido: d.primerApellido,
+    segundoApellido: d.segundoApellido,
+    telefonoCelular: d.telefonoCelular,
+    seccionElectoral: d.seccionElectoral,
+    activo: d.activo,
+  });
+}
+
+export function snapshotPersonaDetectada(p: {
+  id: string;
+  detectadoId: string;
+  nombre: string;
+  primerApellido: string;
+  segundoApellido: string | null;
+  fechaNacimiento: Date;
+  sexo: string | null;
+  claveElector: string | null;
+  curp: string | null;
+  seccionElectoral: string;
+  colonia: string;
+  calle: string;
+  numeroExterior: string;
+  numeroInterior: string | null;
+  codigoPostal: string;
+  activo: boolean;
+}) {
+  return sanitizarObjeto({
+    id: p.id,
+    detectadoId: p.detectadoId,
+    nombre: p.nombre,
+    primerApellido: p.primerApellido,
+    segundoApellido: p.segundoApellido,
+    fechaNacimiento: p.fechaNacimiento.toISOString().slice(0, 10),
+    sexo: p.sexo,
+    claveElector: p.claveElector,
+    curp: p.curp,
+    seccionElectoral: p.seccionElectoral,
+    colonia: p.colonia,
+    calle: p.calle,
+    numeroExterior: p.numeroExterior,
+    numeroInterior: p.numeroInterior,
+    codigoPostal: p.codigoPostal,
+    activo: p.activo,
+  });
+}
+
+export function snapshotOperador(o: {
+  id: string;
+  dirigenteId?: string | null;
+  nombre: string;
+  primerApellido: string;
+  segundoApellido: string | null;
+  telefonoCelular: string | null;
+  colonia?: string | null;
+  activo: boolean;
+  usuario?: { username: string } | null;
+}) {
+  return sanitizarObjeto({
+    id: o.id,
+    dirigenteId: o.dirigenteId ?? null,
+    nombre: o.nombre,
+    primerApellido: o.primerApellido,
+    segundoApellido: o.segundoApellido,
+    telefonoCelular: o.telefonoCelular,
+    colonia: o.colonia ?? null,
+    activo: o.activo,
+    username: o.usuario?.username ?? null,
+  });
+}
+
+export function snapshotRepresentante(r: {
+  id: string;
+  responsableColoniaId: string | null;
+  responsableGeneralId: string | null;
+  nombre: string;
+  primerApellido: string;
+  segundoApellido: string | null;
+  seccionElectoral: string;
+  colonia: string;
+  activo: boolean;
+  validado: boolean;
+}) {
+  return sanitizarObjeto({
+    id: r.id,
+    responsableColoniaId: r.responsableColoniaId,
+    responsableGeneralId: r.responsableGeneralId,
+    nombre: r.nombre,
+    primerApellido: r.primerApellido,
+    segundoApellido: r.segundoApellido,
+    seccionElectoral: r.seccionElectoral,
+    colonia: r.colonia,
+    activo: r.activo,
+    validado: r.validado,
+  });
+}
+
+export function snapshotEventoAsistencia(e: {
+  id: string;
+  titulo: string;
+  fecha: Date;
+  hora: string;
+  lugar: string;
+  alcance: string;
+  estado: string;
+  colonia: string | null;
+  seccionElectoral: string | null;
+  unidadTerritorialId: string | null;
+  distritoLocal: number | null;
+  tipoDirigente: string | null;
+}) {
+  return sanitizarObjeto({
+    id: e.id,
+    titulo: e.titulo,
+    fecha: e.fecha.toISOString().slice(0, 10),
+    hora: e.hora,
+    lugar: e.lugar,
+    alcance: e.alcance,
+    estado: e.estado,
+    colonia: e.colonia,
+    seccionElectoral: e.seccionElectoral,
+    unidadTerritorialId: e.unidadTerritorialId,
+    distritoLocal: e.distritoLocal,
+    tipoDirigente: e.tipoDirigente,
+  });
+}
+
+export async function auditarInicioSesion(
+  req: Request | undefined,
+  input: {
+    exito: boolean;
+    username: string;
+    usuarioId?: string | null;
+    rol?: string | null;
+    motivo?: string;
+    usuario?: AuthUser | null;
+  },
+) {
+  await registrarAuditoria(req, {
+    accion: "LOGIN",
+    entidad: "Sesion",
+    entidadId: input.usuarioId ?? null,
+    entidadLabel: input.username,
+    usuario: input.usuario ?? undefined,
+    metadata: {
+      exito: input.exito,
+      evento: input.exito ? "inicio_sesion" : "intento_fallido",
+      ...(input.motivo ? { motivo: input.motivo } : {}),
+      ...(input.rol ? { rol: input.rol } : {}),
+    },
+    ...(input.exito && input.rol
+      ? { despues: sanitizarObjeto({ username: input.username, rol: input.rol }) }
+      : {}),
+  });
+}
+
+export async function auditarCierreSesion(req: Request | undefined, usuario: AuthUser) {
+  await registrarAuditoria(req, {
+    accion: "LOGOUT",
+    entidad: "Sesion",
+    entidadId: usuario.sub,
+    entidadLabel: usuario.username,
+    usuario,
+    metadata: { evento: "cierre_sesion" },
+    antes: sanitizarObjeto({ username: usuario.username, rol: usuario.rol }),
+  });
+}

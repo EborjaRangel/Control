@@ -133,7 +133,13 @@ export async function asignarSeccionARepresentantes(seccionElectoral: string, id
     return { error: "Selecciona al menos un representante" as const };
   }
 
-  const resultados: Array<{ id: string; ok: boolean; error?: string }> = [];
+  const resultados: Array<{
+    id: string;
+    ok: boolean;
+    error?: string;
+    seccionAnterior?: string;
+    seccionNueva?: string;
+  }> = [];
 
   for (const id of ids) {
     const rep = await prisma.representanteCasilla.findFirst({
@@ -162,7 +168,7 @@ export async function asignarSeccionARepresentantes(seccionElectoral: string, id
       where: { id },
       data: { seccionElectoral },
     });
-    resultados.push({ id, ok: true });
+    resultados.push({ id, ok: true, seccionAnterior: rep.seccionElectoral, seccionNueva: seccionElectoral });
   }
 
   const asignados = resultados.filter((r) => r.ok).length;

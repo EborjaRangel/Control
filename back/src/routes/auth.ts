@@ -12,7 +12,7 @@ import {
   verifyToken,
 } from "../lib/auth.js";
 import { loginSchema } from "../lib/auth-validation.js";
-import { registrarAuditoria } from "../lib/audit.js";
+import { auditarCierreSesion, auditarInicioSesion } from "../lib/audit.js";
 
 const router = Router();
 
@@ -23,8 +23,10 @@ router.post("/login", async (req, res) => {
       stripUnknown: true,
     });
 
+    const usernameNorm = username.toLowerCase();
+
     const usuario = await prisma.usuario.findUnique({
-      where: { username: username.toLowerCase() },
+      where: { username: usernameNorm },
       include: {
         dirigente: { select: { id: true, activo: true } },
         rc: { select: { id: true, activo: true } },
@@ -33,83 +35,101 @@ router.post("/login", async (req, res) => {
     });
 
     if (!usuario || !usuario.activo) {
-      await registrarAuditoria(req, {
-        accion: "LOGIN",
-        entidad: "Sesion",
-        entidadLabel: username.toLowerCase(),
-        metadata: { exito: false, motivo: "credenciales_invalidas" },
+      await auditarInicioSesion(req, {
+        exito: false,
+        username: usernameNorm,
+        motivo: "credenciales_invalidas",
       });
       res.status(401).json({ error: "Usuario o contraseña incorrectos" });
       return;
     }
 
+    const authUser = {
+      sub: usuario.id,
+      username: usuario.username,
+      rol: usuario.rol,
+      dirigenteId: usuario.dirigenteId,
+      rcId: usuario.rcId,
+      rgId: usuario.rgId,
+    };
+
     if (usuario.rol === "DETECTADO") {
+      await auditarInicioSesion(req, {
+        exito: false,
+        username: usuario.username,
+        usuarioId: usuario.id,
+        rol: usuario.rol,
+        motivo: "rol_detectado_sin_acceso",
+        usuario: authUser,
+      });
       res.status(403).json({ error: "Los detectados no tienen acceso al sistema" });
       return;
     }
 
     if (usuario.rol === "DIRIGENTE" && usuario.dirigente && !usuario.dirigente.activo) {
+      await auditarInicioSesion(req, {
+        exito: false,
+        username: usuario.username,
+        usuarioId: usuario.id,
+        rol: usuario.rol,
+        motivo: "dirigente_inactivo",
+        usuario: authUser,
+      });
       res.status(403).json({ error: "Tu cuenta de dirigente está dada de baja" });
       return;
     }
 
     if (usuario.rol === "RC" && usuario.rc && !usuario.rc.activo) {
+      await auditarInicioSesion(req, {
+        exito: false,
+        username: usuario.username,
+        usuarioId: usuario.id,
+        rol: usuario.rol,
+        motivo: "rc_inactivo",
+        usuario: authUser,
+      });
       res.status(403).json({ error: "Tu cuenta de RC está dada de baja" });
       return;
     }
 
     if (usuario.rol === "RG" && usuario.rg && !usuario.rg.activo) {
+      await auditarInicioSesion(req, {
+        exito: false,
+        username: usuario.username,
+        usuarioId: usuario.id,
+        rol: usuario.rol,
+        motivo: "rg_inactivo",
+        usuario: authUser,
+      });
       res.status(403).json({ error: "Tu cuenta de RG está dada de baja" });
       return;
     }
 
     const ok = await verifyPassword(password, usuario.passwordHash);
     if (!ok) {
-      await registrarAuditoria(req, {
-        accion: "LOGIN",
-        entidad: "Sesion",
-        entidadLabel: usuario.username,
-        usuario: {
-          sub: usuario.id,
-          username: usuario.username,
-          rol: usuario.rol,
-        },
-        metadata: { exito: false, motivo: "password_incorrecta" },
+      await auditarInicioSesion(req, {
+        exito: false,
+        username: usuario.username,
+        usuarioId: usuario.id,
+        rol: usuario.rol,
+        motivo: "password_incorrecta",
+        usuario: authUser,
       });
       res.status(401).json({ error: "Usuario o contraseña incorrectos" });
       return;
     }
 
-    const token = signToken({
-      sub: usuario.id,
-      rol: usuario.rol,
-      username: usuario.username,
-      dirigenteId: usuario.dirigenteId,
-      rcId: usuario.rcId,
-      rgId: usuario.rgId,
-    });
+    const token = signToken(authUser);
 
     clearAuthCookie(res);
-    const session = await enrichSessionUser({
-      sub: usuario.id,
-      rol: usuario.rol,
-      username: usuario.username,
-      dirigenteId: usuario.dirigenteId,
-      rcId: usuario.rcId,
-      rgId: usuario.rgId,
-    });
+    const session = await enrichSessionUser(authUser);
 
-    await registrarAuditoria(req, {
-      accion: "LOGIN",
-      entidad: "Sesion",
-      entidadId: usuario.id,
-      entidadLabel: usuario.username,
-      usuario: {
-        sub: usuario.id,
-        username: usuario.username,
-        rol: usuario.rol,
-      },
-      metadata: { exito: true },
+    await auditarInicioSesion(req, {
+      exito: true,
+      username: usuario.username,
+      usuarioId: usuario.id,
+      rol: usuario.rol,
+      usuario: authUser,
     });
 
     res.json({
@@ -130,13 +150,7 @@ router.post("/logout", async (req, res) => {
   const token = readTokenFromRequest(req);
   const payload = token ? verifyToken(token) : null;
   if (payload) {
-    await registrarAuditoria(req, {
-      accion: "LOGOUT",
-      entidad: "Sesion",
-      entidadId: payload.sub,
-      entidadLabel: payload.username,
-      usuario: payload,
-    });
+    await auditarCierreSesion(req, payload);
   }
   clearAuthCookie(res);
   res.json({ ok: true });

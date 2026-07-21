@@ -62,6 +62,7 @@ import {
   snapshotDirigenteBasico,
   snapshotDirigenteEstado,
   snapshotNomina,
+  snapshotRepresentante,
   snapshotUsuarioStaff,
 } from "../lib/audit.js";
 import { TIPOS_DIRIGENTE, compararNumeroDirigente, nombreCompleto } from "../lib/dirigentes.js";
@@ -395,6 +396,38 @@ router.post("/electoral/asignacion/representantes", requireStaff, async (req, re
       res.status(400).json({ error: result.error });
       return;
     }
+
+    for (const item of result.resultados) {
+      if (!item.ok || !item.seccionAnterior || !item.seccionNueva) continue;
+      const rep = await prisma.representanteCasilla.findUnique({
+        where: { id: item.id },
+        select: {
+          id: true,
+          nombre: true,
+          primerApellido: true,
+          segundoApellido: true,
+          seccionElectoral: true,
+          colonia: true,
+          activo: true,
+          validado: true,
+          responsableColoniaId: true,
+          responsableGeneralId: true,
+        },
+      });
+      if (!rep) continue;
+      await registrarAuditoria(req, {
+        accion: "UPDATE",
+        entidad: "RepresentanteCasilla",
+        entidadId: rep.id,
+        entidadLabel: nombreCompleto(rep),
+        rcId: rep.responsableColoniaId,
+        rgId: rep.responsableGeneralId,
+        antes: { seccionElectoral: item.seccionAnterior },
+        despues: { seccionElectoral: item.seccionNueva },
+        metadata: { accion: "asignacion_electoral", seccionElectoral },
+      });
+    }
+
     res.json(result);
   } catch (error) {
     console.error(error);
@@ -406,6 +439,9 @@ router.patch("/electoral/asignacion/representantes/:id/validado", requireStaff, 
   try {
     const id = paramId(req.params.id);
     const validado = req.body?.validado === true;
+    const antes = await prisma.representanteCasilla.findFirst({
+      where: { id, activo: true },
+    });
     const result = await marcarRepresentanteValidado(id, validado);
     if (!result) {
       res.status(404).json({ error: "Representante no encontrado" });
@@ -415,6 +451,21 @@ router.patch("/electoral/asignacion/representantes/:id/validado", requireStaff, 
       res.status(400).json({ error: result.error });
       return;
     }
+
+    if (antes && "representante" in result) {
+      await registrarAuditoria(req, {
+        accion: "STATE_CHANGE",
+        entidad: "RepresentanteCasilla",
+        entidadId: id,
+        entidadLabel: nombreCompleto(result.representante),
+        rcId: result.representante.responsableColoniaId,
+        rgId: result.representante.responsableGeneralId,
+        antes: snapshotRepresentante(antes),
+        despues: snapshotRepresentante(result.representante),
+        metadata: { accion: "validacion_electoral" },
+      });
+    }
+
     res.json({ ok: true, validado });
   } catch (error) {
     console.error(error);

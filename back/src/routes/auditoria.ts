@@ -85,6 +85,7 @@ router.get("/entidades", (_req, res) => {
     "EventoAsistencia",
     "RegistroAsistencia",
     "Notificacion",
+    "Convocatoria",
     "Sesion",
   ]);
 });

@@ -38,6 +38,12 @@ import {
   resolverCredencialesCrear,
   resolverUsernameUnico,
 } from "../lib/credenciales-usuario.js";
+import { nombreCompleto } from "../lib/dirigentes.js";
+import {
+  registrarAuditoria,
+  snapshotOperador,
+  snapshotRepresentante,
+} from "../lib/audit.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -215,6 +221,17 @@ router.post("/por-dirigente/:dirigenteId", requireAuth, async (req, res) => {
       where: { id: rc.id },
       include: rcInclude,
     });
+    if (!existing) {
+      await registrarAuditoria(req, {
+        accion: "CREATE",
+        entidad: "ResponsableColonia",
+        entidadId: full.id,
+        entidadLabel: nombreCompleto(full),
+        rcId: full.id,
+        dirigenteId: full.dirigenteId ?? null,
+        despues: snapshotOperador(full),
+      });
+    }
     res.status(existing ? 200 : 201).json(serializeRc(full, { revealPassword: false }));
   } catch (error) {
     console.error(error);
@@ -270,6 +287,16 @@ router.post("/", requireAuth, async (req, res) => {
       return tx.responsableColonia.findUniqueOrThrow({ where: { id: created.id }, include: rcInclude });
     });
 
+    await registrarAuditoria(req, {
+      accion: "CREATE",
+      entidad: "ResponsableColonia",
+      entidadId: rc.id,
+      entidadLabel: nombreCompleto(rc),
+      rcId: rc.id,
+      dirigenteId: rc.dirigenteId ?? null,
+      despues: snapshotOperador(rc),
+    });
+
     res.status(201).json(serializeRc(rc, { revealPassword: isStaffRol(req.user!.rol) }));
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -319,6 +346,7 @@ router.put("/:id", requireStaff, async (req, res) => {
       res.status(404).json({ error: "No encontrado" });
       return;
     }
+    const antes = snapshotOperador(existing);
     const usernameRaw = data.usuario?.trim();
     const username = usernameRaw ? normalizeUsername(usernameRaw) : "";
     const password = data.password || undefined;
@@ -355,6 +383,17 @@ router.put("/:id", requireStaff, async (req, res) => {
       });
     });
 
+    await registrarAuditoria(req, {
+      accion: "UPDATE",
+      entidad: "ResponsableColonia",
+      entidadId: id,
+      entidadLabel: nombreCompleto(rc),
+      rcId: id,
+      dirigenteId: rc.dirigenteId ?? null,
+      antes,
+      despues: snapshotOperador(rc),
+    });
+
     res.json(serializeRc(rc, { revealPassword: true }));
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -371,11 +410,34 @@ router.delete("/:id", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const reactivar = req.query.reactivar === "true";
+
+    const existing = await prisma.responsableColonia.findUnique({
+      where: { id },
+      include: { usuario: { select: { username: true } } },
+    });
+    if (!existing) {
+      res.status(404).json({ error: "No encontrado" });
+      return;
+    }
+
     const rc = await prisma.responsableColonia.update({
       where: { id },
       data: { activo: reactivar },
       include: rcInclude,
     });
+
+    await registrarAuditoria(req, {
+      accion: reactivar ? "STATE_CHANGE" : "DELETE",
+      entidad: "ResponsableColonia",
+      entidadId: id,
+      entidadLabel: nombreCompleto(rc),
+      rcId: id,
+      dirigenteId: rc.dirigenteId ?? null,
+      antes: snapshotOperador(existing),
+      despues: snapshotOperador(rc),
+      metadata: { reactivar },
+    });
+
     res.json(serializeRc(rc, { revealPassword: true }));
   } catch (error) {
     console.error(error);
@@ -407,6 +469,22 @@ router.post("/:id/representantes", async (req, res) => {
     const rep = await prisma.representanteCasilla.create({
       data: { responsableColoniaId: rcId, ...representanteCreateData(data) },
     });
+
+    const rc = await prisma.responsableColonia.findUnique({
+      where: { id: rcId },
+      select: { dirigenteId: true },
+    });
+
+    await registrarAuditoria(req, {
+      accion: "CREATE",
+      entidad: "RepresentanteCasilla",
+      entidadId: rep.id,
+      entidadLabel: nombreCompleto(rep),
+      rcId,
+      dirigenteId: rc?.dirigenteId ?? null,
+      despues: snapshotRepresentante(rep),
+    });
+
     res.status(201).json(serializeRepresentante(rep));
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -469,10 +547,28 @@ router.put("/:id/representantes/:repId", async (req, res) => {
       res.status(404).json({ error: "No encontrado" });
       return;
     }
+    const antes = snapshotRepresentante(existing);
     const rep = await prisma.representanteCasilla.update({
       where: { id: repId },
       data: representanteCreateData(data),
     });
+
+    const rc = await prisma.responsableColonia.findUnique({
+      where: { id: rcId },
+      select: { dirigenteId: true },
+    });
+
+    await registrarAuditoria(req, {
+      accion: "UPDATE",
+      entidad: "RepresentanteCasilla",
+      entidadId: repId,
+      entidadLabel: nombreCompleto(rep),
+      rcId,
+      dirigenteId: rc?.dirigenteId ?? null,
+      antes,
+      despues: snapshotRepresentante(rep),
+    });
+
     res.json(serializeRepresentante(rep));
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -503,6 +599,23 @@ router.delete("/:id/representantes/:repId", async (req, res) => {
       where: { id: repId },
       data: { activo: false },
     });
+
+    const rc = await prisma.responsableColonia.findUnique({
+      where: { id: rcId },
+      select: { dirigenteId: true },
+    });
+
+    await registrarAuditoria(req, {
+      accion: "DELETE",
+      entidad: "RepresentanteCasilla",
+      entidadId: repId,
+      entidadLabel: nombreCompleto(rep),
+      rcId,
+      dirigenteId: rc?.dirigenteId ?? null,
+      antes: snapshotRepresentante(existing),
+      despues: snapshotRepresentante(rep),
+    });
+
     res.json(serializeRepresentante(rep));
   } catch (error) {
     console.error(error);

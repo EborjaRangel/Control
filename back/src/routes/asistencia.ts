@@ -17,6 +17,10 @@ import {
   eventoCreateSchema,
   registrarAsistenciaSchema,
 } from "../lib/validation-asistencia.js";
+import {
+  registrarAuditoria,
+  snapshotEventoAsistencia,
+} from "../lib/audit.js";
 
 const router = Router();
 
@@ -128,6 +132,14 @@ router.post("/eventos", requireStaff, async (req, res) => {
         unidadTerritorial: true,
         _count: { select: { asistencias: true } },
       },
+    });
+
+    await registrarAuditoria(req, {
+      accion: "CREATE",
+      entidad: "EventoAsistencia",
+      entidadId: evento.id,
+      entidadLabel: evento.titulo,
+      despues: snapshotEventoAsistencia(evento),
     });
 
     res.status(201).json(await enriquecerEvento(evento));
@@ -256,6 +268,16 @@ router.post("/eventos/:id/abrir", requireStaff, async (req, res) => {
       },
     });
 
+    await registrarAuditoria(req, {
+      accion: "STATE_CHANGE",
+      entidad: "EventoAsistencia",
+      entidadId: id,
+      entidadLabel: evento.titulo,
+      antes: snapshotEventoAsistencia(evento),
+      despues: snapshotEventoAsistencia(updated),
+      metadata: { accion: "abrir_pase" },
+    });
+
     res.json(await enriquecerEvento(updated));
   } catch (error) {
     console.error(error);
@@ -287,6 +309,16 @@ router.post("/eventos/:id/cerrar", requireStaff, async (req, res) => {
         unidadTerritorial: true,
         _count: { select: { asistencias: true } },
       },
+    });
+
+    await registrarAuditoria(req, {
+      accion: "STATE_CHANGE",
+      entidad: "EventoAsistencia",
+      entidadId: id,
+      entidadLabel: evento.titulo,
+      antes: snapshotEventoAsistencia(evento),
+      despues: snapshotEventoAsistencia(updated),
+      metadata: { accion: "cerrar_pase" },
     });
 
     res.json(await enriquecerEvento(updated));
@@ -375,6 +407,20 @@ router.post("/eventos/:id/registrar", requireAsistenciaOrStaff, async (req, res)
             seccionElectoral: true,
           },
         },
+      },
+    });
+
+    await registrarAuditoria(req, {
+      accion: "CREATE",
+      entidad: "RegistroAsistencia",
+      entidadId: registro.id,
+      entidadLabel: nombreCompleto(registro.dirigente),
+      dirigenteId: registro.dirigente.id,
+      despues: {
+        eventoId: id,
+        eventoTitulo: evento.titulo,
+        dirigenteId: registro.dirigente.id,
+        dirigenteNombre: nombreCompleto(registro.dirigente),
       },
     });
 

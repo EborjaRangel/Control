@@ -12,6 +12,8 @@ import {
   resumenEnviosEvento,
 } from "../lib/comunicacion/notificar-evento.js";
 import { convocatoriaEventoSchema } from "../lib/validation-convocatoria.js";
+import { registrarAuditoria } from "../lib/audit.js";
+import { obtenerEvento } from "../lib/eventos-asistencia.js";
 
 const router = Router();
 
@@ -42,6 +44,23 @@ router.post("/eventos/:id/enviar", requireConvocatoriaOrStaff, async (req, res) 
     });
 
     const resumen = await enviarConvocatoriaEvento(id, { mensaje: data.mensaje });
+
+    const evento = await obtenerEvento(id);
+
+    await registrarAuditoria(req, {
+      accion: "SEND",
+      entidad: "Convocatoria",
+      entidadId: id,
+      entidadLabel: evento?.titulo ?? id,
+      despues: {
+        mensaje: data.mensaje,
+        totalDirigentes: resumen.totalDirigentes,
+        email: resumen.email,
+        sms: resumen.sms,
+        whatsapp: resumen.whatsapp,
+      },
+    });
+
     res.json(resumen);
   } catch (error) {
     if (error instanceof ValidationError) {

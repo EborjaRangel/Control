@@ -17,6 +17,12 @@ import {
 } from "../lib/serialize-dirigente-detectados.js";
 import { esSeccionValida } from "../lib/secciones-electorales.js";
 import { variantesColoniaParaBusqueda } from "../lib/colonias.js";
+import { nombreCompleto } from "../lib/dirigentes.js";
+import {
+  registrarAuditoria,
+  snapshotDetectado,
+  snapshotPersonaDetectada,
+} from "../lib/audit.js";
 
 const router = Router();
 
@@ -185,13 +191,34 @@ router.put("/dirigentes/:dirigenteId/meta", requireStaff, async (req, res) => {
       stripUnknown: true,
     });
 
+    const anterior = await prisma.dirigente.findUnique({
+      where: { id: dirigenteId },
+      select: { ...dirigenteResumenSelect, metaDetectados: true },
+    });
+    if (!anterior) {
+      res.status(404).json({ error: "Dirigente no encontrado" });
+      return;
+    }
+
     const dirigente = await prisma.dirigente.update({
       where: { id: dirigenteId },
       data: { metaDetectados: data.metaDetectados },
       select: {
         ...dirigenteResumenSelect,
+        metaDetectados: true,
         _count: { select: { detectados: { where: { activo: true } } } },
       },
+    });
+
+    await registrarAuditoria(req, {
+      accion: "UPDATE",
+      entidad: "Dirigente",
+      entidadId: dirigenteId,
+      entidadLabel: nombreCompleto(dirigente),
+      dirigenteId,
+      antes: { metaDetectados: anterior.metaDetectados },
+      despues: { metaDetectados: data.metaDetectados },
+      metadata: { campo: "metaDetectados" },
     });
 
     res.json(serializeDirigenteDetectados(dirigente, dirigente._count.detectados));
@@ -256,6 +283,15 @@ router.post("/", requireAuth, async (req, res) => {
         ineReversoUrl: data.ineReversoUrl,
       },
       include: detectadoInclude,
+    });
+
+    await registrarAuditoria(req, {
+      accion: "CREATE",
+      entidad: "Detectado",
+      entidadId: detectado.id,
+      entidadLabel: nombreCompleto(detectado),
+      dirigenteId: detectado.dirigenteId,
+      despues: snapshotDetectado(detectado),
     });
 
     res.status(201).json(
@@ -335,6 +371,8 @@ router.put("/:id", requireAuth, async (req, res) => {
       stripUnknown: true,
     });
 
+    const antes = snapshotDetectado(existing);
+
     if (
       existing.dirigente &&
       existing.dirigente.activo &&
@@ -363,6 +401,16 @@ router.put("/:id", requireAuth, async (req, res) => {
       },
     });
 
+    await registrarAuditoria(req, {
+      accion: "UPDATE",
+      entidad: "Detectado",
+      entidadId: id,
+      entidadLabel: nombreCompleto(detectado),
+      dirigenteId: detectado.dirigenteId,
+      antes,
+      despues: snapshotDetectado(detectado),
+    });
+
     res.json(
       serializeDetectado(detectado, {
         personasActivas: detectado._count.personas,
@@ -383,10 +431,27 @@ router.delete("/:id", requireStaff, async (req, res) => {
     const id = paramId(req.params.id);
     const reactivar = req.query.reactivar === "true";
 
+    const existing = await prisma.detectado.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ error: "No encontrado" });
+      return;
+    }
+
     const detectado = await prisma.detectado.update({
       where: { id },
       data: { activo: reactivar },
       include: detectadoInclude,
+    });
+
+    await registrarAuditoria(req, {
+      accion: reactivar ? "STATE_CHANGE" : "DELETE",
+      entidad: "Detectado",
+      entidadId: id,
+      entidadLabel: nombreCompleto(detectado),
+      dirigenteId: detectado.dirigenteId,
+      antes: snapshotDetectado(existing),
+      despues: snapshotDetectado(detectado),
+      metadata: { reactivar },
     });
 
     res.json(
@@ -439,6 +504,21 @@ router.post("/:id/personas", requireAuth, async (req, res) => {
         ineFrenteUrl: data.ineFrenteUrl,
         ineReversoUrl: data.ineReversoUrl,
       },
+    });
+
+    const detectado = await prisma.detectado.findUnique({
+      where: { id: detectadoId },
+      select: { dirigenteId: true },
+    });
+
+    await registrarAuditoria(req, {
+      accion: "CREATE",
+      entidad: "PersonaDetectada",
+      entidadId: persona.id,
+      entidadLabel: nombreCompleto(persona),
+      dirigenteId: detectado?.dirigenteId ?? null,
+      despues: snapshotPersonaDetectada(persona),
+      metadata: { detectadoId },
     });
 
     res.status(201).json(serializePersona(persona));
@@ -506,6 +586,8 @@ router.put("/:id/personas/:personaId", requireAuth, async (req, res) => {
       return;
     }
 
+    const antes = snapshotPersonaDetectada(existing);
+
     const persona = await prisma.personaDetectada.update({
       where: { id: personaId },
       data: {
@@ -525,6 +607,22 @@ router.put("/:id/personas/:personaId", requireAuth, async (req, res) => {
         ineFrenteUrl: data.ineFrenteUrl,
         ineReversoUrl: data.ineReversoUrl,
       },
+    });
+
+    const detectado = await prisma.detectado.findUnique({
+      where: { id: detectadoId },
+      select: { dirigenteId: true },
+    });
+
+    await registrarAuditoria(req, {
+      accion: "UPDATE",
+      entidad: "PersonaDetectada",
+      entidadId: personaId,
+      entidadLabel: nombreCompleto(persona),
+      dirigenteId: detectado?.dirigenteId ?? null,
+      antes,
+      despues: snapshotPersonaDetectada(persona),
+      metadata: { detectadoId },
     });
 
     res.json(serializePersona(persona));
@@ -559,6 +657,22 @@ router.delete("/:id/personas/:personaId", requireAuth, async (req, res) => {
     const persona = await prisma.personaDetectada.update({
       where: { id: personaId },
       data: { activo: false },
+    });
+
+    const detectado = await prisma.detectado.findUnique({
+      where: { id: detectadoId },
+      select: { dirigenteId: true },
+    });
+
+    await registrarAuditoria(req, {
+      accion: "DELETE",
+      entidad: "PersonaDetectada",
+      entidadId: personaId,
+      entidadLabel: nombreCompleto(persona),
+      dirigenteId: detectado?.dirigenteId ?? null,
+      antes: snapshotPersonaDetectada(existing),
+      despues: snapshotPersonaDetectada(persona),
+      metadata: { detectadoId },
     });
 
     res.json(serializePersona(persona));
