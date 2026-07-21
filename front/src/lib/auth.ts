@@ -62,8 +62,19 @@ export function isCoordinadorRol(rol: SessionUser["rol"] | undefined) {
   return rol === "COORDINADOR";
 }
 
+export function isSupervisorRol(rol: SessionUser["rol"] | undefined) {
+  return rol === "SUPERVISOR";
+}
+
 export function hasAdminPrivilegesRol(rol: SessionUser["rol"] | undefined) {
   return isAdminRol(rol) || isCoordinadorRol(rol);
+}
+
+/** Rutas del navbar staff reservadas a admin/coordinador. */
+export const PRIVILEGED_STAFF_NAV_HREFS = ["/nominas", "/usuarios"] as const;
+
+export function canAccessPrivilegedStaffNav(rol: SessionUser["rol"] | undefined) {
+  return hasAdminPrivilegesRol(rol);
 }
 
 export function isAsistenciaRol(rol: SessionUser["rol"] | undefined) {

@@ -10,7 +10,7 @@ import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { APP_TITLE, NAVBAR_TITLE } from "@/lib/site";
 import { brandHrefForUser, navItemsForUser } from "@/lib/mi-panel";
-import { isLimitedPanelRol } from "@/lib/auth";
+import { canAccessPrivilegedStaffNav, isLimitedPanelRol, isStaffRol } from "@/lib/auth";
 
 const NOTIFICACIONES_NAV = {
   href: "/notificaciones",
@@ -83,10 +83,13 @@ const ADMIN_NAV = [
   },
 ] as const;
 
-/** Menú staff para supervisor (sin nóminas ni usuarios). */
-const STAFF_NAV_SUPERVISOR = ADMIN_NAV.filter(
-  (item) => item.href !== "/nominas" && item.href !== "/usuarios",
-);
+const PRIVILEGED_NAV_HREFS = new Set<string>(["/nominas", "/usuarios"]);
+
+function staffMainNavForRol(rol: Parameters<typeof canAccessPrivilegedStaffNav>[0]) {
+  if (!isStaffRol(rol)) return [];
+  if (canAccessPrivilegedStaffNav(rol)) return ADMIN_NAV;
+  return ADMIN_NAV.filter((item) => !PRIVILEGED_NAV_HREFS.has(item.href));
+}
 
 function navGridColumns(count: number) {
   if (count <= 4) return count;
@@ -192,7 +195,7 @@ function AvisosNavLink({
 
 export function SiteNavbar() {
   const pathname = usePathname();
-  const { user, isStaff, hasAdminPrivileges, logout } = useAuth();
+  const { user, isStaff, logout } = useAuth();
   const [noLeidas, setNoLeidas] = useState(0);
 
   useEffect(() => {
@@ -207,10 +210,7 @@ export function SiteNavbar() {
   }, [user, pathname]);
 
   const allNavItems = isStaff
-    ? [
-        NOTIFICACIONES_NAV,
-        ...(hasAdminPrivileges ? ADMIN_NAV : STAFF_NAV_SUPERVISOR),
-      ]
+    ? [NOTIFICACIONES_NAV, ...staffMainNavForRol(user?.rol)]
     : user
       ? navItemsForUser(user)
       : [];

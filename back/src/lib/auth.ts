@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
 import type { RolUsuario } from "../generated/prisma/client.js";
+import { prisma } from "./prisma.js";
 import {
   canAccessDirigentePanel,
   canManageRc,
@@ -85,18 +86,49 @@ export function readTokenFromRequest(req: Request) {
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const token = readTokenFromRequest(req);
-  if (!token) {
-    res.status(401).json({ error: "No autenticado" });
-    return;
-  }
-  const payload = verifyToken(token);
-  if (!payload) {
-    res.status(401).json({ error: "Sesión inválida o expirada" });
-    return;
-  }
-  req.user = payload;
-  next();
+  void (async () => {
+    const token = readTokenFromRequest(req);
+    if (!token) {
+      res.status(401).json({ error: "No autenticado" });
+      return;
+    }
+    const payload = verifyToken(token);
+    if (!payload) {
+      res.status(401).json({ error: "Sesión inválida o expirada" });
+      return;
+    }
+
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: payload.sub },
+      select: {
+        id: true,
+        username: true,
+        rol: true,
+        activo: true,
+        dirigenteId: true,
+        rcId: true,
+        rgId: true,
+      },
+    });
+
+    if (!usuario || !usuario.activo) {
+      res.status(401).json({ error: "Sesión inválida o expirada" });
+      return;
+    }
+
+    req.user = {
+      sub: usuario.id,
+      rol: usuario.rol,
+      username: usuario.username,
+      dirigenteId: usuario.dirigenteId,
+      rcId: usuario.rcId,
+      rgId: usuario.rgId,
+    };
+    next();
+  })().catch((error) => {
+    console.error(error);
+    res.status(500).json({ error: "Error de autenticación" });
+  });
 }
 
 export function isStaffRol(rol: RolUsuario | undefined) {

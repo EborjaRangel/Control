@@ -2,5 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "npm install",
-  "buildCommand": "npm run build"
+  "buildCommand": "npm run build",
+  "headers": [
+    {
+      "source": "/((?!_next/static|_next/image|favicon.ico).*)",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, must-revalidate" }]
+    }
+  ]
 }
