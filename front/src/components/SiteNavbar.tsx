@@ -83,6 +83,9 @@ const ADMIN_NAV = [
   },
 ] as const;
 
+/** Staff sin acceso a nóminas (p. ej. supervisor). */
+const STAFF_NAV_WITHOUT_NOMINAS = ADMIN_NAV.filter((item) => item.href !== "/nominas");
+
 function navGridColumns(count: number) {
   if (count <= 4) return count;
   if (count <= 6) return 3;
@@ -204,7 +207,7 @@ export function SiteNavbar() {
   const allNavItems = isStaff
     ? [
         NOTIFICACIONES_NAV,
-        ...ADMIN_NAV.filter((item) => hasAdminPrivileges || item.href !== "/nominas"),
+        ...(hasAdminPrivileges ? ADMIN_NAV : STAFF_NAV_WITHOUT_NOMINAS),
       ]
     : user
       ? navItemsForUser(user)
