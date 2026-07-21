@@ -69,6 +69,17 @@ enum EstadoEnvioComunicacion {
   OMITIDO
 }
 
+/// Acción registrada en auditoría
+enum AuditAccion {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  SEND
+  STATE_CHANGE
+}
+
 /// Alcance de una notificación in-app
 enum AlcanceNotificacion {
   TODOS
@@ -560,4 +571,32 @@ model NotificacionDestinatario {
   @@unique([notificacionId, usuarioId])
   @@index([usuarioId, vistoAt])
   @@index([notificacionId])
+}
+
+/// Registro de auditoría: altas, cambios, bajas y acciones del sistema
+model AuditLog {
+  id            String      @id @default(cuid())
+  accion        AuditAccion
+  entidad       String
+  entidadId     String?
+  entidadLabel  String?
+
+  usuarioId     String?
+  usuarioNombre String?
+  usuarioRol    RolUsuario?
+
+  dirigenteId   String?
+  rcId          String?
+  rgId          String?
+
+  cambios       Json?
+  metadata      Json?
+
+  createdAt     DateTime    @default(now())
+
+  @@index([entidad, entidadId])
+  @@index([usuarioId, createdAt])
+  @@index([accion, createdAt])
+  @@index([createdAt])
+  @@index([dirigenteId])
 }

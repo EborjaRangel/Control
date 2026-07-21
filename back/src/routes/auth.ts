@@ -5,11 +5,14 @@ import {
   clearAuthCookie,
   enrichSessionUser,
   hashPassword,
+  readTokenFromRequest,
   requireAuth,
   signToken,
   verifyPassword,
+  verifyToken,
 } from "../lib/auth.js";
 import { loginSchema } from "../lib/auth-validation.js";
+import { registrarAuditoria } from "../lib/audit.js";
 
 const router = Router();
 
@@ -30,6 +33,12 @@ router.post("/login", async (req, res) => {
     });
 
     if (!usuario || !usuario.activo) {
+      await registrarAuditoria(req, {
+        accion: "LOGIN",
+        entidad: "Sesion",
+        entidadLabel: username.toLowerCase(),
+        metadata: { exito: false, motivo: "credenciales_invalidas" },
+      });
       res.status(401).json({ error: "Usuario o contraseña incorrectos" });
       return;
     }
@@ -56,6 +65,17 @@ router.post("/login", async (req, res) => {
 
     const ok = await verifyPassword(password, usuario.passwordHash);
     if (!ok) {
+      await registrarAuditoria(req, {
+        accion: "LOGIN",
+        entidad: "Sesion",
+        entidadLabel: usuario.username,
+        usuario: {
+          sub: usuario.id,
+          username: usuario.username,
+          rol: usuario.rol,
+        },
+        metadata: { exito: false, motivo: "password_incorrecta" },
+      });
       res.status(401).json({ error: "Usuario o contraseña incorrectos" });
       return;
     }
@@ -70,16 +90,31 @@ router.post("/login", async (req, res) => {
     });
 
     clearAuthCookie(res);
+    const session = await enrichSessionUser({
+      sub: usuario.id,
+      rol: usuario.rol,
+      username: usuario.username,
+      dirigenteId: usuario.dirigenteId,
+      rcId: usuario.rcId,
+      rgId: usuario.rgId,
+    });
+
+    await registrarAuditoria(req, {
+      accion: "LOGIN",
+      entidad: "Sesion",
+      entidadId: usuario.id,
+      entidadLabel: usuario.username,
+      usuario: {
+        sub: usuario.id,
+        username: usuario.username,
+        rol: usuario.rol,
+      },
+      metadata: { exito: true },
+    });
+
     res.json({
       token,
-      ...(await enrichSessionUser({
-        sub: usuario.id,
-        rol: usuario.rol,
-        username: usuario.username,
-        dirigenteId: usuario.dirigenteId,
-        rcId: usuario.rcId,
-        rgId: usuario.rgId,
-      })),
+      ...session,
     });
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -91,7 +126,18 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.post("/logout", (_req, res) => {
+router.post("/logout", async (req, res) => {
+  const token = readTokenFromRequest(req);
+  const payload = token ? verifyToken(token) : null;
+  if (payload) {
+    await registrarAuditoria(req, {
+      accion: "LOGOUT",
+      entidad: "Sesion",
+      entidadId: payload.sub,
+      entidadLabel: payload.username,
+      usuario: payload,
+    });
+  }
   clearAuthCookie(res);
   res.json({ ok: true });
 });

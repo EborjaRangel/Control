@@ -116,9 +116,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    await apiFetch("/api/auth/logout", { method: "POST" });
     clearSessionToken();
     setUser(null);
-    await apiFetch("/api/auth/logout", { method: "POST" });
     router.replace("/login");
   }, [router]);
 

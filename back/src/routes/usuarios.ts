@@ -15,6 +15,7 @@ import {
   puedeModificarUsuarioStaff,
   type PanelUserRol,
 } from "../lib/usuarios-permisos.js";
+import { registrarAuditoria, snapshotUsuarioStaff } from "../lib/audit.js";
 
 const router = Router();
 
@@ -97,6 +98,14 @@ router.post("/", async (req, res) => {
       },
     });
 
+    await registrarAuditoria(req, {
+      accion: "CREATE",
+      entidad: "Usuario",
+      entidadId: usuario.id,
+      entidadLabel: usuario.username,
+      despues: snapshotUsuarioStaff(usuario),
+    });
+
     res.status(201).json(serializeStaffUser(usuario));
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -176,7 +185,25 @@ router.put("/:id", async (req, res) => {
       data.passwordPlano = body.password;
     }
 
+    const antes = snapshotUsuarioStaff(actual);
     const usuario = await prisma.usuario.update({ where: { id }, data });
+
+    const accion =
+      body.activo !== undefined && body.activo !== actual.activo && !body.activo
+        ? "DELETE"
+        : body.activo !== undefined && body.activo !== actual.activo && body.activo
+          ? "STATE_CHANGE"
+          : "UPDATE";
+
+    await registrarAuditoria(req, {
+      accion,
+      entidad: "Usuario",
+      entidadId: id,
+      entidadLabel: usuario.username,
+      antes,
+      despues: snapshotUsuarioStaff(usuario),
+    });
+
     res.json(serializeStaffUser(usuario));
   } catch (error) {
     if (error instanceof ValidationError) {

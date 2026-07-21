@@ -51,6 +51,9 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
     if (!canAccessPrivilegedStaffNav(user.rol) && pathname.startsWith("/usuarios")) {
       return false;
     }
+    if (!canAccessPrivilegedStaffNav(user.rol) && pathname.startsWith("/auditoria")) {
+      return false;
+    }
     return true;
   }
 

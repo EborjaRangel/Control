@@ -9,6 +9,7 @@ import { serializeNomina } from "../lib/serialize-nomina.js";
 import { nominaSchema } from "../lib/validation-nomina.js";
 import { normalizarNominaParaGuardado } from "../lib/normalizar-dirigente.js";
 import { normalizarTextoGuardado } from "../lib/normalizar-texto.js";
+import { registrarAuditoria, snapshotNomina } from "../lib/audit.js";
 
 const router = Router();
 
@@ -123,12 +124,17 @@ router.put("/:dirigenteId", requireAdminPrivileges, async (req, res) => {
 
     const dirigente = await prisma.dirigente.findUnique({
       where: { id: dirigenteId },
-      select: { id: true },
+      select: { id: true, nombre: true, primerApellido: true, segundoApellido: true },
     });
     if (!dirigente) {
       res.status(404).json({ error: "Dirigente no encontrado" });
       return;
     }
+
+    const nominaAnterior = await prisma.nomina.findUnique({
+      where: { dirigenteId },
+      include: { conceptos: true },
+    });
 
     const nomina = await prisma.$transaction(async (tx) =>
       upsertNomina(tx, dirigenteId, guardado),
@@ -137,6 +143,16 @@ router.put("/:dirigenteId", requireAdminPrivileges, async (req, res) => {
     const dirigenteResumen = await prisma.dirigente.findUniqueOrThrow({
       where: { id: dirigenteId },
       select: dirigenteResumenSelect,
+    });
+
+    await registrarAuditoria(req, {
+      accion: nominaAnterior ? "UPDATE" : "CREATE",
+      entidad: "Nomina",
+      entidadId: nomina.id,
+      entidadLabel: `${dirigente.nombre} ${dirigente.primerApellido}`.trim(),
+      dirigenteId,
+      antes: nominaAnterior ? snapshotNomina(nominaAnterior) : null,
+      despues: snapshotNomina(nomina),
     });
 
     res.json(serializeNomina(nomina, dirigenteResumen));

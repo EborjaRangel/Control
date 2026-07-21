@@ -56,6 +56,14 @@ import rcRouter from "./rc.js";
 import rgRouter from "./rg.js";
 import notificacionesRouter from "./notificaciones.js";
 import usuariosRouter from "./usuarios.js";
+import auditoriaRouter from "./auditoria.js";
+import {
+  registrarAuditoria,
+  snapshotDirigenteBasico,
+  snapshotDirigenteEstado,
+  snapshotNomina,
+  snapshotUsuarioStaff,
+} from "../lib/audit.js";
 import { TIPOS_DIRIGENTE, compararNumeroDirigente, nombreCompleto } from "../lib/dirigentes.js";
 import {
   buildFiltroBuscarDirigentes,
@@ -231,6 +239,7 @@ router.use("/rc", rcRouter);
 router.use("/rg", rgRouter);
 router.use("/notificaciones", notificacionesRouter);
 router.use("/usuarios", usuariosRouter);
+router.use("/auditoria", auditoriaRouter);
 
 router.get("/secciones/coyoacan/geojson", (_req, res) => {
   try {
@@ -635,6 +644,15 @@ router.post("/dirigentes", requireStaff, async (req, res) => {
       });
     });
 
+    await registrarAuditoria(req, {
+      accion: "CREATE",
+      entidad: "Dirigente",
+      entidadId: dirigente.id,
+      entidadLabel: nombreCompleto(dirigente),
+      dirigenteId: dirigente.id,
+      despues: snapshotDirigenteBasico(dirigente),
+    });
+
     res.status(201).json(serializeDirigenteForUser(dirigente, req.user, { revealPassword: true }));
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -726,6 +744,7 @@ router.put("/dirigentes/:id", requireStaff, async (req, res) => {
     }
 
     const guardado = normalizarDirigenteParaGuardado(data);
+    const antesDirigente = snapshotDirigenteBasico(existing);
     const credencialesNuevo = resolverCredencialesCrear({
       usuario: data.usuario,
       password: data.password,
@@ -803,6 +822,16 @@ router.put("/dirigentes/:id", requireStaff, async (req, res) => {
       });
     });
 
+    await registrarAuditoria(req, {
+      accion: "UPDATE",
+      entidad: "Dirigente",
+      entidadId: id,
+      entidadLabel: nombreCompleto(dirigente),
+      dirigenteId: id,
+      antes: antesDirigente,
+      despues: snapshotDirigenteBasico(dirigente),
+    });
+
     res.json(serializeDirigenteForUser(dirigente, req.user));
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -833,6 +862,8 @@ router.delete("/dirigentes/:id", requireStaff, async (req, res) => {
       return;
     }
 
+    const antesEstado = snapshotDirigenteEstado(existing);
+
     const dirigente = await prisma.$transaction(async (tx) => {
       if (existing.usuario) {
         await tx.usuario.update({
@@ -848,6 +879,17 @@ router.delete("/dirigentes/:id", requireStaff, async (req, res) => {
         },
         include: dirigenteInclude(),
       });
+    });
+
+    await registrarAuditoria(req, {
+      accion: reactivar ? "STATE_CHANGE" : "DELETE",
+      entidad: "Dirigente",
+      entidadId: id,
+      entidadLabel: nombreCompleto(dirigente),
+      dirigenteId: id,
+      antes: antesEstado,
+      despues: snapshotDirigenteEstado(dirigente),
+      metadata: { reactivar },
     });
 
     res.json(serializeDirigenteForUser(dirigente, req.user));
