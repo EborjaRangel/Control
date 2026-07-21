@@ -34,11 +34,6 @@ export function puedeAsignarRolStaff(
   return true;
 }
 
-export function puedeDarDeBajaUsuarioStaff(
-  actorRol: StaffRol | undefined,
-  targetRol: StaffRol,
-): boolean {
-  if (actorRol === "COORDINADOR" && targetRol === "COORDINADOR") return false;
-  if (actorRol === "COORDINADOR" && targetRol === "ADMIN") return false;
-  return true;
+export function puedeDarDeBajaUsuarioStaff(actorRol: StaffRol | undefined): boolean {
+  return actorRol === "ADMIN";
 }

@@ -131,7 +131,7 @@ router.put("/:id", async (req, res) => {
     const permisoError = puedeModificarUsuarioStaff(req.user?.rol, actual.rol, {
       rol: body.rol as PanelUserRol | undefined,
       activo: body.activo,
-    });
+    }, actual.activo);
     if (permisoError) {
       res.status(403).json({ error: permisoError });
       return;

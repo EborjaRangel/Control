@@ -295,8 +295,7 @@ export default function UsuariosPage() {
                         type="checkbox"
                         checked={values.activo}
                         disabled={
-                          editing.id === session?.id ||
-                          !puedeDarDeBajaUsuarioStaff(actorRol, editing.rol)
+                          editing.id === session?.id || !puedeDarDeBajaUsuarioStaff(actorRol)
                         }
                         onChange={(e) => void setFieldValue("activo", e.target.checked)}
                       />

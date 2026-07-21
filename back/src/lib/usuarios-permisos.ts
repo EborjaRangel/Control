@@ -24,6 +24,7 @@ export function puedeModificarUsuarioStaff(
   actorRol: RolUsuario | undefined,
   targetRol: PanelUserRol,
   cambios: { rol?: PanelUserRol; activo?: boolean },
+  actualActivo?: boolean,
 ): string | null {
   if (isCoordinadorRol(actorRol) && targetRol === "ADMIN") {
     return "Un coordinador no puede modificar administradores";
@@ -32,11 +33,12 @@ export function puedeModificarUsuarioStaff(
     return "Solo un administrador puede asignar el rol de administrador";
   }
   if (
-    isCoordinadorRol(actorRol) &&
-    targetRol === "COORDINADOR" &&
-    cambios.activo === false
+    cambios.activo !== undefined &&
+    actualActivo !== undefined &&
+    cambios.activo !== actualActivo &&
+    !isAdminRol(actorRol)
   ) {
-    return "Solo un administrador puede dar de baja a un coordinador";
+    return "Solo un administrador puede dar de baja o reactivar usuarios";
   }
   return null;
 }
