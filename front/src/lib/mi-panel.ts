@@ -127,6 +127,56 @@ type NavItem = {
   destacado?: boolean;
 };
 
+function panelOperadorNavItems(user: SessionUser): NavItem[] {
+  const d = user.dirigenteId!;
+  const rcHref = user.rcId ? `/rc/${user.rcId}` : `/rc/por-dirigente/${d}`;
+  const rgHref = user.rgId ? `/rg/${user.rgId}` : `/rg/por-dirigente/${d}`;
+
+  return [
+    {
+      href: `/dirigentes/${d}/consultar`,
+      label: "Mi ficha",
+      shortLabel: "Ficha",
+      match: (p) => p === `/dirigentes/${d}/consultar`,
+    },
+    {
+      href: `/detectados/dirigentes/${d}`,
+      label: "Mis Detectados",
+      shortLabel: "Detec.",
+      match: (p) =>
+        p === `/detectados/dirigentes/${d}` ||
+        p === `/detectados/dirigentes/${d}/nuevo` ||
+        (/^\/detectados\/[^/]+$/.test(p) && !p.startsWith("/detectados/dirigentes")) ||
+        (/^\/detectados\/[^/]+\/personas\//.test(p) && !p.startsWith("/detectados/dirigentes")),
+    },
+    {
+      href: rcHref,
+      label: "Mis RC",
+      shortLabel: "RC",
+      match: (p) => p.startsWith(rcHref) || p === `/rc/por-dirigente/${d}`,
+    },
+    {
+      href: rgHref,
+      label: "Mis RG",
+      shortLabel: "RG",
+      match: (p) => p.startsWith(rgHref) || p === `/rg/por-dirigente/${d}`,
+    },
+    {
+      href: `/servicios-urbanos/dirigentes/${d}`,
+      label: "Mis Servicios Urbanos",
+      shortLabel: "Servicios",
+      match: (p) =>
+        p === `/servicios-urbanos/dirigentes/${d}` ||
+        p === `/servicios-urbanos/dirigentes/${d}/nuevo` ||
+        (/^\/servicios-urbanos\/[^/]+$/.test(p) && !p.startsWith("/servicios-urbanos/dirigentes")),
+    },
+  ];
+}
+
+function esOperadorPanel(user: SessionUser) {
+  return user.rol === "DIRIGENTE" || user.rol === "RC" || user.rol === "RG";
+}
+
 export function navItemsForUser(user: SessionUser): NavItem[] {
   if (isConvocatoriaRol(user.rol)) {
     return [
@@ -160,48 +210,25 @@ export function navItemsForUser(user: SessionUser): NavItem[] {
     },
   ];
 
-  if (user.dirigenteId) {
-    items.push({
-      href: `/dirigentes/${user.dirigenteId}/consultar`,
-      label: "Mi ficha",
-      shortLabel: "Ficha",
-      match: (p) => p === `/dirigentes/${user.dirigenteId}/consultar`,
-    });
-    items.push({
-      href: `/detectados/dirigentes/${user.dirigenteId}`,
-      label: "Mis detectados",
-      shortLabel: "Detec.",
-      match: (p) =>
-        p === `/detectados/dirigentes/${user.dirigenteId}` ||
-        (/^\/detectados\/[^/]+$/.test(p) && !p.startsWith("/detectados/dirigentes")),
-    });
-    items.push({
-      href: `/servicios-urbanos/dirigentes/${user.dirigenteId}`,
-      label: "Servicios urbanos",
-      shortLabel: "Servicios",
-      match: (p) =>
-        p === `/servicios-urbanos/dirigentes/${user.dirigenteId}` ||
-        p === `/servicios-urbanos/dirigentes/${user.dirigenteId}/nuevo` ||
-        (/^\/servicios-urbanos\/[^/]+$/.test(p) && !p.startsWith("/servicios-urbanos/dirigentes")),
-    });
-  }
-
-  if (user.rcId) {
-    items.push({
-      href: `/rc/${user.rcId}`,
-      label: user.rol === "RC" ? "Rep. de casilla" : "Rep. Casilla",
-      shortLabel: "Casilla",
-      match: (p) => p.startsWith(`/rc/${user.rcId}`),
-    });
-  }
-
-  if (user.rgId) {
-    items.push({
-      href: `/rg/${user.rgId}`,
-      label: user.rol === "RG" ? "Rep. General" : "Rep. General",
-      shortLabel: "Gral.",
-      match: (p) => p.startsWith(`/rg/${user.rgId}`),
-    });
+  if (user.dirigenteId && esOperadorPanel(user)) {
+    items.push(...panelOperadorNavItems(user));
+  } else {
+    if (user.rcId) {
+      items.push({
+        href: `/rc/${user.rcId}`,
+        label: "Mis RC",
+        shortLabel: "RC",
+        match: (p) => p.startsWith(`/rc/${user.rcId}`),
+      });
+    }
+    if (user.rgId) {
+      items.push({
+        href: `/rg/${user.rgId}`,
+        label: "Mis RG",
+        shortLabel: "RG",
+        match: (p) => p.startsWith(`/rg/${user.rgId}`),
+      });
+    }
   }
 
   return items;

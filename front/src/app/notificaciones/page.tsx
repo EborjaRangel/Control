@@ -10,6 +10,7 @@ import {
   formatRelativaNotificacion,
   type NotificacionUsuarioDTO,
 } from "@/lib/notificaciones";
+import { NotificacionMensaje } from "@/components/NotificacionMensaje";
 
 export default function NotificacionesPage() {
   const { user } = useAuth();
@@ -116,7 +117,9 @@ export default function NotificacionesPage() {
               </p>
             </div>
 
-            <p className="notif-mensaje">{n.mensaje}</p>
+            <p className="notif-mensaje">
+              <NotificacionMensaje mensaje={n.mensaje} />
+            </p>
 
             {!n.leida ? (
               <div className="notif-item-foot">

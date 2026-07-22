@@ -80,19 +80,19 @@ export default function ConsultarDirigentePage() {
               href={`/detectados/dirigentes/${id}`}
               className="btn-primary btn-responsive"
             >
-              Mis detectados
+              Mis Detectados
             </Link>
             <Link
               href={`/servicios-urbanos/dirigentes/${id}`}
               className="btn-secondary btn-responsive"
             >
-              Servicios urbanos
+              Mis Servicios Urbanos
             </Link>
             <Link href={enlaceRc(id, user?.rcId)} className="btn-secondary btn-responsive">
-              {user?.rcId ? "Rep. de casilla" : "Activar Rep. Casilla"}
+              Mis RC
             </Link>
             <Link href={enlaceRg(id, user?.rgId)} className="btn-secondary btn-responsive">
-              {user?.rgId ? "Rep. General" : "Activar Rep. General"}
+              Mis RG
             </Link>
           </div>
         </section>

@@ -104,7 +104,7 @@ function staffMainNavForRol(rol: Parameters<typeof canAccessPrivilegedStaffNav>[
 }
 
 function navGridColumns(count: number) {
-  if (count <= 4) return count;
+  if (count <= 5) return count;
   if (count <= 6) return 3;
   return 5;
 }

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { UploadImage } from "@/components/UploadImage";
 import { useAuth } from "@/components/AuthProvider";
 import { ReporteEstatusStaffActions } from "@/components/ReporteEstatusStaffActions";
-import { SemaforoTiempoReporte } from "@/components/SemaforoTiempoReporte";
+import { SemaforoTiempoReporte, semaforoInputFromReporte } from "@/components/SemaforoTiempoReporte";
 import { ServicioUrbanoForm } from "@/components/ServicioUrbanoForm";
 import { ServicioUrbanoMapPicker } from "@/components/ServicioUrbanoMapPicker";
 import { apiFetch } from "@/lib/api";
@@ -206,7 +206,7 @@ export default function ServicioUrbanoDetallePage() {
       {!reporte.activo ? <p className="alert-warning">Este reporte está dado de baja.</p> : null}
 
       <section className="card-section flex flex-wrap items-center gap-3">
-        <SemaforoTiempoReporte createdAt={reporte.createdAt} />
+        <SemaforoTiempoReporte {...semaforoInputFromReporte(reporte)} />
         <span className={`${estatusBadgeClass(reporte.estatus)} text-sm`}>
           {reporte.estatusLabel}
         </span>

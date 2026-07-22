@@ -1,16 +1,19 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   calcSemaforoTiempoReporte,
   etiquetaSemaforoTiempoReporte,
   semaforoBadgeClass,
+  semaforoCongelado,
   semaforoDescripcion,
+  type EstatusServicioUrbano,
+  type SemaforoTiempoInput,
   type SemaforoTiempoReporte,
 } from "@/lib/servicios-urbanos";
 import { cn } from "@/lib/cn";
 
-type Props = {
-  createdAt: string;
+type Props = SemaforoTiempoInput & {
   showLabel?: boolean;
   compact?: boolean;
   className?: string;
@@ -18,12 +21,16 @@ type Props = {
 
 export function SemaforoTiempoReporte({
   createdAt,
+  estatus,
+  atendidoAt,
   showLabel = true,
   compact = false,
   className,
 }: Props) {
-  const semaforo = calcSemaforoTiempoReporte(createdAt);
-  const tiempo = etiquetaSemaforoTiempoReporte(createdAt);
+  const input: SemaforoTiempoInput = { createdAt, estatus, atendidoAt };
+  const semaforo = calcSemaforoTiempoReporte(input);
+  const tiempo = etiquetaSemaforoTiempoReporte(input);
+  const congelado = semaforoCongelado(input);
 
   return (
     <span
@@ -33,13 +40,17 @@ export function SemaforoTiempoReporte({
         compact && "px-2 py-0.5",
         className,
       )}
-      title={`Tiempo desde el reporte: ${tiempo} (${semaforoDescripcion(semaforo)})`}
+      title={
+        congelado
+          ? `Tiempo al atender: ${tiempo.replace(" · atendido", "")} (${semaforoDescripcion(semaforo)})`
+          : `Tiempo desde el reporte: ${tiempo} (${semaforoDescripcion(semaforo)})`
+      }
     >
       <SemaforoDot semaforo={semaforo} />
       {showLabel ? (
         <span>
           {tiempo}
-          {!compact ? ` · ${semaforoDescripcion(semaforo)}` : null}
+          {!compact && !congelado ? ` · ${semaforoDescripcion(semaforo)}` : null}
         </span>
       ) : null}
     </span>
@@ -64,6 +75,19 @@ export function SemaforoLeyenda() {
       <span className="inline-flex items-center gap-1.5">
         <SemaforoDot semaforo="rojo" /> Más de 96 h
       </span>
+      <span className="text-ink-muted">· Al atender, el tiempo queda congelado</span>
     </div>
   );
+}
+
+export function semaforoInputFromReporte(reporte: {
+  createdAt: string;
+  estatus: EstatusServicioUrbano;
+  atendidoAt: string | null;
+}): SemaforoTiempoInput {
+  return {
+    createdAt: reporte.createdAt,
+    estatus: reporte.estatus,
+    atendidoAt: reporte.atendidoAt,
+  };
 }

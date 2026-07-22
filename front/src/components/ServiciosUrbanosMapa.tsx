@@ -60,7 +60,11 @@ export function ServiciosUrbanosMapa({
       const bounds = new mapboxgl.LngLatBounds();
 
       for (const reporte of reportes) {
-        const semaforo = calcSemaforoTiempoReporte(reporte.createdAt);
+        const semaforo = calcSemaforoTiempoReporte({
+          createdAt: reporte.createdAt,
+          estatus: reporte.estatus,
+          atendidoAt: reporte.atendidoAt,
+        });
         const el = document.createElement("button");
         el.type = "button";
         el.className =

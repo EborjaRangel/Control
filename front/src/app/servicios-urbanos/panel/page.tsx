@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { ReporteEstatusStaffActions } from "@/components/ReporteEstatusStaffActions";
-import { SemaforoLeyenda, SemaforoTiempoReporte } from "@/components/SemaforoTiempoReporte";
+import { SemaforoLeyenda, SemaforoTiempoReporte, semaforoInputFromReporte } from "@/components/SemaforoTiempoReporte";
 import { ServiciosUrbanosMapa } from "@/components/ServiciosUrbanosMapa";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
@@ -329,7 +329,7 @@ export default function ServiciosUrbanosPanelPage() {
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-2">
-                      <SemaforoTiempoReporte createdAt={rep.createdAt} compact showLabel />
+                      <SemaforoTiempoReporte {...semaforoInputFromReporte(rep)} compact showLabel />
                       <span className={estatusBadgeClass(rep.estatus)}>{rep.estatusLabel}</span>
                     </div>
                   </div>
@@ -365,7 +365,7 @@ export default function ServiciosUrbanosPanelPage() {
                         onClick={() => setSelectedId(rep.id)}
                       >
                         <td className="py-2.5 pr-3">
-                          <SemaforoTiempoReporte createdAt={rep.createdAt} compact showLabel />
+                          <SemaforoTiempoReporte {...semaforoInputFromReporte(rep)} compact showLabel />
                         </td>
                         <td className="py-2.5 pr-3">
                           <Link

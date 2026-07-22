@@ -104,33 +104,13 @@ export function estatusBadgeClass(estatus: EstatusServicioUrbano) {
 
 export type SemaforoTiempoReporte = "verde" | "amarillo" | "rojo";
 
-const MS_HORA = 1000 * 60 * 60;
-
-export function calcSemaforoTiempoReporte(createdAt: string | Date): SemaforoTiempoReporte {
-  const ms = Date.now() - new Date(createdAt).getTime();
-  const horas = ms / MS_HORA;
-  if (horas <= 24) return "verde";
-  if (horas <= 96) return "amarillo";
-  return "rojo";
-}
-
-export function horasDesdeReporte(createdAt: string | Date) {
-  const ms = Math.max(0, Date.now() - new Date(createdAt).getTime());
-  return ms / MS_HORA;
-}
-
-export function etiquetaSemaforoTiempoReporte(createdAt: string | Date) {
-  const horas = horasDesdeReporte(createdAt);
-  if (horas < 1) {
-    const mins = Math.max(1, Math.round(horas * 60));
-    return `${mins} min`;
-  }
-  if (horas < 48) {
-    return `${Math.round(horas)} h`;
-  }
-  const dias = Math.round(horas / 24);
-  return `${dias} d`;
-}
+export type { SemaforoTiempoInput } from "./semaforo-servicios-urbanos";
+export {
+  calcSemaforoTiempoReporte,
+  etiquetaSemaforoTiempoReporte,
+  horasSemaforoReporte,
+  semaforoCongelado,
+} from "./semaforo-servicios-urbanos";
 
 export function semaforoBadgeClass(semaforo: SemaforoTiempoReporte) {
   switch (semaforo) {
