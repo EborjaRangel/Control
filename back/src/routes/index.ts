@@ -10,11 +10,13 @@ import {
   canAccessDirigente,
   hashPassword,
   isStaffRol,
+  requireAdmin,
   requireAuth,
   requireStaff,
   hasAdminPrivilegesRol,
   type AuthUser,
 } from "../lib/auth.js";
+import { analisisSeccionesElectorales } from "../lib/analisis-secciones.js";
 import {
   normalizeUsername,
   PASSWORD_DEFECTO_USUARIO,
@@ -57,7 +59,6 @@ import rgRouter from "./rg.js";
 import notificacionesRouter from "./notificaciones.js";
 import usuariosRouter from "./usuarios.js";
 import auditoriaRouter from "./auditoria.js";
-import analisisRouter from "./analisis.js";
 import serviciosUrbanosRouter from "./servicios-urbanos.js";
 import {
   registrarAuditoria,
@@ -244,7 +245,16 @@ router.use("/rg", rgRouter);
 router.use("/notificaciones", notificacionesRouter);
 router.use("/usuarios", usuariosRouter);
 router.use("/auditoria", auditoriaRouter);
-router.use("/analisis", analisisRouter);
+
+router.get("/analisis/secciones", requireAdmin, async (_req, res) => {
+  try {
+    const data = await analisisSeccionesElectorales();
+    res.json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al cargar análisis de secciones" });
+  }
+});
 
 router.get("/secciones/coyoacan/geojson", (_req, res) => {
   try {
