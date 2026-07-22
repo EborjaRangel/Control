@@ -400,6 +400,26 @@ export type ResumenTendenciasAlcaldia = {
   comparables: number;
 };
 
+export type TendenciaSeccion = "morena" | "pan" | "empate" | "sin_datos";
+
+export type TendenciaSeccionFiltro = "" | TendenciaSeccion;
+
+export const ETIQUETAS_TENDENCIA: Record<TendenciaSeccion, string> = {
+  morena: "Favor MORENA + aliados",
+  pan: "Favor PAN + aliados",
+  empate: "Empate técnico",
+  sin_datos: "Sin comparación",
+};
+
+export function tendenciaSeccion(
+  fila: AnalisisSeccionRow,
+  promedios: PromediosAlcaldia | null = null,
+): TendenciaSeccion {
+  const cmp = compararVotacionSeccion(fila.alcalde2021, fila.alcalde2024, promedios);
+  if (!cmp || !fila.alcalde2021 || !fila.alcalde2024) return "sin_datos";
+  return cmp.tendencia;
+}
+
 /** Cuenta secciones cuya tendencia 2021→2024 favorece a cada bloque. */
 export function resumirTendenciasAlcaldia(
   filas: AnalisisSeccionRow[],
