@@ -11,6 +11,7 @@ import {
   COLOR_MC,
   COLOR_MORENA,
   COLOR_PAN,
+  COLOR_PRI,
   colorPartido,
   compararVotacionSeccion,
   indicadorVsPromedio,
@@ -192,6 +193,7 @@ function ConclusionCard({
 
   const tiene2124 =
     comparacion.bloques2021.length > 0 && comparacion.bloques2024.length > 0;
+  const duelo = comparacion.analisisMcVsPri;
 
   return (
     <section className="rounded-pin border border-line bg-surface p-4 shadow-pin">
@@ -203,6 +205,51 @@ function ConclusionCard({
           </span>
         ) : null}
       </div>
+
+      {duelo?.mcSuperoPriDesde2021 ? (
+        <div className="mb-4 rounded-pin border-2 border-[#e65100] bg-[#fff3e0] p-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-[#e65100]">
+            MC superó al PRI (2021 → 2024)
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-ink">
+            En 2021 el PRI iba{" "}
+            {duelo.ventajaPri2021 > 0.5
+              ? `arriba del MC (${formatPorcentaje(duelo.pri2021)} vs ${formatPorcentaje(duelo.mc2021)}).`
+              : `emparejado con el MC (${formatPorcentaje(duelo.pri2021)} vs ${formatPorcentaje(duelo.mc2021)}).`}{" "}
+            En 2024 el MC ya le ganó en voto directo:{" "}
+            <span className="font-semibold" style={{ color: COLOR_MC }}>
+              MC {formatPorcentaje(duelo.mc2024)}
+            </span>{" "}
+            vs{" "}
+            <span className="font-semibold" style={{ color: COLOR_PRI }}>
+              PRI {formatPorcentaje(duelo.pri2024)}
+            </span>{" "}
+            (+{duelo.ventajaMc2024.toFixed(2)} pp de ventaja MC).
+          </p>
+        </div>
+      ) : duelo?.mcSuperaPri2024 ? (
+        <div className="mb-4 rounded-pin border border-[#e65100] bg-[#fff8f0] p-3">
+          <p className="text-xs font-semibold text-[#e65100]">MC arriba del PRI en 2024</p>
+          <p className="mt-1 text-sm text-ink-secondary">
+            Duelo directo: MC {formatPorcentaje(duelo.mc2024)} vs PRI {formatPorcentaje(duelo.pri2024)}{" "}
+            (2021: MC {formatPorcentaje(duelo.mc2021)} vs PRI {formatPorcentaje(duelo.pri2021)}).
+          </p>
+        </div>
+      ) : duelo ? (
+        <div className="mb-4 rounded-pin border border-line bg-surface-muted p-3">
+          <p className="text-xs font-semibold text-ink-secondary">Duelo MC vs PRI (2021 → 2024)</p>
+          <p className="mt-1 text-sm text-ink-secondary">
+            PRI {formatPorcentaje(duelo.pri2021)} → {formatPorcentaje(duelo.pri2024)} · MC{" "}
+            {formatPorcentaje(duelo.mc2021)} → {formatPorcentaje(duelo.mc2024)}. En 2024:{" "}
+            {duelo.pri2024 > duelo.mc2024 + 0.5
+              ? `PRI ${formatPorcentaje(duelo.pri2024)} vs MC ${formatPorcentaje(duelo.mc2024)}.`
+              : duelo.mc2024 > duelo.pri2024 + 0.5
+                ? `MC ${formatPorcentaje(duelo.mc2024)} vs PRI ${formatPorcentaje(duelo.pri2024)}.`
+                : `empate técnico MC ${formatPorcentaje(duelo.mc2024)} vs PRI ${formatPorcentaje(duelo.pri2024)}.`}
+          </p>
+        </div>
+      ) : null}
+
       <div className="space-y-2 text-sm leading-relaxed text-ink-secondary">
         {comparacion.conclusion.split(/(?<=\.)\s+/).map((oracion) => (
           <p key={oracion} className="break-words">

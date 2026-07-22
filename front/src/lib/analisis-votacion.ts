@@ -45,6 +45,7 @@ export type ComparacionBloquesSeccion = {
   deltaPan2018_2024: number;
   mc2021: number;
   mc2024: number;
+  analisisMcVsPri: AnalisisMcVsPri | null;
   tendencia: "morena" | "pan" | "empate";
   tendenciaParticipacion: "sube" | "baja" | "estable";
   conclusion: string;
@@ -54,6 +55,22 @@ export type ComparacionBloquesSeccion = {
   participacion2018: number | null;
   participacion2021: number | null;
   participacion2024: number | null;
+};
+
+export type AnalisisMcVsPri = {
+  pri2021: number;
+  pri2024: number;
+  mc2021: number;
+  mc2024: number;
+  deltaPriPct: number;
+  deltaMcPct: number;
+  /** Positivo si PRI iba arriba del MC en 2021. */
+  ventajaPri2021: number;
+  /** Positivo si MC va arriba del PRI en 2024. */
+  ventajaMc2024: number;
+  mcSuperaPri2024: boolean;
+  /** PRI ≥ MC en 2021 y MC > PRI en 2024 (solo entre ellos dos). */
+  mcSuperoPriDesde2021: boolean;
 };
 
 const CLAVES_META = new Set([
@@ -276,6 +293,54 @@ function deltaPct(actual: number, anterior: number): number {
   return Math.round((actual - anterior) * 100) / 100;
 }
 
+const UMBRAL_PP = 0.5;
+
+function analizarMcVsPri(
+  alcalde2021: ResultadoAlcaldiaSeccion | null,
+  alcalde2024: ResultadoAlcaldiaSeccion | null,
+): AnalisisMcVsPri | null {
+  if (!alcalde2021 || !alcalde2024) return null;
+
+  const pri2021 = pctVotos(alcalde2021, "PRI");
+  const pri2024 = pctVotos(alcalde2024, "PRI");
+  const mc2021 = pctVotos(alcalde2021, "MC");
+  const mc2024 = pctVotos(alcalde2024, "MC");
+
+  const ventajaPri2021 = deltaPct(pri2021, mc2021);
+  const ventajaMc2024 = deltaPct(mc2024, pri2024);
+  const mcSuperaPri2024 = ventajaMc2024 > UMBRAL_PP;
+  const mcSuperoPriDesde2021 =
+    ventajaPri2021 >= -UMBRAL_PP && ventajaMc2024 > UMBRAL_PP;
+
+  return {
+    pri2021,
+    pri2024,
+    mc2021,
+    mc2024,
+    deltaPriPct: deltaPct(pri2024, pri2021),
+    deltaMcPct: deltaPct(mc2024, mc2021),
+    ventajaPri2021,
+    ventajaMc2024,
+    mcSuperaPri2024,
+    mcSuperoPriDesde2021,
+  };
+}
+
+function textoDueloMcVsPri(analisis: AnalisisMcVsPri): string {
+  const base = `Duelo MC vs PRI (solo entre ellos): PRI ${formatPorcentaje(analisis.pri2021)} (2021) → ${formatPorcentaje(analisis.pri2024)} (2024) (${analisis.deltaPriPct >= 0 ? "+" : ""}${analisis.deltaPriPct.toFixed(2)} pp); MC ${formatPorcentaje(analisis.mc2021)} → ${formatPorcentaje(analisis.mc2024)} (${analisis.deltaMcPct >= 0 ? "+" : ""}${analisis.deltaMcPct.toFixed(2)} pp).`;
+
+  if (analisis.mcSuperoPriDesde2021) {
+    return `${base} En 2024 el MC ya superó al PRI respecto de 2021 (${formatPorcentaje(analisis.mc2024)} vs ${formatPorcentaje(analisis.pri2024)}).`;
+  }
+  if (analisis.mcSuperaPri2024) {
+    return `${base} En 2024 el MC mantiene ventaja sobre el PRI (${formatPorcentaje(analisis.mc2024)} vs ${formatPorcentaje(analisis.pri2024)}).`;
+  }
+  if (analisis.ventajaPri2021 > UMBRAL_PP && analisis.ventajaMc2024 <= UMBRAL_PP) {
+    return `${base} El PRI sigue arriba del MC en 2024 (${formatPorcentaje(analisis.pri2024)} vs ${formatPorcentaje(analisis.mc2024)}).`;
+  }
+  return `${base} En 2024 el duelo MC vs PRI sigue muy parejo (${formatPorcentaje(analisis.mc2024)} vs ${formatPorcentaje(analisis.pri2024)}).`;
+}
+
 function generarConclusion(
   bloques2018: ResumenBloque[],
   bloques2021: ResumenBloque[],
@@ -287,6 +352,7 @@ function generarConclusion(
   deltaPan2018_2024: number,
   mc2021: number,
   mc2024: number,
+  analisisMcVsPri: AnalisisMcVsPri | null,
   participacion2018: number | null,
   participacion2021: number | null,
   participacion2024: number | null,
@@ -371,20 +437,26 @@ function generarConclusion(
   }
 
   if (tiene2124) {
-    partes.push(
-      `MC (bloque independiente desde 2021): ${formatPorcentaje(mc2021)} → ${formatPorcentaje(mc2024)} (${deltaMcPct >= 0 ? "+" : ""}${deltaMcPct.toFixed(2)} pp).`,
-    );
+    if (analisisMcVsPri) {
+      partes.push(textoDueloMcVsPri(analisisMcVsPri));
+    } else {
+      partes.push(
+        `MC (bloque independiente desde 2021): ${formatPorcentaje(mc2021)} → ${formatPorcentaje(mc2024)} (${deltaMcPct >= 0 ? "+" : ""}${deltaMcPct.toFixed(2)} pp).`,
+      );
+    }
     const vsMc21 = textoVsPromedio(mc2021, promedios?.mc2021 ?? null, "MC en 2021");
     const vsMc24 = textoVsPromedio(mc2024, promedios?.mc2024 ?? null, "MC en 2024");
     if (vsMc21) partes.push(vsMc21);
     if (vsMc24) partes.push(vsMc24);
 
-    const mcSube = deltaMcPct > 0.5;
-    const mcBaja = deltaMcPct < -0.5;
-    if (mcSube) {
-      partes.push("MC ganó terreno en la sección respecto a 2021.");
-    } else if (mcBaja) {
-      partes.push("MC perdió terreno en la sección respecto a 2021.");
+    if (analisisMcVsPri && !analisisMcVsPri.mcSuperoPriDesde2021) {
+      const mcSube = deltaMcPct > UMBRAL_PP;
+      const mcBaja = deltaMcPct < -UMBRAL_PP;
+      if (mcSube) {
+        partes.push("MC ganó terreno en la sección respecto a 2021.");
+      } else if (mcBaja) {
+        partes.push("MC perdió terreno en la sección respecto a 2021.");
+      }
     }
   }
 
@@ -462,6 +534,7 @@ export function compararVotacionSeccion(
 
   const mc2021 = alcalde2021 ? pctVotos(alcalde2021, "MC") : 0;
   const mc2024 = alcalde2024 ? pctVotos(alcalde2024, "MC") : 0;
+  const analisisMcVsPri = analizarMcVsPri(alcalde2021, alcalde2024);
 
   const deltaMorenaPct =
     alcalde2021 && alcalde2024
@@ -504,6 +577,7 @@ export function compararVotacionSeccion(
     deltaPan2018_2024,
     mc2021,
     mc2024,
+    analisisMcVsPri,
     tendencia,
     tendenciaParticipacion: tendenciaParticipacion(participacion2021, participacion2024),
     conclusion: generarConclusion(
@@ -517,6 +591,7 @@ export function compararVotacionSeccion(
       deltaPan2018_2024,
       mc2021,
       mc2024,
+      analisisMcVsPri,
       participacion2018,
       participacion2021,
       participacion2024,
