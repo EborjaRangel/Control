@@ -14,12 +14,18 @@ export type ResultadoAlcaldiaSeccion = {
   partidos: PartidoVotosSeccion[];
 };
 
+export type CasillaElectoresDetalle = {
+  etiqueta: string;
+  listaNominal: number;
+};
+
 export type AnalisisSeccionRow = {
   seccion: string;
   casillas: string;
   totalCasillas: number;
   basicas: number;
   contiguas: number;
+  casillasDetalle: CasillaElectoresDetalle[];
   unidadesTerritoriales: string;
   colonias: string;
   totalElectores: number;

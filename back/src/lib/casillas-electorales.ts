@@ -1,11 +1,9 @@
 import { readFileSync, existsSync } from "fs";
 import path from "path";
 import { esSeccionValida } from "./secciones-electorales.js";
+import { resolveBackDataPath } from "./back-data-path.js";
 
-const CASILLAS_FILE = path.join(
-  process.cwd(),
-  "data/electoral/casillas-coyoacan-2024.json",
-);
+const CASILLAS_FILE = resolveBackDataPath("electoral", "casillas-coyoacan-2024.json");
 
 export type TipoCasillaElectoral = "BASICA" | "CONTIGUA";
 

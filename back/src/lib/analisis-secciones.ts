@@ -14,12 +14,18 @@ import {
   distritoLocalDeSeccion,
 } from "./secciones-electorales.js";
 
+export type CasillaElectoresDetalle = {
+  etiqueta: string;
+  listaNominal: number;
+};
+
 export type AnalisisSeccionRow = {
   seccion: string;
   casillas: string;
   totalCasillas: number;
   basicas: number;
   contiguas: number;
+  casillasDetalle: CasillaElectoresDetalle[];
   unidadesTerritoriales: string;
   colonias: string;
   totalElectores: number;
@@ -45,9 +51,17 @@ function etiquetaCasillas(info: SeccionCasillasResumenDTO | null): string {
 
 function totalElectoresSeccion(info: SeccionCasillasResumenDTO | null): number {
   if (!info?.casillas?.length) return 0;
-  const basica = info.casillas.find((c) => c.tipo === "BASICA");
-  if (basica) return basica.listaNominal;
-  return info.casillas[0]?.listaNominal ?? 0;
+  return info.casillas.reduce((sum, casilla) => sum + casilla.listaNominal, 0);
+}
+
+function casillasDetalleElectores(info: SeccionCasillasResumenDTO | null): CasillaElectoresDetalle[] {
+  if (!info?.casillas?.length) return [];
+  return [...info.casillas]
+    .sort((a, b) => a.numero - b.numero)
+    .map((casilla) => ({
+      etiqueta: `${casilla.numero} ${casilla.tipoLabel}`,
+      listaNominal: casilla.listaNominal,
+    }));
 }
 
 function distritoFederalSeccion(info: SeccionCasillasResumenDTO | null): number | null {
@@ -117,6 +131,7 @@ export async function analisisSeccionesElectorales(): Promise<AnalisisSeccionesR
       totalCasillas: info?.total ?? 0,
       basicas: info?.basicas ?? 0,
       contiguas: info?.contiguas ?? 0,
+      casillasDetalle: casillasDetalleElectores(info),
       unidadesTerritoriales: etiquetaLista(utsMap.get(seccion)),
       colonias: etiquetaLista(coloniasMap.get(seccion)),
       totalElectores: totalElectoresSeccion(info),

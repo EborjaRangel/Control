@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm install && npm run build"
+buildCommand = "npm install && npm run build && (npm run electoral:import-resultados-alcaldia || true)"
 
 [deploy]
 preDeployCommand = "npx prisma migrate deploy"

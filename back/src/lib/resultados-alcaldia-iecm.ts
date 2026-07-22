@@ -1,10 +1,8 @@
 import { existsSync, readFileSync } from "fs";
 import path from "path";
+import { resolveBackDataPath } from "./back-data-path.js";
 
-const RESULTADOS_FILE = path.join(
-  process.cwd(),
-  "data/electoral/resultados-alcaldia-coyoacan.json",
-);
+const RESULTADOS_FILE = resolveBackDataPath("electoral", "resultados-alcaldia-coyoacan.json");
 
 export type PartidoVotosSeccion = {
   clave: string;

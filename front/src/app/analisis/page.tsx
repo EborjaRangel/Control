@@ -199,9 +199,59 @@ export default function AnalisisPage() {
 
 function ResultadosAlcaldePanel({ fila }: { fila: AnalisisSeccionRow }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <ResultadoAlcaldeBlock anio={2024} titulo="Alcalde 2024" resultado={fila.alcalde2024} />
-      <ResultadoAlcaldeBlock anio={2021} titulo="Alcalde 2021" resultado={fila.alcalde2021} />
+    <div className="space-y-4">
+      {fila.casillasDetalle.length > 0 ? (
+        <div className="panel-soft space-y-3 p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="font-semibold text-ink">Electores por casilla</h3>
+            <p className="text-sm font-medium text-ink">
+              Total {formatElectores(fila.totalElectores)}
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="data-table min-w-[280px] text-sm">
+              <thead>
+                <tr>
+                  <th>Casilla</th>
+                  <th className="text-right">Electores</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fila.casillasDetalle.map((casilla) => (
+                  <tr key={casilla.etiqueta}>
+                    <td>{casilla.etiqueta}</td>
+                    <td className="text-right whitespace-nowrap">
+                      {formatElectores(casilla.listaNominal)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td className="font-semibold">Total sección</td>
+                  <td className="text-right font-semibold whitespace-nowrap">
+                    {formatElectores(fila.totalElectores)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      ) : null}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ResultadoAlcaldeBlock
+          anio={2024}
+          titulo="Alcalde 2024"
+          resultado={fila.alcalde2024}
+          totalElectores={fila.totalElectores}
+        />
+        <ResultadoAlcaldeBlock
+          anio={2021}
+          titulo="Alcalde 2021"
+          resultado={fila.alcalde2021}
+          totalElectores={fila.totalElectores}
+        />
+      </div>
     </div>
   );
 }
@@ -210,10 +260,12 @@ function ResultadoAlcaldeBlock({
   titulo,
   anio,
   resultado,
+  totalElectores,
 }: {
   titulo: string;
   anio: number;
   resultado: ResultadoAlcaldiaSeccion | null;
+  totalElectores: number;
 }) {
   if (!resultado) {
     return (
@@ -234,7 +286,7 @@ function ResultadoAlcaldeBlock({
         </p>
       </div>
       <p className="text-xs text-ink-secondary">
-        Lista nominal {formatElectores(resultado.listaNominal)} · Votación total{" "}
+        Electores {formatElectores(totalElectores)} · Votación total{" "}
         {formatElectores(resultado.votacionTotal)}
       </p>
       <div className="overflow-x-auto">
