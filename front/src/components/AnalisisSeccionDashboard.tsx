@@ -107,8 +107,8 @@ export function AnalisisSeccionDashboard({
         <section className="panel-soft space-y-4 p-4">
           <h3 className="font-semibold text-ink">Comparación de bloques 2018 · 2021 · 2024</h3>
           <p className="text-xs text-ink-secondary">
-            En 2018, MC se suma al bloque PAN y aliados por la coalición PAN-PRD-MC. PRI y PRD
-            también se contabilizan en PAN y aliados.
+            En 2018, MC y PRD se suman al bloque PAN y aliados por la coalición PAN-PRD-MC. El PRI
+            va por separado y no se suma a PAN y aliados.
           </p>
           <div className="grid gap-6 lg:grid-cols-3">
             <BloquesChart titulo="2018" bloques={comparacion.bloques2018} maxPct={maxBloquePct} />
@@ -137,7 +137,7 @@ export function AnalisisSeccionDashboard({
           anio={2018}
           resultado={fila.alcalde2018}
           partidos={comparacion.topPartidos2018}
-          nota="MC contado en PAN y aliados. PRI y PRD también en PAN y aliados."
+          nota="MC y PRD en PAN y aliados. PRI contado aparte (Otros)."
         />
         <AnioDashboard
           titulo="Alcalde 2021"

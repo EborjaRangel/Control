@@ -90,8 +90,9 @@ function esAliadoPan2018(clave: string): boolean {
   return k === "MC" || k === "CONVERGENCIA" || k.includes("CONVERGENCIA");
 }
 
-function esAliadoPan(clave: string): boolean {
+function esAliadoPan(clave: string, anio?: AnioAlcaldia): boolean {
   const k = clave.toUpperCase();
+  if (anio === 2018 && (k === "PRI" || k.startsWith("PRI_"))) return false;
   return (
     k === "PAN" ||
     k.startsWith("PAN_") ||
@@ -105,7 +106,7 @@ function esAliadoPan(clave: string): boolean {
 export function clasificarBloque(clave: string, anio?: AnioAlcaldia): BloqueVotacion {
   const k = clave.toUpperCase();
   if (k === "MORENA" || k.includes("MORENA")) return "morena";
-  if (esAliadoPan(clave)) return "pan";
+  if (esAliadoPan(clave, anio)) return "pan";
   if (anio === 2018 && esAliadoPan2018(clave)) return "pan";
   if (k === "MC") return "mc";
   return "otros";
@@ -113,7 +114,7 @@ export function clasificarBloque(clave: string, anio?: AnioAlcaldia): BloqueVota
 
 function etiquetaBloque(bloque: BloqueVotacion, anio?: AnioAlcaldia): string {
   if (anio === 2018 && bloque === "pan") {
-    return "PAN y aliados (incl. MC, PRI, PRD)";
+    return "PAN y aliados (incl. MC, PRD; PRI aparte)";
   }
   if (bloque === "pan") {
     return "PAN y aliados (PAN, PRI, PRD)";
