@@ -46,7 +46,9 @@ export default function ServicioUrbanoDetallePage() {
     (reporte?.dirigenteId ? canViewOwnDirigente(user, reporte.dirigenteId) : false);
 
   const backHref = reporte?.dirigenteId
-    ? `/servicios-urbanos/dirigentes/${reporte.dirigenteId}`
+    ? isStaff
+      ? "/servicios-urbanos"
+      : `/servicios-urbanos/dirigentes/${reporte.dirigenteId}`
     : isStaff
       ? "/servicios-urbanos"
       : user?.dirigenteId
@@ -210,6 +212,9 @@ export default function ServicioUrbanoDetallePage() {
         </span>
         <span className="text-sm text-ink-secondary">
           Actualizado {formatReporteFecha(reporte.estatusAt)}
+          {reporte.atendidoAt ? (
+            <> · Atendido {formatReporteFecha(reporte.atendidoAt)}</>
+          ) : null}
         </span>
       </section>
 
@@ -268,7 +273,7 @@ export default function ServicioUrbanoDetallePage() {
 
           <section className="card-section space-y-4">
             <h2 className="section-title">Fotografías</h2>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2">
               <div>
                 <p className="label mb-2">Antes</p>
                 <UploadImage
@@ -289,20 +294,32 @@ export default function ServicioUrbanoDetallePage() {
                   className="h-48 w-full max-w-md rounded-pin object-cover ring-2 ring-pin-light"
                 />
               </div>
-              {reporte.fotoAtencionUrl ? (
-                <div>
-                  <p className="label mb-2">Atención (administración)</p>
-                  <UploadImage
-                    src={reporte.fotoAtencionUrl}
-                    alt="Atención del servicio"
-                    width={320}
-                    height={200}
-                    className="h-48 w-full max-w-md rounded-pin object-cover ring-2 ring-success-text/30"
-                  />
-                </div>
-              ) : null}
             </div>
           </section>
+
+          {reporte.estatus === "ATENDIDO" && reporte.fotoAtencionUrl ? (
+            <section className="card-section space-y-4">
+              <h2 className="section-title">Atención del servicio</h2>
+              {reporte.atendidoAt ? (
+                <p className="text-sm text-ink-secondary">
+                  Registrado el {formatReporteFecha(reporte.atendidoAt)}
+                </p>
+              ) : null}
+              <UploadImage
+                src={reporte.fotoAtencionUrl}
+                alt="Cómo quedó el servicio"
+                width={480}
+                height={300}
+                className="h-56 w-full max-w-xl rounded-pin object-cover ring-2 ring-success-text/30"
+              />
+              {reporte.anotacionAtencion ? (
+                <div>
+                  <p className="label mb-2">Anotación</p>
+                  <p className="whitespace-pre-wrap text-sm text-ink">{reporte.anotacionAtencion}</p>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
         </>
       )}
     </div>

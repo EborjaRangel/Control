@@ -381,14 +381,20 @@ router.patch("/:id/estatus", requireStaff, async (req, res) => {
     });
 
     const antes = snapshotServicioUrbano(existing);
+    const now = new Date();
+    const esAtendido = data.estatus === "ATENDIDO";
 
     const reporte = await prisma.reporteServicioUrbano.update({
       where: { id },
       data: {
         estatus: data.estatus as EstatusReporteServicioUrbano,
-        estatusAt: new Date(),
-        ...(data.fotoAtencionUrl?.trim()
-          ? { fotoAtencionUrl: data.fotoAtencionUrl.trim() }
+        estatusAt: now,
+        ...(esAtendido
+          ? {
+              atendidoAt: now,
+              fotoAtencionUrl: data.fotoAtencionUrl!.trim(),
+              anotacionAtencion: data.anotacionAtencion?.trim() || null,
+            }
           : {}),
       },
       include: reporteInclude,

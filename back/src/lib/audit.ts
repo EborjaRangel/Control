@@ -308,6 +308,8 @@ export function snapshotServicioUrbano(r: {
   lng: number;
   estatus: string;
   fotoAtencionUrl?: string | null;
+  anotacionAtencion?: string | null;
+  atendidoAt?: Date | null;
   activo: boolean;
 }) {
   return sanitizarObjeto({
@@ -323,6 +325,8 @@ export function snapshotServicioUrbano(r: {
     lng: r.lng,
     estatus: r.estatus,
     fotoAtencionUrl: r.fotoAtencionUrl ?? null,
+    anotacionAtencion: r.anotacionAtencion ?? null,
+    atendidoAt: r.atendidoAt?.toISOString() ?? null,
     activo: r.activo,
   });
 }

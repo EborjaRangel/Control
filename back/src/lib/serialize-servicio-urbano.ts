@@ -30,6 +30,8 @@ type ReporteRow = {
   fotoAntesUrl: string;
   fotoDespuesUrl: string;
   fotoAtencionUrl: string | null;
+  anotacionAtencion: string | null;
+  atendidoAt: Date | null;
   estatus: EstatusReporteServicioUrbano;
   estatusAt: Date;
   activo: boolean;
@@ -63,6 +65,8 @@ export function serializeReporteServicioUrbano(r: ReporteRow) {
     fotoAntesUrl: r.fotoAntesUrl,
     fotoDespuesUrl: r.fotoDespuesUrl,
     fotoAtencionUrl: r.fotoAtencionUrl,
+    anotacionAtencion: r.anotacionAtencion,
+    atendidoAt: r.atendidoAt?.toISOString() ?? null,
     estatus: r.estatus,
     estatusLabel: ESTATUS_SERVICIO_URBANO_LABEL[r.estatus],
     estatusAt: r.estatusAt.toISOString(),

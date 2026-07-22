@@ -4,17 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { SemaforoLeyenda, SemaforoTiempoReporte } from "@/components/SemaforoTiempoReporte";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
-import { nombreColoniaCatalogo } from "@/lib/colonias";
-import { TIPO_DIRIGENTE_LABEL } from "@/lib/dirigentes";
-import type { DirigenteServiciosUrbanosDTO } from "@/lib/servicios-urbanos";
-import { etiquetaSeccion } from "@/lib/secciones-electorales";
+import {
+  estatusBadgeClass,
+  formatReporteFecha,
+  type ReporteServicioUrbanoDTO,
+} from "@/lib/servicios-urbanos";
 
 export default function ServiciosUrbanosPage() {
   const pathname = usePathname();
   const { isStaff } = useAuth();
-  const [dirigentes, setDirigentes] = useState<DirigenteServiciosUrbanosDTO[]>([]);
+  const [reportes, setReportes] = useState<ReporteServicioUrbanoDTO[]>([]);
   const [buscar, setBuscar] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,12 +27,12 @@ export default function ServiciosUrbanosPage() {
     try {
       const params = new URLSearchParams();
       if (buscar.trim()) params.set("buscar", buscar.trim());
-      const res = await apiFetch(`/api/servicios-urbanos/dirigentes?${params.toString()}`);
+      const res = await apiFetch(`/api/servicios-urbanos?${params.toString()}`);
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
-        throw new Error(data.error ?? "Error al cargar dirigentes");
+        throw new Error(data.error ?? "Error al cargar reportes");
       }
-      setDirigentes((await res.json()) as DirigenteServiciosUrbanosDTO[]);
+      setReportes((await res.json()) as ReporteServicioUrbanoDTO[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al cargar");
     } finally {
@@ -56,24 +58,25 @@ export default function ServiciosUrbanosPage() {
           <p className="page-subtitle">
             {loading
               ? "Cargando…"
-              : `${dirigentes.length} dirigente(s) · Reportes con fotos antes/después y georreferencia`}
+              : `${reportes.length} reporte(s) · Del más reciente al más antiguo`}
           </p>
         </div>
         <div className="page-actions">
-          <Link href="/servicios-urbanos/panel" className="btn-primary btn-responsive">
+          <Link href="/servicios-urbanos/panel" className="btn-secondary btn-responsive">
             Panel de control
           </Link>
         </div>
       </div>
 
-      <div className="card">
+      <div className="card space-y-3">
         <input
           type="search"
           value={buscar}
           onChange={(e) => setBuscar(e.target.value)}
-          placeholder="Buscar dirigente por nombre, sección o colonia…"
+          placeholder="Buscar por folio, dirección, colonia o dirigente…"
           className="input-search"
         />
+        <SemaforoLeyenda />
       </div>
 
       {error ? <div className="alert-error">{error}</div> : null}
@@ -81,33 +84,36 @@ export default function ServiciosUrbanosPage() {
       {loading ? (
         <div className="flex items-center gap-3 text-ink-secondary">
           <span className="size-5 animate-pulse rounded-full bg-pin-light" />
-          Cargando dirigentes…
+          Cargando reportes…
         </div>
       ) : null}
 
-      {!loading && dirigentes.length === 0 ? (
+      {!loading && reportes.length === 0 ? (
         <div className="card py-12 text-center">
-          <p className="font-semibold text-ink">No hay dirigentes registrados</p>
+          <p className="font-semibold text-ink">No hay reportes registrados</p>
         </div>
       ) : null}
 
-      {!loading && dirigentes.length > 0 ? (
+      {!loading && reportes.length > 0 ? (
         <>
           <ul className="mobile-only-list">
-            {dirigentes.map((d) => (
-              <li key={d.id} className="list-card-interactive">
-                <Link href={`/servicios-urbanos/dirigentes/${d.id}`} className="block">
-                  <div className="list-card-header">
-                    <div className="min-w-0">
-                      <p className="break-words font-bold text-pin">{d.nombreCompleto}</p>
-                      <p className="mt-1 text-xs text-ink-secondary">
-                        {TIPO_DIRIGENTE_LABEL[d.tipo as keyof typeof TIPO_DIRIGENTE_LABEL] ??
-                          d.tipo}{" "}
-                        · {nombreColoniaCatalogo(d.colonia)} · {etiquetaSeccion(d.seccionElectoral)}
-                      </p>
-                    </div>
-                    <span className="badge-pin">{d.reportesActivos} reporte(s)</span>
+            {reportes.map((rep) => (
+              <li key={rep.id} className="list-card">
+                <div className="list-card-header">
+                  <div className="min-w-0 space-y-1">
+                    <p className="font-mono font-bold text-pin">{rep.folio}</p>
+                    <p className="font-medium text-ink">{rep.tipoLabel}</p>
+                    <p className="text-xs text-ink-secondary">
+                      {rep.dirigente?.nombreCompleto ?? "—"} · {formatReporteFecha(rep.createdAt)}
+                    </p>
                   </div>
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <SemaforoTiempoReporte createdAt={rep.createdAt} compact showLabel />
+                    <span className={estatusBadgeClass(rep.estatus)}>{rep.estatusLabel}</span>
+                  </div>
+                </div>
+                <Link href={`/servicios-urbanos/${rep.id}`} className="btn-ghost btn-sm btn-responsive">
+                  Ver detalle
                 </Link>
               </li>
             ))}
@@ -115,40 +121,36 @@ export default function ServiciosUrbanosPage() {
 
           <div className="desktop-only-table">
             <TableWrap>
-              <table className="w-full min-w-[720px] text-left text-sm">
+              <table className="w-full min-w-[880px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-line text-xs text-ink-secondary">
+                    <th className="py-2 pr-3">Semáforo</th>
+                    <th className="py-2 pr-3">Folio</th>
+                    <th className="py-2 pr-3">Servicio</th>
                     <th className="py-2 pr-3">Dirigente</th>
-                    <th className="py-2 pr-3">Colonia</th>
-                    <th className="py-2 pr-3">Sección</th>
-                    <th className="py-2 pr-3">Reportes</th>
+                    <th className="py-2 pr-3">Estatus</th>
+                    <th className="py-2 pr-3">Reportado</th>
                     <th className="py-2" />
                   </tr>
                 </thead>
                 <tbody>
-                  {dirigentes.map((d) => (
-                    <tr key={d.id} className="border-b border-line/60">
+                  {reportes.map((rep) => (
+                    <tr key={rep.id} className="border-b border-line/60">
                       <td className="py-2.5 pr-3">
-                        <Link
-                          href={`/servicios-urbanos/dirigentes/${d.id}`}
-                          className="font-medium text-pin hover:underline"
-                        >
-                          {d.nombreCompleto}
-                        </Link>
+                        <SemaforoTiempoReporte createdAt={rep.createdAt} compact showLabel />
+                      </td>
+                      <td className="py-2.5 pr-3 font-mono font-medium text-pin">{rep.folio}</td>
+                      <td className="py-2.5 pr-3">{rep.tipoLabel}</td>
+                      <td className="py-2.5 pr-3">{rep.dirigente?.nombreCompleto ?? "—"}</td>
+                      <td className="py-2.5 pr-3">
+                        <span className={estatusBadgeClass(rep.estatus)}>{rep.estatusLabel}</span>
                       </td>
                       <td className="py-2.5 pr-3 text-ink-secondary">
-                        {nombreColoniaCatalogo(d.colonia)}
+                        {formatReporteFecha(rep.createdAt)}
                       </td>
-                      <td className="py-2.5 pr-3 text-ink-secondary">
-                        {etiquetaSeccion(d.seccionElectoral)}
-                      </td>
-                      <td className="py-2.5 pr-3">{d.reportesActivos}</td>
                       <td className="py-2.5 text-right">
-                        <Link
-                          href={`/servicios-urbanos/dirigentes/${d.id}`}
-                          className="btn-ghost btn-sm"
-                        >
-                          Ver reportes
+                        <Link href={`/servicios-urbanos/${rep.id}`} className="btn-ghost btn-sm">
+                          Ver detalle
                         </Link>
                       </td>
                     </tr>

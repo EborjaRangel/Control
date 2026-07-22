@@ -16,18 +16,26 @@ export function ReporteEstatusStaffActions({ reporte, onUpdated, compact = false
   const [error, setError] = useState<string | null>(null);
   const [modalAtender, setModalAtender] = useState(false);
   const [fotoAtencionUrl, setFotoAtencionUrl] = useState(reporte.fotoAtencionUrl ?? "");
+  const [anotacionAtencion, setAnotacionAtencion] = useState(reporte.anotacionAtencion ?? "");
 
   async function cambiarEstatus(
     estatus: EstatusServicioUrbano,
-    foto?: string,
+    payload?: { foto: string; anotacion: string },
   ) {
     setSaving(estatus);
     setError(null);
     try {
-      const body: { estatus: EstatusServicioUrbano; fotoAtencionUrl?: string } = { estatus };
+      const body: {
+        estatus: EstatusServicioUrbano;
+        fotoAtencionUrl?: string;
+        anotacionAtencion?: string | null;
+      } = { estatus };
+
       if (estatus === "ATENDIDO") {
-        body.fotoAtencionUrl = foto?.trim() ?? "";
+        body.fotoAtencionUrl = payload?.foto.trim() ?? "";
+        body.anotacionAtencion = payload?.anotacion.trim() || null;
       }
+
       const res = await apiFetch(`/api/servicios-urbanos/${reporte.id}/estatus`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -73,6 +81,7 @@ export function ReporteEstatusStaffActions({ reporte, onUpdated, compact = false
             disabled={saving != null}
             onClick={() => {
               setFotoAtencionUrl(reporte.fotoAtencionUrl ?? "");
+              setAnotacionAtencion(reporte.anotacionAtencion ?? "");
               setError(null);
               setModalAtender(true);
             }}
@@ -86,7 +95,7 @@ export function ReporteEstatusStaffActions({ reporte, onUpdated, compact = false
       {modalAtender ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-4 sm:items-center">
           <div
-            className="card-section w-full max-w-lg space-y-4 shadow-xl"
+            className="card-section max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto shadow-xl"
             role="dialog"
             aria-labelledby="atender-title"
           >
@@ -99,11 +108,21 @@ export function ReporteEstatusStaffActions({ reporte, onUpdated, compact = false
               </p>
             </div>
             <ImageUploadStandalone
-              label="Foto de atención (obligatoria)"
+              label="Foto de cómo quedó (obligatoria)"
               value={fotoAtencionUrl}
               onChange={setFotoAtencionUrl}
-              previewAlt="Atención del servicio"
+              previewAlt="Resultado del servicio"
             />
+            <label className="label">
+              Anotación (opcional)
+              <textarea
+                className="input min-h-[96px] resize-y"
+                value={anotacionAtencion}
+                onChange={(e) => setAnotacionAtencion(e.target.value)}
+                placeholder="Observaciones sobre la atención del servicio…"
+                maxLength={2000}
+              />
+            </label>
             {error ? <div className="alert-error">{error}</div> : null}
             <div className="flex flex-wrap justify-end gap-3">
               <button
@@ -118,7 +137,12 @@ export function ReporteEstatusStaffActions({ reporte, onUpdated, compact = false
                 type="button"
                 className="btn-primary btn-responsive"
                 disabled={saving != null || !fotoAtencionUrl.trim()}
-                onClick={() => void cambiarEstatus("ATENDIDO", fotoAtencionUrl)}
+                onClick={() =>
+                  void cambiarEstatus("ATENDIDO", {
+                    foto: fotoAtencionUrl,
+                    anotacion: anotacionAtencion,
+                  })
+                }
               >
                 {saving === "ATENDIDO" ? "Guardando…" : "Confirmar atención"}
               </button>

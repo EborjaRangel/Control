@@ -41,7 +41,12 @@ export const servicioUrbanoEstatusSchema = Yup.object({
     .trim()
     .when("estatus", {
       is: "ATENDIDO",
-      then: (schema) => schema.required("Sube la foto de atención"),
+      then: (schema) => schema.required("Sube la foto de cómo quedó el servicio"),
       otherwise: (schema) => schema.nullable().optional(),
     }),
+  anotacionAtencion: Yup.string()
+    .trim()
+    .max(2000, "Máximo 2000 caracteres")
+    .nullable()
+    .optional(),
 });

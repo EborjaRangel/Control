@@ -45,6 +45,8 @@ export type ReporteServicioUrbanoDTO = {
   fotoAntesUrl: string;
   fotoDespuesUrl: string;
   fotoAtencionUrl: string | null;
+  anotacionAtencion: string | null;
+  atendidoAt: string | null;
   estatus: EstatusServicioUrbano;
   estatusLabel: string;
   estatusAt: string;

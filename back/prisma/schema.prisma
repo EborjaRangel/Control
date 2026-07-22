@@ -279,6 +279,8 @@ model ReporteServicioUrbano {
   fotoAntesUrl     String
   fotoDespuesUrl   String
   fotoAtencionUrl  String?
+  anotacionAtencion String?
+  atendidoAt       DateTime?
   estatus          EstatusReporteServicioUrbano  @default(ENVIADO)
   estatusAt        DateTime                      @default(now())
   activo           Boolean                       @default(true)
