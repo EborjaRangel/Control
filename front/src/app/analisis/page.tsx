@@ -290,7 +290,11 @@ function AnalisisCard({
   onToggle: () => void;
 }) {
   return (
-    <li className="list-card min-w-0 space-y-3 overflow-hidden">
+    <li
+      className={`list-card min-w-0 space-y-3 overflow-hidden transition-colors ${
+        expandido ? "border-pin-muted bg-pin-light" : "bg-surface"
+      }`}
+    >
       <div className="list-card-header">
         <div className="min-w-0">
           <p className="text-xs text-ink-secondary">Sección electoral</p>
