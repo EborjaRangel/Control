@@ -101,7 +101,7 @@ export function clasificarBloque(clave: string, anio?: AnioAlcaldia): BloqueVota
 
 function etiquetaBloque(bloque: BloqueVotacion, anio?: AnioAlcaldia): string {
   if (anio === 2018 && bloque === "pan") {
-    return "PAN y aliados (incl. MC/Convergencia)";
+    return "PAN y aliados (incl. MC)";
   }
   return ETIQUETAS_BLOQUE[bloque];
 }
@@ -286,7 +286,7 @@ function generarConclusion(
 
   if (tiene2018) {
     partes.push(
-      "En 2018, MC y Convergencia se contabilizan dentro de PAN y aliados por la coalición PAN-PRD-MC.",
+      "En 2018, MC se contabiliza dentro de PAN y aliados por la coalición PAN-PRD-MC.",
     );
   }
 

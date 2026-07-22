@@ -107,7 +107,7 @@ export function AnalisisSeccionDashboard({
         <section className="panel-soft space-y-4 p-4">
           <h3 className="font-semibold text-ink">Comparación de bloques 2018 · 2021 · 2024</h3>
           <p className="text-xs text-ink-secondary">
-            En 2018, MC y Convergencia se suman al bloque PAN y aliados por la coalición PAN-PRD-MC.
+            En 2018, MC se suma al bloque PAN y aliados por la coalición PAN-PRD-MC.
           </p>
           <div className="grid gap-6 lg:grid-cols-3">
             <BloquesChart titulo="2018" bloques={comparacion.bloques2018} maxPct={maxBloquePct} />
@@ -133,7 +133,7 @@ export function AnalisisSeccionDashboard({
           anio={2018}
           resultado={fila.alcalde2018}
           partidos={comparacion.topPartidos2018}
-          nota="MC y Convergencia contados en PAN y aliados."
+          nota="MC contado en PAN y aliados."
         />
         <AnioDashboard
           titulo="Alcalde 2021"
