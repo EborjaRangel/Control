@@ -1,4 +1,5 @@
 import { prisma } from "./prisma.js";
+import { compararNumeroDirigente, nombreCompleto } from "./dirigentes.js";
 import {
   cargarCasillasCoyoacan,
   casillasDatasetDisponible,
@@ -16,6 +17,7 @@ import {
 
 export type AnalisisSeccionRow = {
   seccion: string;
+  dirigentes: string;
   casillas: string;
   totalCasillas: number;
   basicas: number;
@@ -75,6 +77,37 @@ async function coloniasPorSeccion(): Promise<Map<string, Set<string>>> {
   return mapa;
 }
 
+async function dirigentesPorSeccion(): Promise<Map<string, string[]>> {
+  const dirigentes = await prisma.dirigente.findMany({
+    where: { status: { not: "BAJA" } },
+    select: {
+      id: true,
+      nombre: true,
+      primerApellido: true,
+      segundoApellido: true,
+      seccionElectoral: true,
+    },
+  });
+
+  const mapa = new Map<string, typeof dirigentes>();
+  for (const dirigente of dirigentes) {
+    const lista = mapa.get(dirigente.seccionElectoral) ?? [];
+    lista.push(dirigente);
+    mapa.set(dirigente.seccionElectoral, lista);
+  }
+
+  const resultado = new Map<string, string[]>();
+  for (const [seccion, lista] of mapa) {
+    resultado.set(
+      seccion,
+      lista
+        .sort(compararNumeroDirigente)
+        .map((d) => nombreCompleto(d)),
+    );
+  }
+  return resultado;
+}
+
 async function utsPorSeccion(): Promise<Map<string, Set<string>>> {
   const uts = await prisma.unidadTerritorial.findMany({
     select: { clave: true, nombre: true, seccionesElectorales: true },
@@ -102,8 +135,20 @@ function etiquetaLista(set: Set<string> | undefined): string {
     .join(", ");
 }
 
+function etiquetaDirigentes(nombres: string[] | undefined): string {
+  if (!nombres?.length) return "";
+  return nombres
+    .map((v) => v.trim())
+    .filter(Boolean)
+    .join(", ");
+}
+
 export async function analisisSeccionesElectorales(): Promise<AnalisisSeccionesResponse> {
-  const [coloniasMap, utsMap] = await Promise.all([coloniasPorSeccion(), utsPorSeccion()]);
+  const [coloniasMap, utsMap, dirigentesMap] = await Promise.all([
+    coloniasPorSeccion(),
+    utsPorSeccion(),
+    dirigentesPorSeccion(),
+  ]);
 
   const dataset = casillasDatasetDisponible() ? cargarCasillasCoyoacan() : null;
   const resultados = resultadosAlcaldiaDisponibles() ? cargarResultadosAlcaldiaCoyoacan() : null;
@@ -112,6 +157,7 @@ export async function analisisSeccionesElectorales(): Promise<AnalisisSeccionesR
     const info = dataset?.porSeccion[seccion] ?? null;
     return {
       seccion,
+      dirigentes: etiquetaDirigentes(dirigentesMap.get(seccion)),
       casillas: etiquetaCasillas(info),
       totalCasillas: info?.total ?? 0,
       basicas: info?.basicas ?? 0,

@@ -16,6 +16,7 @@ export type ResultadoAlcaldiaSeccion = {
 
 export type AnalisisSeccionRow = {
   seccion: string;
+  dirigentes: string;
   casillas: string;
   totalCasillas: number;
   basicas: number;

@@ -76,6 +76,7 @@ export default function AnalisisPage() {
       if (!q) return true;
       return (
         fila.seccion.includes(q) ||
+        fila.dirigentes.toLowerCase().includes(q) ||
         fila.casillas.toLowerCase().includes(q) ||
         fila.unidadesTerritoriales.toLowerCase().includes(q) ||
         fila.colonias.toLowerCase().includes(q)
@@ -298,7 +299,12 @@ function AnalisisCard({
       <div className="list-card-header">
         <div className="min-w-0">
           <p className="text-xs text-ink-secondary">Sección electoral</p>
-          <p className="text-lg font-bold text-ink">{fila.seccion}</p>
+          <p className="text-lg font-bold text-ink">
+            {fila.seccion}
+            {fila.dirigentes ? (
+              <span className="font-medium text-base text-ink"> — {fila.dirigentes}</span>
+            ) : null}
+          </p>
         </div>
         <TendenciaBadge tendencia={tendencia} />
       </div>
