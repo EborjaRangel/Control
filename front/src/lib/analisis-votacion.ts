@@ -672,13 +672,14 @@ export type ResumenTendenciasAlcaldia = {
   favorMorena: number;
   favorPan: number;
   empate: number;
+  mcSuperoPri: number;
   sinComparacion: number;
   comparables: number;
 };
 
 export type TendenciaSeccion = "morena" | "pan" | "empate" | "sin_datos";
 
-export type TendenciaSeccionFiltro = "" | TendenciaSeccion;
+export type TendenciaSeccionFiltro = "" | TendenciaSeccion | "mc_supero_pri";
 
 export const ETIQUETAS_TENDENCIA: Record<TendenciaSeccion, string> = {
   morena: "Favor MORENA + aliados",
@@ -686,6 +687,27 @@ export const ETIQUETAS_TENDENCIA: Record<TendenciaSeccion, string> = {
   empate: "Empate técnico",
   sin_datos: "Sin comparación",
 };
+
+export function etiquetaFiltroTendencia2124(filtro: TendenciaSeccionFiltro): string {
+  if (!filtro) return "";
+  if (filtro === "mc_supero_pri") {
+    return "MC superó al PRI (2021→2024)";
+  }
+  return ETIQUETAS_TENDENCIA[filtro];
+}
+
+export function seccionMcSuperoPriDesde2021(
+  fila: AnalisisSeccionRow,
+  promedios: PromediosAlcaldia | null = null,
+): boolean {
+  const cmp = compararVotacionSeccion(
+    fila.alcalde2018,
+    fila.alcalde2021,
+    fila.alcalde2024,
+    promedios,
+  );
+  return cmp?.analisisMcVsPri?.mcSuperoPriDesde2021 ?? false;
+}
 
 export function tendenciaSeccion(
   fila: AnalisisSeccionRow,
@@ -763,6 +785,7 @@ export function resumirTendenciasAlcaldia(
   let favorMorena = 0;
   let favorPan = 0;
   let empate = 0;
+  let mcSuperoPri = 0;
   let sinComparacion = 0;
 
   for (const fila of filas) {
@@ -776,6 +799,7 @@ export function resumirTendenciasAlcaldia(
       sinComparacion += 1;
       continue;
     }
+    if (cmp.analisisMcVsPri?.mcSuperoPriDesde2021) mcSuperoPri += 1;
     if (cmp.tendencia === "morena") favorMorena += 1;
     else if (cmp.tendencia === "pan") favorPan += 1;
     else empate += 1;
@@ -785,6 +809,7 @@ export function resumirTendenciasAlcaldia(
     favorMorena,
     favorPan,
     empate,
+    mcSuperoPri,
     sinComparacion,
     comparables: favorMorena + favorPan + empate,
   };

@@ -14,10 +14,13 @@ import {
 import {
   calcularPromediosAlcaldia,
   compararFilasAnalisis,
+  compararVotacionSeccion,
   ETIQUETAS_ORDEN_ANALISIS,
   ETIQUETAS_TENDENCIA,
+  etiquetaFiltroTendencia2124,
   metricasOrdenListadoAnalisis,
   resumirTendenciasAlcaldia,
+  seccionMcSuperoPriDesde2021,
   tendenciaSeccion,
   type OrdenListadoAnalisis,
   type PromediosAlcaldia,
@@ -76,7 +79,9 @@ export default function AnalisisPage() {
     const q = buscar.trim().toLowerCase();
     const filtered = data.filas.filter((fila) => {
       if (distritoLocal && String(fila.distritoLocal ?? "") !== distritoLocal) return false;
-      if (tendenciaFiltro && tendenciaPorSeccion.get(fila.seccion) !== tendenciaFiltro) {
+      if (tendenciaFiltro === "mc_supero_pri") {
+        if (!seccionMcSuperoPriDesde2021(fila, promedios)) return false;
+      } else if (tendenciaFiltro && tendenciaPorSeccion.get(fila.seccion) !== tendenciaFiltro) {
         return false;
       }
       if (!q) return true;
@@ -96,7 +101,7 @@ export default function AnalisisPage() {
     [data, promedios],
   );
 
-  const toggleTendenciaFiltro = (valor: TendenciaSeccion) => {
+  const toggleTendenciaFiltro = (valor: TendenciaSeccionFiltro) => {
     setTendenciaFiltro((actual) => (actual === valor ? "" : valor));
   };
 
@@ -111,7 +116,7 @@ export default function AnalisisPage() {
             {loading
               ? "Cargando…"
               : data
-                ? `${filas.length} de ${data.totalSecciones} secciones · ${ETIQUETAS_ORDEN_ANALISIS[orden]}${tendenciaFiltro ? ` · ${ETIQUETAS_TENDENCIA[tendenciaFiltro]}` : ""}${data.vigencia ? ` · INE ${data.vigencia}` : ""}`
+                ? `${filas.length} de ${data.totalSecciones} secciones · ${ETIQUETAS_ORDEN_ANALISIS[orden]}${tendenciaFiltro ? ` · ${etiquetaFiltroTendencia2124(tendenciaFiltro)}` : ""}${data.vigencia ? ` · INE ${data.vigencia}` : ""}`
                 : "Secciones electorales con dashboard de votación y tendencias por bloque"}
           </p>
         </div>
@@ -124,7 +129,7 @@ export default function AnalisisPage() {
           <p className="text-sm text-ink-secondary">
             Tendencia 2021 → 2024 (clic para filtrar el listado)
           </p>
-          <div className="card-section grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="card-section grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <ResumenTendenciaCard
               titulo="Favor PAN + aliados"
               valor={tendencias.favorPan}
@@ -154,6 +159,16 @@ export default function AnalisisPage() {
               valorClass="text-ink"
               activo={tendenciaFiltro === "empate"}
               onClick={() => toggleTendenciaFiltro("empate")}
+            />
+            <ResumenTendenciaCard
+              titulo="MC superó al PRI"
+              valor={tendencias.mcSuperoPri}
+              total={tendencias.comparables}
+              detalle="PRI ≥ MC en 2021 y MC > PRI en 2024"
+              colorClass="border-[#e65100]/40 bg-[#fff3e0]"
+              valorClass="text-[#e65100]"
+              activo={tendenciaFiltro === "mc_supero_pri"}
+              onClick={() => toggleTendenciaFiltro("mc_supero_pri")}
             />
             <ResumenTendenciaCard
               titulo="Sin comparación"
@@ -197,6 +212,7 @@ export default function AnalisisPage() {
             <option value="morena">{ETIQUETAS_TENDENCIA.morena}</option>
             <option value="pan">{ETIQUETAS_TENDENCIA.pan}</option>
             <option value="empate">{ETIQUETAS_TENDENCIA.empate}</option>
+            <option value="mc_supero_pri">{etiquetaFiltroTendencia2124("mc_supero_pri")}</option>
             <option value="sin_datos">{ETIQUETAS_TENDENCIA.sin_datos}</option>
           </select>
         </div>
@@ -270,6 +286,7 @@ export default function AnalisisPage() {
               tendencia={tendenciaPorSeccion.get(fila.seccion) ?? "sin_datos"}
               promedios={promedios}
               orden={orden}
+              tendenciaFiltro={tendenciaFiltro}
               expandido={expandido === fila.seccion}
               onToggle={() => setExpandido(expandido === fila.seccion ? null : fila.seccion)}
             />
@@ -308,6 +325,7 @@ function AnalisisCard({
   tendencia,
   promedios,
   orden,
+  tendenciaFiltro,
   expandido,
   onToggle,
 }: {
@@ -315,10 +333,17 @@ function AnalisisCard({
   tendencia: TendenciaSeccion;
   promedios: PromediosAlcaldia | null;
   orden: OrdenListadoAnalisis;
+  tendenciaFiltro: TendenciaSeccionFiltro;
   expandido: boolean;
   onToggle: () => void;
 }) {
   const metricas = metricasOrdenListadoAnalisis(fila, promedios);
+  const duelo = compararVotacionSeccion(
+    fila.alcalde2018,
+    fila.alcalde2021,
+    fila.alcalde2024,
+    promedios,
+  )?.analisisMcVsPri;
 
   return (
     <li
@@ -338,6 +363,12 @@ function AnalisisCard({
         </div>
         <TendenciaBadge tendencia={tendencia} />
       </div>
+      {tendenciaFiltro === "mc_supero_pri" && duelo ? (
+        <p className="text-sm font-semibold text-[#e65100]">
+          PRI {formatPorcentaje(duelo.pri2021)} (2021) → {formatPorcentaje(duelo.pri2024)} (2024) · MC{" "}
+          {formatPorcentaje(duelo.mc2021)} → {formatPorcentaje(duelo.mc2024)} (2024)
+        </p>
+      ) : null}
       {orden === "morena_var" && metricas.deltaMorena != null ? (
         <p className="text-sm font-semibold text-[#9f2241]">
           Variación MORENA + aliados: {metricas.deltaMorena >= 0 ? "+" : ""}
