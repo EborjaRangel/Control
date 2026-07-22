@@ -11,6 +11,7 @@ import {
   type AnalisisSeccionRow,
   type AnalisisSeccionesResponse,
 } from "@/lib/analisis";
+import { calcularPromediosAlcaldia, type PromediosAlcaldia } from "@/lib/analisis-votacion";
 
 export default function AnalisisPage() {
   const pathname = usePathname();
@@ -58,6 +59,11 @@ export default function AnalisisPage() {
       );
     });
   }, [data, buscar, distritoLocal]);
+
+  const promedios = useMemo(
+    () => (data ? calcularPromediosAlcaldia(data.filas) : null),
+    [data],
+  );
 
   if (!isAdmin) return null;
 
@@ -126,6 +132,7 @@ export default function AnalisisPage() {
               <AnalisisCard
                 key={fila.seccion}
                 fila={fila}
+                promedios={promedios}
                 expandido={expandido === fila.seccion}
                 onToggle={() =>
                   setExpandido(expandido === fila.seccion ? null : fila.seccion)
@@ -180,7 +187,7 @@ export default function AnalisisPage() {
                       {expandido === fila.seccion ? (
                         <tr>
                           <td colSpan={8} className="bg-surface-soft p-4">
-                            <AnalisisSeccionDashboard fila={fila} />
+                            <AnalisisSeccionDashboard fila={fila} promedios={promedios} />
                           </td>
                         </tr>
                       ) : null}
@@ -198,10 +205,12 @@ export default function AnalisisPage() {
 
 function AnalisisCard({
   fila,
+  promedios,
   expandido,
   onToggle,
 }: {
   fila: AnalisisSeccionRow;
+  promedios: PromediosAlcaldia | null;
   expandido: boolean;
   onToggle: () => void;
 }) {
@@ -239,7 +248,7 @@ function AnalisisCard({
       <button type="button" className="btn-ghost btn-sm btn-responsive" onClick={onToggle}>
         {expandido ? "Ocultar análisis" : "Ver análisis 2021/2024"}
       </button>
-      {expandido ? <AnalisisSeccionDashboard fila={fila} /> : null}
+      {expandido ? <AnalisisSeccionDashboard fila={fila} promedios={promedios} /> : null}
     </li>
   );
 }
