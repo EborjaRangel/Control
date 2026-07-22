@@ -22,6 +22,7 @@
     "db:reset-admin": "tsx scripts/reset-admin.ts",
     "db:prepare-dirigentes-carga": "tsx scripts/prepare-dirigentes-carga-sheet.ts",
     "db:import-dirigentes": "tsx scripts/import-dirigentes-excel.ts",
+    "db:update-dirigentes-colonia-ut": "tsx scripts/update-dirigentes-colonia-ut.ts",
     "db:import-nomina-matriz": "tsx scripts/import-nomina-matriz-pagos.ts",
     "db:provision-usuarios": "tsx scripts/provision-usuarios-dirigentes.ts",
     "db:sync-to-production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-local-to-production.ps1",

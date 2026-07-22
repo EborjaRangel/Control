@@ -1,5 +1,5 @@
 import { prisma } from "./prisma.js";
-import { nombreColoniaCatalogo, variantesColoniaParaBusqueda } from "./colonias.js";
+import { cpsDeColonia, nombreColoniaCatalogo, variantesColoniaParaBusqueda } from "./colonias.js";
 import { esSeccionValida } from "./secciones-electorales.js";
 import { utsParaColonia } from "./unidades-territoriales-match.js";
 
@@ -174,4 +174,120 @@ export async function resolverUnidadTerritorialId(
 
 export function etiquetaUnidadTerritorial(ut: { clave: string; nombre: string }) {
   return `${ut.clave} — ${ut.nombre}`;
+}
+
+export type CatalogoSeccionElectoral = {
+  colonias: string[];
+  unidadesTerritoriales: UnidadTerritorialResumen[];
+};
+
+function resumenUt(ut: {
+  id: string;
+  clave: string;
+  nombre: string;
+  tipoUt: string | null;
+  seccionesElectorales: string[];
+}): UnidadTerritorialResumen {
+  return {
+    id: ut.id,
+    clave: ut.clave,
+    nombre: ut.nombre,
+    tipoUt: ut.tipoUt,
+    seccionesElectorales: ut.seccionesElectorales,
+  };
+}
+
+/** Colonias y UTs válidas por sección (misma fuente que el formulario de dirigente). */
+export async function cargarCatalogoElectoralPorSeccion(): Promise<
+  Map<string, CatalogoSeccionElectoral>
+> {
+  const enlaces = await prisma.coloniaUnidadTerritorial.findMany({
+    include: { unidadTerritorial: true },
+  });
+
+  const mapa = new Map<string, { colonias: Set<string>; uts: Map<string, UnidadTerritorialResumen> }>();
+
+  for (const enlace of enlaces) {
+    const ut = resumenUt(enlace.unidadTerritorial);
+    for (const seccion of enlace.unidadTerritorial.seccionesElectorales) {
+      const entry = mapa.get(seccion) ?? { colonias: new Set<string>(), uts: new Map() };
+      entry.colonias.add(enlace.coloniaNombre);
+      entry.uts.set(ut.id, ut);
+      mapa.set(seccion, entry);
+    }
+  }
+
+  return new Map(
+    [...mapa.entries()].map(([seccion, entry]) => [
+      seccion,
+      {
+        colonias: [...entry.colonias].sort((a, b) => a.localeCompare(b, "es")),
+        unidadesTerritoriales: [...entry.uts.values()].sort((a, b) =>
+          a.clave.localeCompare(b.clave, "es"),
+        ),
+      },
+    ]),
+  );
+}
+
+/** Asigna colonia y UT solo desde el catálogo de la sección (sin usar textos externos). */
+export async function asignarColoniaUtDesdeCatalogoSeccion(
+  seccionElectoral: string,
+  catalogo: CatalogoSeccionElectoral,
+): Promise<{
+  colonia: string | null;
+  codigoPostal: string | null;
+  unidadTerritorialId: string | null;
+  unidadTerritorialClave: string | null;
+  motivo: string;
+}> {
+  const { colonias, unidadesTerritoriales } = catalogo;
+
+  for (const colonia of colonias) {
+    const unidadTerritorialId = await resolverUtParaColoniaEnSeccion(colonia, seccionElectoral);
+    if (!unidadTerritorialId) continue;
+
+    const ut = unidadesTerritoriales.find((u) => u.id === unidadTerritorialId);
+    return {
+      colonia,
+      codigoPostal: cpsDeColonia(colonia)[0] ?? null,
+      unidadTerritorialId,
+      unidadTerritorialClave: ut?.clave ?? null,
+      motivo:
+        colonias.length > 1
+          ? "colonia y UT del catálogo de la sección"
+          : "catálogo de la sección",
+    };
+  }
+
+  if (unidadesTerritoriales.length === 1) {
+    const ut = unidadesTerritoriales[0]!;
+    const colonia = colonias[0] ?? null;
+    return {
+      colonia,
+      codigoPostal: colonia ? (cpsDeColonia(colonia)[0] ?? null) : null,
+      unidadTerritorialId: ut.id,
+      unidadTerritorialClave: ut.clave,
+      motivo: "UT única de la sección",
+    };
+  }
+
+  return {
+    colonia: null,
+    codigoPostal: null,
+    unidadTerritorialId: null,
+    unidadTerritorialClave: null,
+    motivo: colonias.length === 0 ? "sección sin colonias en catálogo" : "sin par colonia-UT en catálogo",
+  };
+}
+
+/** Resuelve UT igual que el alta/edición de dirigente: colonia → UT que incluye la sección. */
+export async function resolverUtParaColoniaEnSeccion(
+  coloniaNombre: string,
+  seccionElectoral: string,
+): Promise<string | null> {
+  const uts = await utsPorColonia(coloniaNombre);
+  const conSeccion = uts.filter((ut) => ut.seccionesElectorales.includes(seccionElectoral));
+  if (conSeccion.length >= 1) return conSeccion[0]!.id;
+  return resolverUnidadTerritorialId(coloniaNombre, null);
 }
