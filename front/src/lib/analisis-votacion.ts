@@ -749,12 +749,32 @@ export function metricasOrdenListadoAnalisis(
   };
 }
 
+export function ventajaMcVsPri2024(
+  fila: AnalisisSeccionRow,
+  promedios: PromediosAlcaldia | null = null,
+): number | null {
+  const cmp = compararVotacionSeccion(
+    fila.alcalde2018,
+    fila.alcalde2021,
+    fila.alcalde2024,
+    promedios,
+  );
+  return cmp?.analisisMcVsPri?.ventajaMc2024 ?? null;
+}
+
 export function compararFilasAnalisis(
   a: AnalisisSeccionRow,
   b: AnalisisSeccionRow,
   orden: OrdenListadoAnalisis,
   promedios: PromediosAlcaldia | null,
+  tendenciaFiltro: TendenciaSeccionFiltro = "",
 ): number {
+  if (tendenciaFiltro === "mc_supero_pri") {
+    const va = ventajaMcVsPri2024(a, promedios) ?? Number.NEGATIVE_INFINITY;
+    const vb = ventajaMcVsPri2024(b, promedios) ?? Number.NEGATIVE_INFINITY;
+    return vb - va || Number(a.seccion) - Number(b.seccion);
+  }
+
   if (orden === "default") {
     return (
       b.totalCasillas - a.totalCasillas ||

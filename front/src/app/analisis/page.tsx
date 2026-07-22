@@ -93,7 +93,9 @@ export default function AnalisisPage() {
         fila.colonias.toLowerCase().includes(q)
       );
     });
-    return [...filtered].sort((a, b) => compararFilasAnalisis(a, b, orden, promedios));
+    return [...filtered].sort((a, b) =>
+      compararFilasAnalisis(a, b, orden, promedios, tendenciaFiltro),
+    );
   }, [data, buscar, distritoLocal, tendenciaFiltro, tendenciaPorSeccion, orden, promedios]);
 
   const tendencias = useMemo(
@@ -164,7 +166,7 @@ export default function AnalisisPage() {
               titulo="MC superó al PRI"
               valor={tendencias.mcSuperoPri}
               total={tendencias.comparables}
-              detalle="PRI ≥ MC en 2021 y MC > PRI en 2024"
+              detalle="PRI ≥ MC en 2021 · MC > PRI en 2024 · mayor ventaja arriba"
               colorClass="border-[#e65100]/40 bg-[#fff3e0]"
               valorClass="text-[#e65100]"
               activo={tendenciaFiltro === "mc_supero_pri"}
@@ -365,8 +367,9 @@ function AnalisisCard({
       </div>
       {tendenciaFiltro === "mc_supero_pri" && duelo ? (
         <p className="text-sm font-semibold text-[#e65100]">
-          PRI {formatPorcentaje(duelo.pri2021)} (2021) → {formatPorcentaje(duelo.pri2024)} (2024) · MC{" "}
-          {formatPorcentaje(duelo.mc2021)} → {formatPorcentaje(duelo.mc2024)} (2024)
+          Ventaja MC vs PRI en 2024: +{duelo.ventajaMc2024.toFixed(2)} pp · PRI{" "}
+          {formatPorcentaje(duelo.pri2021)} → {formatPorcentaje(duelo.pri2024)} · MC{" "}
+          {formatPorcentaje(duelo.mc2021)} → {formatPorcentaje(duelo.mc2024)}
         </p>
       ) : null}
       {orden === "morena_var" && metricas.deltaMorena != null ? (
