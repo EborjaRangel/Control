@@ -152,6 +152,27 @@ function etiquetaPartido(clave: string) {
   return clave.replaceAll("_", "-");
 }
 
+function cargarDatasetExistente(): ResultadosAlcaldiaCoyoacanDataset {
+  if (!existsSync(outFile)) return {};
+  try {
+    return JSON.parse(readFileSync(outFile, "utf8")) as ResultadosAlcaldiaCoyoacanDataset;
+  } catch {
+    console.warn(`No se pudo leer ${outFile}; se regenerará desde cero.`);
+    return {};
+  }
+}
+
+function esArchivoHojaCalculo(filePath: string): boolean {
+  try {
+    const head = readFileSync(filePath).subarray(0, 4);
+    const ole = head[0] === 0xd0 && head[1] === 0xcf && head[2] === 0x11 && head[3] === 0xe0;
+    const zip = head[0] === 0x50 && head[1] === 0x4b;
+    return ole || zip;
+  } catch {
+    return false;
+  }
+}
+
 function redondearPct(value: number) {
   return Math.round(value * 100) / 100;
 }
@@ -162,6 +183,9 @@ async function ensureXlsx(anio: AnioImport) {
   const target = path.join(rawDir, meta.archivo);
   if (existsSync(target)) {
     try {
+      if (!esArchivoHojaCalculo(target)) {
+        throw new Error("El archivo descargado no es una hoja de cálculo válida");
+      }
       XLSX.readFile(target);
       return target;
     } catch {
@@ -171,7 +195,10 @@ async function ensureXlsx(anio: AnioImport) {
 
   console.log(`Descargando ${meta.archivo} desde IECM…`);
   const res = await fetch(meta.url, {
-    headers: { Accept: "*/*", "User-Agent": "control-back-import/1.0" },
+    headers: {
+      Accept: "*/*",
+      "User-Agent": "Mozilla/5.0 (compatible; control-back-import/1.0)",
+    },
   });
   if (!res.ok) {
     if (anio === 2021 || anio === 2018) {
@@ -183,6 +210,11 @@ async function ensureXlsx(anio: AnioImport) {
   }
   if (!res.body) throw new Error("Respuesta vacía al descargar resultados IECM");
   await pipeline(res.body as unknown as NodeJS.ReadableStream, createWriteStream(target));
+  if (!esArchivoHojaCalculo(target)) {
+    throw new Error(
+      `La descarga de ${meta.archivo} no es un Excel válido (¿bloqueo del IECM?). Colócalo manualmente en data/electoral/raw/`,
+    );
+  }
   return target;
 }
 
@@ -308,7 +340,10 @@ function parseXlsxAlcaldia(xlsxPath: string, anio: AnioImport): ResultadoAlcaldi
 }
 
 async function main() {
-  const dataset: ResultadosAlcaldiaCoyoacanDataset = {};
+  const dataset = cargarDatasetExistente();
+  if (Object.keys(dataset).length > 0) {
+    console.log(`Dataset previo: ${Object.keys(dataset).join(", ")}`);
+  }
 
   for (const anio of [2024, 2021, 2018] as const) {
     try {
@@ -321,6 +356,9 @@ async function main() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn(`  ${anio}: omitido — ${msg}`);
+      if (dataset[String(anio) as keyof ResultadosAlcaldiaCoyoacanDataset]) {
+        console.warn(`  ${anio}: se conserva la versión ya presente en ${outFile}`);
+      }
     }
   }
 
