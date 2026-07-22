@@ -25,6 +25,7 @@ export type AnalisisSeccionRow = {
   totalElectores: number;
   distritoLocal: number | null;
   distritoFederal: number | null;
+  alcalde2018: ResultadoAlcaldiaSeccion | null;
   alcalde2021: ResultadoAlcaldiaSeccion | null;
   alcalde2024: ResultadoAlcaldiaSeccion | null;
 };

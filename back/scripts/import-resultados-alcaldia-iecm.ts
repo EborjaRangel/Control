@@ -5,6 +5,8 @@
  * - 2024: https://estadisticaresultadospelo2024.iecm.mx/archivos/downloadalc.php
  * - 2021: https://www.iecm.mx/www/estadisticaresultadospelo2021/archivos/downloadalc.php
  *   (formato distinto: hoja ResultadosCasillas)
+ * - 2018: https://www.iecm.mx/www/estadisticaresultadospelo2018/archivos/bd2018alccas.xls
+ *   (columnas DEM, SECCIÓN, LN, VT, VN)
  *
  * Uso: npm run electoral:import-resultados-alcaldia -w control-back
  */
@@ -38,7 +40,15 @@ const FUENTES = {
     fuente:
       "Instituto Electoral de la Ciudad de México (IECM/IEDF) — Estadística de resultados PELO 2020-2021, elección de alcaldías por casilla",
   },
+  2018: {
+    url: "https://www.iecm.mx/www/estadisticaresultadospelo2018/archivos/bd2018alccas.xls",
+    archivo: "bd2018alccas.xls",
+    fuente:
+      "Instituto Electoral de la Ciudad de México (IECM/IEDF) — Estadística de resultados PELO 2017-2018, elección de alcaldías por casilla",
+  },
 } as const;
+
+type AnioImport = keyof typeof FUENTES;
 
 const seccionesValidas = new Set(SECCIONES_ELECTORALES_COYOACAN);
 
@@ -63,6 +73,21 @@ const META_HEADERS = new Set(
     "Vn",
     "Votos candidatos no registrados",
     "Cnr",
+    "Dem",
+    "Clave dem",
+    "Dtto loc",
+    "Circunscripcion",
+    "Cas",
+    "Ln",
+    "Vt",
+    "Vn",
+    "Gga",
+    "Gmr",
+    "Jcmn",
+    "Mhg",
+    "Jmpr",
+    "Votacion total pt mor pes",
+    "Votacion total pan prd mc",
   ].map(normalizarHeader),
 );
 
@@ -84,7 +109,9 @@ function localizarHojaCasillas(wb: XLSX.WorkBook) {
       const normalized = row.map(normalizarHeader);
       const tieneSeccion =
         normalized.includes("seccion electoral") || normalized.includes("seccion");
-      if (tieneSeccion && normalized.includes("lista nominal")) {
+      const tieneListaNominal =
+        normalized.includes("lista nominal") || normalized.includes("ln");
+      if (tieneSeccion && tieneListaNominal) {
         return { matrix, headerRow: i, headers: row.map((cell) => String(cell ?? "").trim()) };
       }
     }
@@ -129,7 +156,7 @@ function redondearPct(value: number) {
   return Math.round(value * 100) / 100;
 }
 
-async function ensureXlsx(anio: 2021 | 2024) {
+async function ensureXlsx(anio: AnioImport) {
   mkdirSync(rawDir, { recursive: true });
   const meta = FUENTES[anio];
   const target = path.join(rawDir, meta.archivo);
@@ -147,7 +174,7 @@ async function ensureXlsx(anio: 2021 | 2024) {
     headers: { Accept: "*/*", "User-Agent": "control-back-import/1.0" },
   });
   if (!res.ok) {
-    if (anio === 2021) {
+    if (anio === 2021 || anio === 2018) {
       throw new Error(
         `No se pudo descargar ${meta.archivo} (${res.status}). Descárgalo manualmente desde el IECM (Alcaldías → BASE DE DATOS) y colócalo en data/electoral/raw/`,
       );
@@ -168,7 +195,7 @@ type FilaCasilla = {
   partidos: Record<string, number>;
 };
 
-function parseXlsxAlcaldia(xlsxPath: string, anio: 2021 | 2024): ResultadoAlcaldiaAnio {
+function parseXlsxAlcaldia(xlsxPath: string, anio: AnioImport): ResultadoAlcaldiaAnio {
   const wb = XLSX.readFile(xlsxPath);
   const located = localizarHojaCasillas(wb);
   if (!located) throw new Error(`No se encontró encabezado en ${xlsxPath}`);
@@ -182,10 +209,10 @@ function parseXlsxAlcaldia(xlsxPath: string, anio: 2021 | 2024): ResultadoAlcald
     partyColumns.push({ index, clave: header.replace(/\s+/g, "_").toUpperCase() });
   });
 
-  const idxDem = indiceHeader(headers, "demarcacion territorial");
+  const idxDem = indiceHeader(headers, "demarcacion territorial", "dem");
   const idxSeccion = indiceHeader(headers, "seccion electoral", "seccion");
-  const idxListaNominal = indiceHeader(headers, "lista nominal");
-  const idxVotosTotales = indiceHeader(headers, "votos totales", "votacion total");
+  const idxListaNominal = indiceHeader(headers, "lista nominal", "ln");
+  const idxVotosTotales = indiceHeader(headers, "votos totales", "votacion total", "vt");
   const idxVotosNulos = indiceHeader(headers, "votos nulos", "vn");
   const idxVotosCnr = indiceHeader(headers, "votos candidatos no registrados", "cnr");
 
@@ -283,13 +310,12 @@ function parseXlsxAlcaldia(xlsxPath: string, anio: 2021 | 2024): ResultadoAlcald
 async function main() {
   const dataset: ResultadosAlcaldiaCoyoacanDataset = {};
 
-  for (const anio of [2024, 2021] as const) {
+  for (const anio of [2024, 2021, 2018] as const) {
     try {
       const xlsxPath = await ensureXlsx(anio);
       console.log(`Procesando ${anio}…`);
       const resultado = parseXlsxAlcaldia(xlsxPath, anio);
-      if (anio === 2024) dataset["2024"] = resultado;
-      else dataset["2021"] = resultado;
+      dataset[String(anio) as keyof ResultadosAlcaldiaCoyoacanDataset] = resultado;
       const count = Object.keys(resultado.porSeccion).length;
       console.log(`  ${anio}: ${count} secciones`);
     } catch (err) {
@@ -298,7 +324,7 @@ async function main() {
     }
   }
 
-  if (!dataset["2024"] && !dataset["2021"]) {
+  if (!dataset["2024"] && !dataset["2021"] && !dataset["2018"]) {
     throw new Error("No se importó ningún año de resultados de alcaldía");
   }
 
@@ -308,6 +334,11 @@ async function main() {
   if (!dataset["2021"]) {
     console.warn(
       "2021 no importado. Descarga bd2021alccas.xlsx desde el IECM y vuelve a ejecutar el script.",
+    );
+  }
+  if (!dataset["2018"]) {
+    console.warn(
+      "2018 no importado. Descarga bd2018alccas.xls desde el IECM y vuelve a ejecutar el script.",
     );
   }
 }

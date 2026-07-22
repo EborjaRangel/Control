@@ -325,7 +325,7 @@ function AnalisisCard({
         </p>
       </div>
       <button type="button" className="btn-ghost btn-sm btn-responsive" onClick={onToggle}>
-        {expandido ? "Ocultar análisis" : "Ver análisis 2021/2024"}
+        {expandido ? "Ocultar análisis" : "Ver análisis 2018/2021/2024"}
       </button>
       {expandido ? (
         <div className="min-w-0 max-w-full border-t border-line pt-3">

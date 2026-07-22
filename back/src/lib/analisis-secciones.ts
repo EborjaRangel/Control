@@ -25,6 +25,7 @@ export type AnalisisSeccionRow = {
   totalElectores: number;
   distritoLocal: number | null;
   distritoFederal: number | null;
+  alcalde2018: ResultadoAlcaldiaSeccion | null;
   alcalde2021: ResultadoAlcaldiaSeccion | null;
   alcalde2024: ResultadoAlcaldiaSeccion | null;
 };
@@ -120,6 +121,7 @@ export async function analisisSeccionesElectorales(): Promise<AnalisisSeccionesR
       totalElectores: totalElectoresSeccion(info),
       distritoLocal: distritoLocalDeSeccion(seccion),
       distritoFederal: distritoFederalSeccion(info),
+      alcalde2018: resultados?.["2018"]?.porSeccion[seccion] ?? null,
       alcalde2021: resultados?.["2021"]?.porSeccion[seccion] ?? null,
       alcalde2024: resultados?.["2024"]?.porSeccion[seccion] ?? null,
     };

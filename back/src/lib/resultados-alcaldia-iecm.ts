@@ -28,7 +28,10 @@ export type ResultadoAlcaldiaAnio = {
   porSeccion: Record<string, ResultadoAlcaldiaSeccion>;
 };
 
+export type AnioAlcaldiaResultados = 2018 | 2021 | 2024;
+
 export type ResultadosAlcaldiaCoyoacanDataset = {
+  "2018"?: ResultadoAlcaldiaAnio;
   "2021"?: ResultadoAlcaldiaAnio;
   "2024"?: ResultadoAlcaldiaAnio;
 };
@@ -50,10 +53,9 @@ export function cargarResultadosAlcaldiaCoyoacan(): ResultadosAlcaldiaCoyoacanDa
 }
 
 export function resultadoAlcaldiaSeccion(
-  anio: 2021 | 2024,
+  anio: AnioAlcaldiaResultados,
   seccion: string,
 ): ResultadoAlcaldiaSeccion | null {
   const data = cargarResultadosAlcaldiaCoyoacan();
-  const bucket = anio === 2021 ? data["2021"] : data["2024"];
-  return bucket?.porSeccion[seccion] ?? null;
+  return data[String(anio) as keyof ResultadosAlcaldiaCoyoacanDataset]?.porSeccion[seccion] ?? null;
 }
