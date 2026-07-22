@@ -121,6 +121,35 @@ export function normalizarMensajeNotificacion(mensaje: string): string {
   return mensaje.trim().toUpperCase();
 }
 
+export async function notificarUsuariosDirectos(input: {
+  dirigenteIds: string[];
+  mensaje: string;
+  creadoPorId?: string | null;
+}) {
+  const usuarioIds = await usuariosParaDirigentes(input.dirigenteIds);
+  if (usuarioIds.length === 0) {
+    return { notificacionId: null as string | null, destinatarios: 0 };
+  }
+
+  const notificacion = await prisma.notificacion.create({
+    data: {
+      mensaje: normalizarMensajeNotificacion(input.mensaje),
+      alcance: "TODOS",
+      creadoPorId: input.creadoPorId ?? null,
+      destinatarios: {
+        createMany: {
+          data: usuarioIds.map((usuarioId) => ({ usuarioId })),
+        },
+      },
+    },
+  });
+
+  return {
+    notificacionId: notificacion.id,
+    destinatarios: usuarioIds.length,
+  };
+}
+
 export async function enviarNotificacion(input: EnviarNotificacionInput) {
   const dirigentes = await prisma.dirigente.findMany({
     where: filtroDirigentesNotificacion(input),

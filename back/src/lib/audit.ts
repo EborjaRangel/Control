@@ -307,6 +307,7 @@ export function snapshotServicioUrbano(r: {
   lat: number;
   lng: number;
   estatus: string;
+  fotoAtencionUrl?: string | null;
   activo: boolean;
 }) {
   return sanitizarObjeto({
@@ -321,6 +322,7 @@ export function snapshotServicioUrbano(r: {
     lat: r.lat,
     lng: r.lng,
     estatus: r.estatus,
+    fotoAtencionUrl: r.fotoAtencionUrl ?? null,
     activo: r.activo,
   });
 }

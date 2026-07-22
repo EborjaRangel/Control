@@ -37,4 +37,11 @@ export const servicioUrbanoEstatusSchema = Yup.object({
   estatus: Yup.string()
     .oneOf([...ESTATUS], "Estatus inválido")
     .required("Selecciona un estatus"),
+  fotoAtencionUrl: Yup.string()
+    .trim()
+    .when("estatus", {
+      is: "ATENDIDO",
+      then: (schema) => schema.required("Sube la foto de atención"),
+      otherwise: (schema) => schema.nullable().optional(),
+    }),
 });

@@ -278,6 +278,7 @@ model ReporteServicioUrbano {
   lng              Float
   fotoAntesUrl     String
   fotoDespuesUrl   String
+  fotoAtencionUrl  String?
   estatus          EstatusReporteServicioUrbano  @default(ENVIADO)
   estatusAt        DateTime                      @default(now())
   activo           Boolean                       @default(true)

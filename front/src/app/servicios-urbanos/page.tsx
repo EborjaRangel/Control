@@ -59,6 +59,11 @@ export default function ServiciosUrbanosPage() {
               : `${dirigentes.length} dirigente(s) · Reportes con fotos antes/después y georreferencia`}
           </p>
         </div>
+        <div className="page-actions">
+          <Link href="/servicios-urbanos/panel" className="btn-primary btn-responsive">
+            Panel de control
+          </Link>
+        </div>
       </div>
 
       <div className="card">

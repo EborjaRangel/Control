@@ -15,6 +15,7 @@ import {
   servicioUrbanoUpdateSchema,
 } from "../lib/validation-servicios-urbanos.js";
 import { generarFolioServicioUrbano } from "../lib/folio-servicio-urbano.js";
+import { notificarEstatusServicioUrbano } from "../lib/notificacion-servicio-urbano.js";
 import type { EstatusReporteServicioUrbano } from "../generated/prisma/client.js";
 import {
   ESTATUS_SERVICIO_URBANO_LABEL,
@@ -37,6 +38,12 @@ const reporteInclude = {
   dirigente: { select: dirigenteResumenServiciosUrbanosSelect },
 } as const;
 
+function parseIntQuery(value: string | undefined) {
+  if (!value?.trim()) return undefined;
+  const n = Number.parseInt(value, 10);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 router.get("/", requireStaff, async (req, res) => {
   try {
     const buscar = typeof req.query.buscar === "string" ? req.query.buscar.trim() : "";
@@ -47,13 +54,37 @@ router.get("/", requireStaff, async (req, res) => {
       : undefined;
     const dirigenteId =
       typeof req.query.dirigenteId === "string" ? req.query.dirigenteId.trim() : "";
+    const coloniaQuery =
+      typeof req.query.colonia === "string" ? req.query.colonia.trim() : "";
+    const coloniaFiltro = coloniaQuery ? variantesColoniaParaBusqueda(coloniaQuery) : [];
+    const seccionElectoral =
+      typeof req.query.seccionElectoral === "string" ? req.query.seccionElectoral.trim() : "";
+    const unidadTerritorialId =
+      typeof req.query.unidadTerritorialId === "string"
+        ? req.query.unidadTerritorialId.trim()
+        : "";
+    const distritoFederal = parseIntQuery(
+      typeof req.query.distritoFederal === "string" ? req.query.distritoFederal : undefined,
+    );
+    const distritoLocal = parseIntQuery(
+      typeof req.query.distritoLocal === "string" ? req.query.distritoLocal : undefined,
+    );
     const incluirBajas = req.query.incluirBajas === "true";
+
+    const dirigenteWhere: Prisma.DirigenteWhereInput = {
+      ...(coloniaFiltro.length > 0 ? { colonia: { in: coloniaFiltro } } : {}),
+      ...(seccionElectoral ? { seccionElectoral } : {}),
+      ...(unidadTerritorialId ? { unidadTerritorialId } : {}),
+      ...(distritoFederal != null ? { distritoFederal } : {}),
+      ...(distritoLocal != null ? { distritoLocal } : {}),
+    };
 
     const where: Prisma.ReporteServicioUrbanoWhereInput = {
       ...(incluirBajas ? {} : { activo: true }),
       ...(dirigenteId ? { dirigenteId } : {}),
       ...(tipo ? { tipo: tipo as TipoServicioUrbano } : {}),
       ...(estatus ? { estatus } : {}),
+      ...(Object.keys(dirigenteWhere).length > 0 ? { dirigente: dirigenteWhere } : {}),
       ...(buscar
         ? {
             OR: [
@@ -356,6 +387,9 @@ router.patch("/:id/estatus", requireStaff, async (req, res) => {
       data: {
         estatus: data.estatus as EstatusReporteServicioUrbano,
         estatusAt: new Date(),
+        ...(data.fotoAtencionUrl?.trim()
+          ? { fotoAtencionUrl: data.fotoAtencionUrl.trim() }
+          : {}),
       },
       include: reporteInclude,
     });
@@ -370,6 +404,17 @@ router.patch("/:id/estatus", requireStaff, async (req, res) => {
       despues: snapshotServicioUrbano(reporte),
       metadata: { estatus: data.estatus },
     });
+
+    if (data.estatus !== existing.estatus) {
+      await notificarEstatusServicioUrbano({
+        dirigenteId: reporte.dirigenteId,
+        folio: reporte.folio,
+        tipo: reporte.tipo,
+        direccion: reporte.direccion,
+        estatus: data.estatus as EstatusReporteServicioUrbano,
+        creadoPorId: req.user?.sub ?? null,
+      });
+    }
 
     res.json(serializeReporteServicioUrbano(reporte));
   } catch (error) {

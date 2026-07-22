@@ -5,16 +5,16 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { UploadImage } from "@/components/UploadImage";
 import { useAuth } from "@/components/AuthProvider";
+import { ReporteEstatusStaffActions } from "@/components/ReporteEstatusStaffActions";
+import { SemaforoTiempoReporte } from "@/components/SemaforoTiempoReporte";
 import { ServicioUrbanoForm } from "@/components/ServicioUrbanoForm";
 import { ServicioUrbanoMapPicker } from "@/components/ServicioUrbanoMapPicker";
 import { apiFetch } from "@/lib/api";
 import { canViewOwnDirigente } from "@/lib/mi-panel";
 import {
-  ESTATUS_SERVICIO_URBANO,
   estatusBadgeClass,
   formatReporteFecha,
   mapsUrl,
-  type EstatusServicioUrbano,
   type ReporteServicioUrbanoDTO,
 } from "@/lib/servicios-urbanos";
 import type { ServicioUrbanoFormValues } from "@/lib/validation-servicios-urbanos";
@@ -38,9 +38,7 @@ export default function ServicioUrbanoDetallePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editando, setEditando] = useState(false);
-  const [estatusDraft, setEstatusDraft] = useState<EstatusServicioUrbano>("ENVIADO");
-  const [estatusSaving, setEstatusSaving] = useState(false);
-  const [estatusError, setEstatusError] = useState<string | null>(null);
+  const [desechando, setDesechando] = useState(false);
 
   const canLoad = isStaff || Boolean(user?.dirigenteId);
   const canManage =
@@ -63,7 +61,6 @@ export default function ServicioUrbanoDetallePage() {
       if (!res.ok) throw new Error("Reporte no encontrado");
       const data = (await res.json()) as ReporteServicioUrbanoDTO;
       setReporte(data);
-      setEstatusDraft(data.estatus);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al cargar");
     } finally {
@@ -98,15 +95,15 @@ export default function ServicioUrbanoDetallePage() {
     await load();
   }
 
-  async function handleEstatusChange() {
-    if (!reporte || estatusDraft === reporte.estatus) return;
-    setEstatusSaving(true);
-    setEstatusError(null);
+  async function marcarDesechado() {
+    if (!reporte || reporte.estatus === "DESECHADO") return;
+    if (!window.confirm("¿Marcar este reporte como desechado?")) return;
+    setDesechando(true);
     try {
       const res = await apiFetch(`/api/servicios-urbanos/${id}/estatus`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estatus: estatusDraft }),
+        body: JSON.stringify({ estatus: "DESECHADO" }),
       });
       if (!res.ok) {
         const data = (await res.json()) as { error?: string; detalles?: string[] };
@@ -114,9 +111,9 @@ export default function ServicioUrbanoDetallePage() {
       }
       await load();
     } catch (err) {
-      setEstatusError(err instanceof Error ? err.message : "Error al actualizar estatus");
+      alert(err instanceof Error ? err.message : "Error al actualizar estatus");
     } finally {
-      setEstatusSaving(false);
+      setDesechando(false);
     }
   }
 
@@ -166,6 +163,11 @@ export default function ServicioUrbanoDetallePage() {
           </p>
         </div>
         <div className="page-actions">
+          {isStaff ? (
+            <Link href="/servicios-urbanos/panel" className="btn-secondary btn-responsive">
+              Panel de control
+            </Link>
+          ) : null}
           <Link href={backHref} className="btn-ghost btn-responsive">
             Volver
           </Link>
@@ -202,6 +204,7 @@ export default function ServicioUrbanoDetallePage() {
       {!reporte.activo ? <p className="alert-warning">Este reporte está dado de baja.</p> : null}
 
       <section className="card-section flex flex-wrap items-center gap-3">
+        <SemaforoTiempoReporte createdAt={reporte.createdAt} />
         <span className={`${estatusBadgeClass(reporte.estatus)} text-sm`}>
           {reporte.estatusLabel}
         </span>
@@ -212,32 +215,18 @@ export default function ServicioUrbanoDetallePage() {
 
       {isStaff && !editando ? (
         <section className="card-section space-y-4">
-          <h2 className="section-title">Estatus del trámite</h2>
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="label min-w-[220px]">
-              Cambiar estatus
-              <select
-                className="input"
-                value={estatusDraft}
-                onChange={(e) => setEstatusDraft(e.target.value as EstatusServicioUrbano)}
-              >
-                {ESTATUS_SERVICIO_URBANO.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <h2 className="section-title">Gestión del trámite</h2>
+          <ReporteEstatusStaffActions reporte={reporte} onUpdated={load} />
+          {reporte.estatus !== "DESECHADO" && reporte.estatus !== "ATENDIDO" ? (
             <button
               type="button"
-              className="btn-primary btn-responsive"
-              disabled={estatusSaving || estatusDraft === reporte.estatus}
-              onClick={() => void handleEstatusChange()}
+              className="btn-ghost btn-responsive text-danger"
+              disabled={desechando}
+              onClick={() => void marcarDesechado()}
             >
-              {estatusSaving ? "Guardando…" : "Actualizar estatus"}
+              {desechando ? "Guardando…" : "Marcar desechado"}
             </button>
-          </div>
-          {estatusError ? <div className="alert-error">{estatusError}</div> : null}
+          ) : null}
         </section>
       ) : null}
 
@@ -279,7 +268,7 @@ export default function ServicioUrbanoDetallePage() {
 
           <section className="card-section space-y-4">
             <h2 className="section-title">Fotografías</h2>
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <p className="label mb-2">Antes</p>
                 <UploadImage
@@ -291,7 +280,7 @@ export default function ServicioUrbanoDetallePage() {
                 />
               </div>
               <div>
-                <p className="label mb-2">Después</p>
+                <p className="label mb-2">Después (dirigente)</p>
                 <UploadImage
                   src={reporte.fotoDespuesUrl}
                   alt="Después del servicio"
@@ -300,6 +289,18 @@ export default function ServicioUrbanoDetallePage() {
                   className="h-48 w-full max-w-md rounded-pin object-cover ring-2 ring-pin-light"
                 />
               </div>
+              {reporte.fotoAtencionUrl ? (
+                <div>
+                  <p className="label mb-2">Atención (administración)</p>
+                  <UploadImage
+                    src={reporte.fotoAtencionUrl}
+                    alt="Atención del servicio"
+                    width={320}
+                    height={200}
+                    className="h-48 w-full max-w-md rounded-pin object-cover ring-2 ring-success-text/30"
+                  />
+                </div>
+              ) : null}
             </div>
           </section>
         </>

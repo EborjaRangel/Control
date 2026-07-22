@@ -13,6 +13,7 @@ import {
   formatReporteFecha,
   type DirigenteServiciosUrbanosPanelDTO,
 } from "@/lib/servicios-urbanos";
+import { SemaforoLeyenda, SemaforoTiempoReporte } from "@/components/SemaforoTiempoReporte";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
 
 export default function DirigenteServiciosUrbanosPage() {
@@ -111,7 +112,10 @@ export default function DirigenteServiciosUrbanosPage() {
       </div>
 
       <section className="card-section space-y-4">
-        <h2 className="section-title">Reportes</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="section-title">Reportes</h2>
+          <SemaforoLeyenda />
+        </div>
         {panel.reportes.length === 0 ? (
           <p className="text-sm text-ink-secondary">
             {canCreate ? (
@@ -146,9 +150,12 @@ export default function DirigenteServiciosUrbanosPage() {
                         {formatReporteFecha(rep.createdAt)}
                       </p>
                     </div>
-                    <span className={`${estatusBadgeClass(rep.estatus)} shrink-0`}>
-                      {rep.estatusLabel}
-                    </span>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <SemaforoTiempoReporte createdAt={rep.createdAt} compact showLabel />
+                      <span className={`${estatusBadgeClass(rep.estatus)} shrink-0`}>
+                        {rep.estatusLabel}
+                      </span>
+                    </div>
                   </div>
                   <Link href={`/servicios-urbanos/${rep.id}`} className="btn-ghost btn-sm btn-responsive">
                     Ver detalle
@@ -162,6 +169,7 @@ export default function DirigenteServiciosUrbanosPage() {
                 <table className="w-full min-w-[640px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-line text-xs text-ink-secondary">
+                      <th className="py-2 pr-3">Semáforo</th>
                       <th className="py-2 pr-3">Folio</th>
                       <th className="py-2 pr-3">Servicio</th>
                       <th className="py-2 pr-3">Estatus</th>
@@ -172,6 +180,9 @@ export default function DirigenteServiciosUrbanosPage() {
                   <tbody>
                     {panel.reportes.map((rep) => (
                       <tr key={rep.id} className="border-b border-line/60">
+                        <td className="py-2.5 pr-3">
+                          <SemaforoTiempoReporte createdAt={rep.createdAt} compact showLabel />
+                        </td>
                         <td className="py-2.5 pr-3">
                           <Link
                             href={`/servicios-urbanos/${rep.id}`}
