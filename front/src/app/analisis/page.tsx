@@ -11,7 +11,7 @@ import {
   type AnalisisSeccionRow,
   type AnalisisSeccionesResponse,
 } from "@/lib/analisis";
-import { calcularPromediosAlcaldia, type PromediosAlcaldia } from "@/lib/analisis-votacion";
+import { calcularPromediosAlcaldia, resumirTendenciasAlcaldia, type PromediosAlcaldia } from "@/lib/analisis-votacion";
 
 export default function AnalisisPage() {
   const pathname = usePathname();
@@ -65,6 +65,16 @@ export default function AnalisisPage() {
     [data],
   );
 
+  const tendencias = useMemo(
+    () => (data ? resumirTendenciasAlcaldia(data.filas, promedios) : null),
+    [data, promedios],
+  );
+
+  const tendenciasFiltradas = useMemo(
+    () => (filas.length && data ? resumirTendenciasAlcaldia(filas, promedios) : null),
+    [filas, data, promedios],
+  );
+
   if (!isAdmin) return null;
 
   return (
@@ -83,6 +93,44 @@ export default function AnalisisPage() {
       </div>
 
       {error ? <div className="alert-error">{error}</div> : null}
+
+      {!loading && tendencias ? (
+        <section className="card-section grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <ResumenTendenciaCard
+            titulo="Favor PAN + aliados"
+            valor={tendenciasFiltradas?.favorPan ?? tendencias.favorPan}
+            total={tendenciasFiltradas?.comparables ?? tendencias.comparables}
+            detalle="Tendencia al alza vs MORENA (2021→2024)"
+            colorClass="border-pin bg-pin-light"
+            valorClass="text-pin"
+          />
+          <ResumenTendenciaCard
+            titulo="Favor MORENA + aliados"
+            valor={tendenciasFiltradas?.favorMorena ?? tendencias.favorMorena}
+            total={tendenciasFiltradas?.comparables ?? tendencias.comparables}
+            detalle="Tendencia al alza vs PAN (2021→2024)"
+            colorClass="border-[#9f2241]/30 bg-[#9f2241]/5"
+            valorClass="text-[#9f2241]"
+          />
+          <ResumenTendenciaCard
+            titulo="Sin ventaja clara"
+            valor={tendenciasFiltradas?.empate ?? tendencias.empate}
+            total={tendenciasFiltradas?.comparables ?? tendencias.comparables}
+            detalle="Variación similar entre bloques"
+            colorClass="border-line bg-surface-soft"
+            valorClass="text-ink"
+          />
+          <ResumenTendenciaCard
+            titulo="Sin comparación"
+            valor={tendenciasFiltradas?.sinComparacion ?? tendencias.sinComparacion}
+            total={data?.totalSecciones ?? 403}
+            detalle="Faltan datos 2021 o 2024"
+            colorClass="border-line bg-surface-soft"
+            valorClass="text-ink-secondary"
+            ocultarPct
+          />
+        </section>
+      ) : null}
 
       <section className="card-section grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div>
@@ -250,5 +298,35 @@ function AnalisisCard({
       </button>
       {expandido ? <AnalisisSeccionDashboard fila={fila} promedios={promedios} /> : null}
     </li>
+  );
+}
+
+function ResumenTendenciaCard({
+  titulo,
+  valor,
+  total,
+  detalle,
+  colorClass,
+  valorClass,
+  ocultarPct = false,
+}: {
+  titulo: string;
+  valor: number;
+  total: number;
+  detalle: string;
+  colorClass: string;
+  valorClass: string;
+  ocultarPct?: boolean;
+}) {
+  const pct = total > 0 ? Math.round((valor / total) * 1000) / 10 : 0;
+
+  return (
+    <div className={`rounded-pin border p-4 ${colorClass}`}>
+      <p className="text-sm font-medium text-ink-secondary">{titulo}</p>
+      <p className={`mt-1 text-3xl font-bold ${valorClass}`}>{valor}</p>
+      <p className="mt-1 text-xs text-ink-secondary">
+        {ocultarPct ? `de ${total} secciones` : `${pct}% de ${total} comparables · ${detalle}`}
+      </p>
+    </div>
   );
 }

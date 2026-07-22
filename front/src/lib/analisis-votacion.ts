@@ -391,3 +391,41 @@ export function indicadorVsPromedio(
   if (diff > 0) return { texto: `+${diff.toFixed(1)} pp vs prom.`, tono: "arriba" };
   return { texto: `${diff.toFixed(1)} pp vs prom.`, tono: "abajo" };
 }
+
+export type ResumenTendenciasAlcaldia = {
+  favorMorena: number;
+  favorPan: number;
+  empate: number;
+  sinComparacion: number;
+  comparables: number;
+};
+
+/** Cuenta secciones cuya tendencia 2021→2024 favorece a cada bloque. */
+export function resumirTendenciasAlcaldia(
+  filas: AnalisisSeccionRow[],
+  promedios: PromediosAlcaldia | null = null,
+): ResumenTendenciasAlcaldia {
+  let favorMorena = 0;
+  let favorPan = 0;
+  let empate = 0;
+  let sinComparacion = 0;
+
+  for (const fila of filas) {
+    const cmp = compararVotacionSeccion(fila.alcalde2021, fila.alcalde2024, promedios);
+    if (!cmp || !fila.alcalde2021 || !fila.alcalde2024) {
+      sinComparacion += 1;
+      continue;
+    }
+    if (cmp.tendencia === "morena") favorMorena += 1;
+    else if (cmp.tendencia === "pan") favorPan += 1;
+    else empate += 1;
+  }
+
+  return {
+    favorMorena,
+    favorPan,
+    empate,
+    sinComparacion,
+    comparables: favorMorena + favorPan + empate,
+  };
+}
