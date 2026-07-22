@@ -51,7 +51,7 @@ export function AnalisisSeccionDashboard({
   );
 
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 max-w-full space-y-5 overflow-hidden">
       <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
         <p>
           <span className="text-ink-secondary">Electores: </span>
@@ -152,7 +152,13 @@ function ConclusionCard({
           </span>
         ) : null}
       </div>
-      <p className="text-sm leading-relaxed text-ink-secondary">{comparacion.conclusion}</p>
+      <div className="space-y-2 text-sm leading-relaxed text-ink-secondary">
+        {comparacion.conclusion.split(/(?<=\.)\s+/).map((oracion) => (
+          <p key={oracion} className="break-words">
+            {oracion}
+          </p>
+        ))}
+      </div>
     </section>
   );
 }
@@ -321,10 +327,10 @@ function BarraHorizontal({
   const ancho = Math.max(2, (porcentaje / maxPct) * 100);
 
   return (
-    <div className="space-y-1">
-      <div className="flex items-baseline justify-between gap-2 text-sm">
-        <span className="min-w-0 truncate font-medium text-ink">{etiqueta}</span>
-        <span className="shrink-0 whitespace-nowrap text-ink-secondary">
+    <div className="min-w-0 space-y-1">
+      <div className="grid gap-1 text-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline sm:gap-2">
+        <span className="min-w-0 break-words font-medium text-ink">{etiqueta}</span>
+        <span className="min-w-0 break-words text-ink-secondary sm:text-right">
           {formatPorcentaje(porcentaje)} · {formatElectores(votos)}
         </span>
       </div>

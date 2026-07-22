@@ -240,6 +240,7 @@
   }
 
   .main-with-navbar {
+    @apply min-w-0 overflow-x-hidden;
     padding-top: calc(
       var(--navbar-h) + var(--navbar-nav-h) + env(safe-area-inset-top, 0px) + 1.25rem
     );
@@ -268,7 +269,7 @@
   }
 
   .page-subtitle {
-    @apply mt-1 text-sm text-ink-secondary sm:text-base;
+    @apply mt-1 break-words text-sm text-ink-secondary sm:text-base;
   }
 
   .section-title {

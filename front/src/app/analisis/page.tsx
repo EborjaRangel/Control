@@ -1,10 +1,9 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { AnalisisSeccionDashboard } from "@/components/AnalisisSeccionDashboard";
-import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import {
   formatElectores,
@@ -96,9 +95,9 @@ export default function AnalisisPage() {
   if (!isAdmin) return null;
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="min-w-0 max-w-full space-y-6 sm:space-y-8">
       <div className="page-header">
-        <div>
+        <div className="min-w-0">
           <h1 className="page-title">Análisis</h1>
           <p className="page-subtitle">
             {loading
@@ -113,7 +112,7 @@ export default function AnalisisPage() {
       {error ? <div className="alert-error">{error}</div> : null}
 
       {!loading && tendencias ? (
-        <section className="space-y-2">
+        <section className="min-w-0 space-y-2">
           <p className="text-sm text-ink-secondary">
             Tendencia 2021 → 2024 (clic para filtrar el listado)
           </p>
@@ -163,8 +162,8 @@ export default function AnalisisPage() {
         </section>
       ) : null}
 
-      <section className="card-section grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
+      <section className="card-section grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="min-w-0">
           <label className="label" htmlFor="analisis-buscar">
             Buscar
           </label>
@@ -176,7 +175,7 @@ export default function AnalisisPage() {
             placeholder="Sección, UT, colonia…"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="label" htmlFor="analisis-tendencia">
             Tendencia 2021 → 2024
           </label>
@@ -193,7 +192,7 @@ export default function AnalisisPage() {
             <option value="sin_datos">{ETIQUETAS_TENDENCIA.sin_datos}</option>
           </select>
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="label" htmlFor="analisis-distrito">
             Distrito local
           </label>
@@ -209,7 +208,7 @@ export default function AnalisisPage() {
           </select>
         </div>
         {tendenciaFiltro || distritoLocal || buscar ? (
-          <div className="flex items-end">
+          <div className="flex min-w-0 items-end">
             <button
               type="button"
               className="btn-ghost btn-sm btn-responsive w-full sm:w-auto"
@@ -237,85 +236,18 @@ export default function AnalisisPage() {
       ) : null}
 
       {!loading && filas.length > 0 ? (
-        <>
-          <ul className="mobile-only-list">
-            {filas.map((fila) => (
-              <AnalisisCard
-                key={fila.seccion}
-                fila={fila}
-                tendencia={tendenciaPorSeccion.get(fila.seccion) ?? "sin_datos"}
-                promedios={promedios}
-                expandido={expandido === fila.seccion}
-                onToggle={() =>
-                  setExpandido(expandido === fila.seccion ? null : fila.seccion)
-                }
-              />
-            ))}
-          </ul>
-
-          <div className="desktop-only-table">
-            <TableWrap>
-              <table className="data-table min-w-[1200px]">
-                <thead>
-                  <tr>
-                    <th>Sección</th>
-                    <th>Tendencia</th>
-                    <th>Casillas</th>
-                    <th>UT</th>
-                    <th>Colonia</th>
-                    <th className="text-right">Electores</th>
-                    <th>D. local</th>
-                    <th>D. federal</th>
-                    <th className="w-28">Análisis</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filas.map((fila) => (
-                    <Fragment key={fila.seccion}>
-                      <tr>
-                        <td className="whitespace-nowrap font-semibold">{fila.seccion}</td>
-                        <td>
-                          <TendenciaBadge
-                            tendencia={tendenciaPorSeccion.get(fila.seccion) ?? "sin_datos"}
-                          />
-                        </td>
-                        <td>
-                          <div className="font-medium">{fila.totalCasillas}</div>
-                          <div className="text-xs text-ink-secondary">{fila.casillas}</div>
-                        </td>
-                        <td className="max-w-[220px] break-words text-sm">{fila.unidadesTerritoriales}</td>
-                        <td className="max-w-[260px] break-words text-sm">{fila.colonias}</td>
-                        <td className="whitespace-nowrap text-right font-medium">
-                          {formatElectores(fila.totalElectores)}
-                        </td>
-                        <td className="whitespace-nowrap">{fila.distritoLocal ?? "—"}</td>
-                        <td className="whitespace-nowrap">{fila.distritoFederal ?? "—"}</td>
-                        <td>
-                          <button
-                            type="button"
-                            className="btn-ghost btn-sm"
-                            onClick={() =>
-                              setExpandido(expandido === fila.seccion ? null : fila.seccion)
-                            }
-                          >
-                            {expandido === fila.seccion ? "Ocultar" : "Ver"}
-                          </button>
-                        </td>
-                      </tr>
-                      {expandido === fila.seccion ? (
-                        <tr>
-                          <td colSpan={9} className="bg-surface-soft p-4">
-                            <AnalisisSeccionDashboard fila={fila} promedios={promedios} />
-                          </td>
-                        </tr>
-                      ) : null}
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </TableWrap>
-          </div>
-        </>
+        <ul className="min-w-0 space-y-3">
+          {filas.map((fila) => (
+            <AnalisisCard
+              key={fila.seccion}
+              fila={fila}
+              tendencia={tendenciaPorSeccion.get(fila.seccion) ?? "sin_datos"}
+              promedios={promedios}
+              expandido={expandido === fila.seccion}
+              onToggle={() => setExpandido(expandido === fila.seccion ? null : fila.seccion)}
+            />
+          ))}
+        </ul>
       ) : null}
     </div>
   );
@@ -331,7 +263,7 @@ function TendenciaBadge({ tendencia }: { tendencia: TendenciaSeccion }) {
 
   return (
     <span
-      className={`inline-flex max-w-[9.5rem] rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold leading-snug ring-1 ring-inset ${estilos[tendencia]}`}
+      className={`inline-flex max-w-full rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold leading-snug ring-1 ring-inset break-words ${estilos[tendencia]}`}
     >
       {tendencia === "morena"
         ? "MORENA + aliados"
@@ -358,15 +290,15 @@ function AnalisisCard({
   onToggle: () => void;
 }) {
   return (
-    <li className="list-card space-y-3">
+    <li className="list-card min-w-0 space-y-3 overflow-hidden">
       <div className="list-card-header">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs text-ink-secondary">Sección electoral</p>
           <p className="text-lg font-bold text-ink">{fila.seccion}</p>
         </div>
         <TendenciaBadge tendencia={tendencia} />
       </div>
-      <div className="space-y-2 text-sm">
+      <div className="space-y-2 break-words text-sm">
         <p>
           <span className="text-ink-secondary">Casillas: </span>
           {fila.casillas}
@@ -391,7 +323,11 @@ function AnalisisCard({
       <button type="button" className="btn-ghost btn-sm btn-responsive" onClick={onToggle}>
         {expandido ? "Ocultar análisis" : "Ver análisis 2021/2024"}
       </button>
-      {expandido ? <AnalisisSeccionDashboard fila={fila} promedios={promedios} /> : null}
+      {expandido ? (
+        <div className="min-w-0 max-w-full border-t border-line pt-3">
+          <AnalisisSeccionDashboard fila={fila} promedios={promedios} />
+        </div>
+      ) : null}
     </li>
   );
 }
@@ -423,13 +359,13 @@ function ResumenTendenciaCard({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-pin border p-4 text-left transition-shadow ${colorClass} ${
+      className={`min-w-0 rounded-pin border p-4 text-left transition-shadow ${colorClass} ${
         activo ? "ring-2 ring-pin shadow-pin" : "hover:shadow-pin"
       } ${onClick ? "cursor-pointer" : ""}`}
     >
       <p className="text-sm font-medium text-ink-secondary">{titulo}</p>
       <p className={`mt-1 text-3xl font-bold ${valorClass}`}>{valor}</p>
-      <p className="mt-1 text-xs text-ink-secondary">
+      <p className="mt-1 break-words text-xs text-ink-secondary">
         {ocultarPct ? `de ${total} secciones` : `${pct}% de ${total} comparables · ${detalle}`}
       </p>
       {activo ? <p className="mt-2 text-xs font-semibold text-pin">Filtro activo</p> : null}
