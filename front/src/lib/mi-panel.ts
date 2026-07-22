@@ -1,5 +1,11 @@
 import type { SessionUser } from "@/lib/auth";
-import { canAccessPrivilegedStaffNav, isAsistenciaRol, isConvocatoriaRol, isStaffRol } from "@/lib/auth";
+import {
+  canAccessPrivilegedStaffNav,
+  isAdminRol,
+  isAsistenciaRol,
+  isConvocatoriaRol,
+  isStaffRol,
+} from "@/lib/auth";
 
 export function canManageRc(user: SessionUser | null, rcId: string) {
   if (!user) return false;
@@ -52,6 +58,9 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
       return false;
     }
     if (!canAccessPrivilegedStaffNav(user.rol) && pathname.startsWith("/auditoria")) {
+      return false;
+    }
+    if (!isAdminRol(user.rol) && pathname.startsWith("/analisis")) {
       return false;
     }
     return true;

@@ -286,7 +286,7 @@ export default function ServiciosUrbanosPanelPage() {
       <section className="space-y-3">
         <h2 className="section-title">Mapa de reportes</h2>
         {loading ? (
-          <div className="flex h-[420px] items-center justify-center rounded-pin bg-surface-muted text-ink-secondary">
+          <div className="flex h-[min(70vh,420px)] min-h-[280px] items-center justify-center rounded-pin bg-surface-muted text-ink-secondary sm:min-h-[360px]">
             Cargando mapa…
           </div>
         ) : (

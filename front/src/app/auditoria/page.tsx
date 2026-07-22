@@ -166,9 +166,68 @@ export default function AuditoriaPage() {
         </div>
       ) : null}
 
-      {!loading ? (
-        <TableWrap>
-          <table className="data-table">
+      {!loading && logs.length === 0 ? (
+        <p className="text-sm text-ink-secondary">No hay registros de auditoría con los filtros actuales.</p>
+      ) : null}
+
+      {!loading && logs.length > 0 ? (
+        <>
+          <ul className="mobile-only-list">
+            {logs.map((log) => (
+              <li key={log.id} className="list-card space-y-3">
+                <div className="list-card-header">
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-sm font-medium">{formatAuditFecha(log.createdAt)}</p>
+                    <p className="font-semibold text-ink">{log.usuarioNombre ?? "—"}</p>
+                    {log.usuarioRol ? (
+                      <p className="text-xs text-ink-secondary">{log.usuarioRol}</p>
+                    ) : null}
+                  </div>
+                  <span className="badge-pin shrink-0">{log.accionLabel}</span>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <p>
+                    <span className="text-ink-secondary">Entidad: </span>
+                    {labelEntidadAuditoria(log.entidad)}
+                  </p>
+                  <p className="break-words font-medium">{log.entidadLabel ?? log.entidadId ?? "—"}</p>
+                  <p className="text-ink-secondary">{resumenAuditoria(log)}</p>
+                </div>
+                {log.cambios || log.metadata ? (
+                  <button
+                    type="button"
+                    className="btn-ghost btn-sm btn-responsive"
+                    onClick={() => setExpandido(expandido === log.id ? null : log.id)}
+                  >
+                    {expandido === log.id ? "Ocultar detalle" : "Ver detalle"}
+                  </button>
+                ) : null}
+                {expandido === log.id ? (
+                  <div className="panel-soft space-y-3 text-sm">
+                    {log.cambios
+                      ? Object.entries(log.cambios).map(([campo, cambio]) => (
+                          <div key={campo}>
+                            <p className="font-medium text-ink">{campo}</p>
+                            <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-words font-mono text-xs">
+                              {JSON.stringify(cambio, null, 2)}
+                            </pre>
+                          </div>
+                        ))
+                      : null}
+                    {log.metadata ? (
+                      <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-xs">
+                        {JSON.stringify(log.metadata, null, 2)}
+                      </pre>
+                    ) : null}
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+
+          <div className="desktop-only-table">
+            <TableWrap>
+              <table className="data-table min-w-[920px]">
             <thead>
               <tr>
                 <th>Fecha y hora</th>
@@ -260,11 +319,9 @@ export default function AuditoriaPage() {
               ))}
             </tbody>
           </table>
-        </TableWrap>
-      ) : null}
-
-      {!loading && logs.length === 0 ? (
-        <p className="text-sm text-ink-secondary">No hay registros de auditoría con los filtros actuales.</p>
+            </TableWrap>
+          </div>
+        </>
       ) : null}
     </div>
   );

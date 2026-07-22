@@ -93,11 +93,12 @@ export function ReporteEstatusStaffActions({ reporte, onUpdated, compact = false
       {!compact && error ? <div className="alert-error mt-3">{error}</div> : null}
 
       {modalAtender ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-4 sm:items-center">
+        <div className="modal-backdrop" role="presentation" onClick={() => setModalAtender(false)}>
           <div
-            className="card-section max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto shadow-xl"
+            className="modal-panel max-w-lg"
             role="dialog"
             aria-labelledby="atender-title"
+            onClick={(e) => e.stopPropagation()}
           >
             <div>
               <h3 id="atender-title" className="section-title">
@@ -107,6 +108,7 @@ export function ReporteEstatusStaffActions({ reporte, onUpdated, compact = false
                 {reporte.folio} · {reporte.tipoLabel}
               </p>
             </div>
+            <div className="space-y-4">
             <ImageUploadStandalone
               label="Foto de cómo quedó (obligatoria)"
               value={fotoAtencionUrl}
@@ -124,7 +126,7 @@ export function ReporteEstatusStaffActions({ reporte, onUpdated, compact = false
               />
             </label>
             {error ? <div className="alert-error">{error}</div> : null}
-            <div className="flex flex-wrap justify-end gap-3">
+            <div className="flex flex-wrap justify-end gap-3 pt-2">
               <button
                 type="button"
                 className="btn-ghost btn-responsive"
@@ -146,6 +148,7 @@ export function ReporteEstatusStaffActions({ reporte, onUpdated, compact = false
               >
                 {saving === "ATENDIDO" ? "Guardando…" : "Confirmar atención"}
               </button>
+            </div>
             </div>
           </div>
         </div>

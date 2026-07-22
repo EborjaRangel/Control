@@ -23,7 +23,7 @@ export function ServiciosUrbanosMapa({
   reportes,
   selectedId,
   onSelect,
-  heightClassName = "h-[420px]",
+  heightClassName = "h-[min(70vh,420px)] w-full min-h-[280px] sm:min-h-[360px]",
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("mapbox-gl").Map | null>(null);

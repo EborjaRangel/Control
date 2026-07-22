@@ -173,9 +173,41 @@ export default function UsuariosPage() {
         </div>
       ) : null}
 
-      {!loading ? (
-        <TableWrap>
-          <table className="data-table">
+      {!loading && usuarios.length === 0 ? (
+        <div className="card py-12 text-center">
+          <p className="font-semibold text-ink">No hay usuarios registrados</p>
+        </div>
+      ) : null}
+
+      {!loading && usuarios.length > 0 ? (
+        <>
+          <ul className="mobile-only-list">
+            {usuarios.map((u) => (
+              <li key={u.id} className="list-card">
+                <div className="list-card-header">
+                  <div className="min-w-0">
+                    <p className="break-words font-bold text-ink">{u.username}</p>
+                    <p className="mt-1 text-xs text-ink-secondary">
+                      {STAFF_ROL_LABEL[u.rol]} · {u.activo ? "Activo" : "Inactivo"}
+                    </p>
+                  </div>
+                  <span className="badge-pin shrink-0">{STAFF_ROL_LABEL[u.rol]}</span>
+                </div>
+                <p className="break-all font-mono text-xs text-ink-secondary">{u.password ?? "—"}</p>
+                {puedeEditarUsuarioStaff(actorRol, u.rol) ? (
+                  <button type="button" className="btn-ghost btn-sm btn-responsive" onClick={() => openEdit(u)}>
+                    Editar
+                  </button>
+                ) : (
+                  <p className="text-xs text-ink-secondary">Sin permiso para editar</p>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          <div className="desktop-only-table">
+            <TableWrap>
+              <table className="data-table min-w-[720px]">
             <thead>
               <tr>
                 <th>Usuario</th>
@@ -213,7 +245,9 @@ export default function UsuariosPage() {
               ))}
             </tbody>
           </table>
-        </TableWrap>
+            </TableWrap>
+          </div>
+        </>
       ) : null}
 
       {modalOpen ? (

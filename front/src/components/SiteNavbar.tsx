@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { BellIcon } from "@/components/BellIcon";
 import { CoyoteLogo } from "@/components/CoyoteLogo";
@@ -10,7 +10,7 @@ import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { APP_TITLE, NAVBAR_TITLE } from "@/lib/site";
 import { brandHrefForUser, navItemsForUser } from "@/lib/mi-panel";
-import { canAccessPrivilegedStaffNav, isLimitedPanelRol, isStaffRol } from "@/lib/auth";
+import { canAccessPrivilegedStaffNav, isAdminRol, isLimitedPanelRol, isStaffRol } from "@/lib/auth";
 
 const NOTIFICACIONES_NAV = {
   href: "/notificaciones",
@@ -93,14 +93,27 @@ const ADMIN_NAV = [
     shortLabel: "Auditoría",
     match: (p: string) => p.startsWith("/auditoria"),
   },
+  {
+    href: "/analisis",
+    label: "Análisis",
+    shortLabel: "Análisis",
+    match: (p: string) => p.startsWith("/analisis"),
+  },
 ] as const;
 
 const PRIVILEGED_NAV_HREFS = new Set<string>(["/nominas", "/usuarios", "/auditoria"]);
+const ADMIN_ONLY_NAV_HREFS = new Set<string>(["/analisis"]);
 
 function staffMainNavForRol(rol: Parameters<typeof canAccessPrivilegedStaffNav>[0]) {
   if (!isStaffRol(rol)) return [];
-  if (canAccessPrivilegedStaffNav(rol)) return ADMIN_NAV;
-  return ADMIN_NAV.filter((item) => !PRIVILEGED_NAV_HREFS.has(item.href));
+  let items: typeof ADMIN_NAV[number][] = [...ADMIN_NAV];
+  if (!canAccessPrivilegedStaffNav(rol)) {
+    items = items.filter((item) => !PRIVILEGED_NAV_HREFS.has(item.href));
+  }
+  if (!isAdminRol(rol)) {
+    items = items.filter((item) => !ADMIN_ONLY_NAV_HREFS.has(item.href));
+  }
+  return items;
 }
 
 function navGridColumns(count: number) {
@@ -209,6 +222,7 @@ export function SiteNavbar() {
   const pathname = usePathname();
   const { user, isStaff, logout } = useAuth();
   const [noLeidas, setNoLeidas] = useState(0);
+  const navRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -230,6 +244,37 @@ export function SiteNavbar() {
   const mainNavItems = allNavItems.filter((item) => item.href !== "/notificaciones");
   const showAvisos = Boolean(user) && !isLimitedPanelRol(user?.rol);
   const avisosActive = pathname.startsWith("/notificaciones");
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (mainNavItems.length === 0) {
+      root.style.removeProperty("--navbar-nav-h");
+      return;
+    }
+
+    const syncNavHeight = () => {
+      const nav = navRef.current;
+      if (!nav) return;
+      root.style.setProperty("--navbar-nav-h", `${nav.offsetHeight}px`);
+    };
+
+    syncNavHeight();
+    const timer = window.setTimeout(syncNavHeight, 0);
+    const nav = navRef.current;
+    if (!nav) {
+      return () => window.clearTimeout(timer);
+    }
+
+    const observer = new ResizeObserver(syncNavHeight);
+    observer.observe(nav);
+    window.addEventListener("resize", syncNavHeight);
+
+    return () => {
+      window.clearTimeout(timer);
+      observer.disconnect();
+      window.removeEventListener("resize", syncNavHeight);
+    };
+  }, [mainNavItems.length, pathname, user?.id, user?.rol, isStaff]);
 
   return (
     <header className="navbar-top">
@@ -260,6 +305,7 @@ export function SiteNavbar() {
 
         {mainNavItems.length > 0 ? (
           <nav
+            ref={navRef}
             className={cn("navbar-nav", mainNavItems.length >= 7 && "navbar-nav-staff")}
             style={{
               gridTemplateColumns: `repeat(${navGridColumns(mainNavItems.length)}, minmax(0, 1fr))`,

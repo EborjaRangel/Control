@@ -57,6 +57,7 @@ import rgRouter from "./rg.js";
 import notificacionesRouter from "./notificaciones.js";
 import usuariosRouter from "./usuarios.js";
 import auditoriaRouter from "./auditoria.js";
+import analisisRouter from "./analisis.js";
 import serviciosUrbanosRouter from "./servicios-urbanos.js";
 import {
   registrarAuditoria,
@@ -243,6 +244,7 @@ router.use("/rg", rgRouter);
 router.use("/notificaciones", notificacionesRouter);
 router.use("/usuarios", usuariosRouter);
 router.use("/auditoria", auditoriaRouter);
+router.use("/analisis", analisisRouter);
 
 router.get("/secciones/coyoacan/geojson", (_req, res) => {
   try {

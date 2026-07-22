@@ -33,7 +33,7 @@
   --radius-pin: 1rem;
   --radius-pin-lg: 1.5rem;
   --navbar-h: 3.5rem;
-  --navbar-nav-h: 6.75rem;
+  --navbar-nav-h: 8.25rem;
   --progress: 0%;
 }
 
@@ -255,8 +255,12 @@
     }
 
     :root {
-      --navbar-nav-h: 3.5rem;
+      --navbar-nav-h: 5.5rem;
     }
+  }
+
+  .seccion-map-marker {
+    @apply whitespace-nowrap rounded-full border-2 border-surface bg-pin px-2 py-0.5 text-[0.6875rem] font-bold leading-tight text-surface shadow-pin;
   }
 
   .page-title {
@@ -534,23 +538,35 @@
   }
 
   .desktop-only-table {
-    @apply hidden md:block;
+    @apply hidden lg:block;
   }
 
   .mobile-only-list {
-    @apply space-y-3 md:hidden;
+    @apply space-y-3 lg:hidden;
   }
 
-  .seccion-map-marker {
-    @apply whitespace-nowrap rounded-full border-2 border-surface bg-pin px-2 py-0.5 text-[0.6875rem] font-bold leading-tight text-surface shadow-pin;
+  .data-table {
+    @apply w-full min-w-[640px] text-left text-sm;
+  }
+
+  .data-table thead tr {
+    @apply border-b border-line text-xs text-ink-secondary;
+  }
+
+  .data-table th {
+    @apply py-2 pr-3 font-semibold;
+  }
+
+  .data-table td {
+    @apply border-b border-line/60 py-2.5 pr-3 align-top;
   }
 
   .modal-backdrop {
-    @apply fixed inset-0 z-[60] flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm;
+    @apply fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center;
   }
 
   .modal-panel {
-    @apply w-full rounded-pin-lg border border-line bg-surface p-6 shadow-pin-hover;
+    @apply max-h-[min(90dvh,calc(100dvh-2rem))] w-full overflow-y-auto overscroll-contain rounded-pin-lg border border-line bg-surface p-6 shadow-pin-hover;
   }
 }
 
