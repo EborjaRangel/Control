@@ -7,14 +7,19 @@ import { AnalisisSeccionDashboard } from "@/components/AnalisisSeccionDashboard"
 import { apiFetch } from "@/lib/api";
 import {
   formatElectores,
+  formatPorcentaje,
   type AnalisisSeccionRow,
   type AnalisisSeccionesResponse,
 } from "@/lib/analisis";
 import {
   calcularPromediosAlcaldia,
+  compararFilasAnalisis,
+  ETIQUETAS_ORDEN_ANALISIS,
   ETIQUETAS_TENDENCIA,
+  metricasOrdenListadoAnalisis,
   resumirTendenciasAlcaldia,
   tendenciaSeccion,
+  type OrdenListadoAnalisis,
   type PromediosAlcaldia,
   type TendenciaSeccion,
   type TendenciaSeccionFiltro,
@@ -29,6 +34,7 @@ export default function AnalisisPage() {
   const [distritoLocal, setDistritoLocal] = useState("");
   const [tendenciaFiltro, setTendenciaFiltro] = useState<TendenciaSeccionFiltro>("");
   const [buscar, setBuscar] = useState("");
+  const [orden, setOrden] = useState<OrdenListadoAnalisis>("default");
   const [expandido, setExpandido] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -68,7 +74,7 @@ export default function AnalisisPage() {
   const filas = useMemo(() => {
     if (!data) return [];
     const q = buscar.trim().toLowerCase();
-    return data.filas.filter((fila) => {
+    const filtered = data.filas.filter((fila) => {
       if (distritoLocal && String(fila.distritoLocal ?? "") !== distritoLocal) return false;
       if (tendenciaFiltro && tendenciaPorSeccion.get(fila.seccion) !== tendenciaFiltro) {
         return false;
@@ -82,7 +88,8 @@ export default function AnalisisPage() {
         fila.colonias.toLowerCase().includes(q)
       );
     });
-  }, [data, buscar, distritoLocal, tendenciaFiltro, tendenciaPorSeccion]);
+    return [...filtered].sort((a, b) => compararFilasAnalisis(a, b, orden, promedios));
+  }, [data, buscar, distritoLocal, tendenciaFiltro, tendenciaPorSeccion, orden, promedios]);
 
   const tendencias = useMemo(
     () => (data ? resumirTendenciasAlcaldia(data.filas, promedios) : null),
@@ -104,7 +111,7 @@ export default function AnalisisPage() {
             {loading
               ? "Cargando…"
               : data
-                ? `${filas.length} de ${data.totalSecciones} secciones · tendencia 2021→2024${tendenciaFiltro ? ` · ${ETIQUETAS_TENDENCIA[tendenciaFiltro]}` : ""}${data.vigencia ? ` · INE ${data.vigencia}` : ""}`
+                ? `${filas.length} de ${data.totalSecciones} secciones · ${ETIQUETAS_ORDEN_ANALISIS[orden]}${tendenciaFiltro ? ` · ${ETIQUETAS_TENDENCIA[tendenciaFiltro]}` : ""}${data.vigencia ? ` · INE ${data.vigencia}` : ""}`
                 : "Secciones electorales con dashboard de votación y tendencias por bloque"}
           </p>
         </div>
@@ -208,7 +215,24 @@ export default function AnalisisPage() {
             <option value="30">30</option>
           </select>
         </div>
-        {tendenciaFiltro || distritoLocal || buscar ? (
+        <div className="min-w-0">
+          <label className="label" htmlFor="analisis-orden">
+            Orden del listado
+          </label>
+          <select
+            id="analisis-orden"
+            className="input"
+            value={orden}
+            onChange={(e) => setOrden(e.target.value as OrdenListadoAnalisis)}
+          >
+            {(Object.keys(ETIQUETAS_ORDEN_ANALISIS) as OrdenListadoAnalisis[]).map((key) => (
+              <option key={key} value={key}>
+                {ETIQUETAS_ORDEN_ANALISIS[key]}
+              </option>
+            ))}
+          </select>
+        </div>
+        {tendenciaFiltro || distritoLocal || buscar || orden !== "default" ? (
           <div className="flex min-w-0 items-end">
             <button
               type="button"
@@ -217,6 +241,7 @@ export default function AnalisisPage() {
                 setTendenciaFiltro("");
                 setDistritoLocal("");
                 setBuscar("");
+                setOrden("default");
               }}
             >
               Limpiar filtros
@@ -244,6 +269,7 @@ export default function AnalisisPage() {
               fila={fila}
               tendencia={tendenciaPorSeccion.get(fila.seccion) ?? "sin_datos"}
               promedios={promedios}
+              orden={orden}
               expandido={expandido === fila.seccion}
               onToggle={() => setExpandido(expandido === fila.seccion ? null : fila.seccion)}
             />
@@ -281,15 +307,19 @@ function AnalisisCard({
   fila,
   tendencia,
   promedios,
+  orden,
   expandido,
   onToggle,
 }: {
   fila: AnalisisSeccionRow;
   tendencia: TendenciaSeccion;
   promedios: PromediosAlcaldia | null;
+  orden: OrdenListadoAnalisis;
   expandido: boolean;
   onToggle: () => void;
 }) {
+  const metricas = metricasOrdenListadoAnalisis(fila, promedios);
+
   return (
     <li
       className={`list-card min-w-0 space-y-3 overflow-hidden transition-colors ${
@@ -308,6 +338,17 @@ function AnalisisCard({
         </div>
         <TendenciaBadge tendencia={tendencia} />
       </div>
+      {orden === "morena_var" && metricas.deltaMorena != null ? (
+        <p className="text-sm font-semibold text-[#9f2241]">
+          Variación MORENA + aliados: {metricas.deltaMorena >= 0 ? "+" : ""}
+          {metricas.deltaMorena.toFixed(2)} pp (2021→2024)
+        </p>
+      ) : null}
+      {orden === "pan_pct" && metricas.panPct2024 != null ? (
+        <p className="text-sm font-semibold text-pin">
+          PAN + aliados 2024: {formatPorcentaje(metricas.panPct2024)}
+        </p>
+      ) : null}
       <div className="space-y-2 break-words text-sm">
         <p>
           <span className="text-ink-secondary">Casillas: </span>

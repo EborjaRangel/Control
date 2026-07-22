@@ -701,6 +701,60 @@ export function tendenciaSeccion(
   return cmp.tendencia;
 }
 
+export type OrdenListadoAnalisis = "default" | "morena_var" | "pan_pct";
+
+export const ETIQUETAS_ORDEN_ANALISIS: Record<OrdenListadoAnalisis, string> = {
+  default: "Casillas y electores",
+  morena_var: "Variación MORENA + aliados (2021→2024, mayor arriba)",
+  pan_pct: "% PAN + aliados en 2024 (mayor arriba)",
+};
+
+export function metricasOrdenListadoAnalisis(
+  fila: AnalisisSeccionRow,
+  promedios: PromediosAlcaldia | null,
+): { deltaMorena: number | null; panPct2024: number | null } {
+  const cmp = compararVotacionSeccion(
+    fila.alcalde2018,
+    fila.alcalde2021,
+    fila.alcalde2024,
+    promedios,
+  );
+  if (!cmp) return { deltaMorena: null, panPct2024: null };
+  return {
+    deltaMorena:
+      fila.alcalde2021 && fila.alcalde2024 ? cmp.deltaMorenaPct : null,
+    panPct2024: cmp.bloques2024.find((b) => b.bloque === "pan")?.porcentaje ?? null,
+  };
+}
+
+export function compararFilasAnalisis(
+  a: AnalisisSeccionRow,
+  b: AnalisisSeccionRow,
+  orden: OrdenListadoAnalisis,
+  promedios: PromediosAlcaldia | null,
+): number {
+  if (orden === "default") {
+    return (
+      b.totalCasillas - a.totalCasillas ||
+      b.totalElectores - a.totalElectores ||
+      Number(a.seccion) - Number(b.seccion)
+    );
+  }
+
+  const ma = metricasOrdenListadoAnalisis(a, promedios);
+  const mb = metricasOrdenListadoAnalisis(b, promedios);
+
+  if (orden === "morena_var") {
+    const va = ma.deltaMorena ?? Number.NEGATIVE_INFINITY;
+    const vb = mb.deltaMorena ?? Number.NEGATIVE_INFINITY;
+    return vb - va || Number(a.seccion) - Number(b.seccion);
+  }
+
+  const va = ma.panPct2024 ?? Number.NEGATIVE_INFINITY;
+  const vb = mb.panPct2024 ?? Number.NEGATIVE_INFINITY;
+  return vb - va || Number(a.seccion) - Number(b.seccion);
+}
+
 /** Cuenta secciones cuya tendencia 2021→2024 favorece a cada bloque. */
 export function resumirTendenciasAlcaldia(
   filas: AnalisisSeccionRow[],
