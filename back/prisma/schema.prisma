@@ -91,6 +91,15 @@ enum AlcanceNotificacion {
   SECCION
 }
 
+/// Tipo de reporte de servicios urbanos
+enum TipoServicioUrbano {
+  FUGA_AGUA
+  BACHE
+  DESASOLVE_COLADERA
+  PODA_ARBOL
+  LUMINARIAS_FUNDIDAS
+}
+
 model Dirigente {
   id String @id @default(cuid())
 
@@ -152,6 +161,7 @@ model Dirigente {
   nomina              Nomina?
   usuario             Usuario?
   detectados          Detectado[]
+  reportesServiciosUrbanos ReporteServicioUrbano[]
   asistencias         RegistroAsistencia[]
   enviosComunicacion  EnvioComunicacion[]
   estudios            DirigenteEstudio[]
@@ -242,6 +252,31 @@ model Detectado {
   @@index([activo])
   @@index([seccionElectoral])
   @@index([dirigenteId])
+}
+
+/// Reporte de servicios urbanos registrado por un dirigente (antes/después + georreferencia)
+model ReporteServicioUrbano {
+  id              String             @id @default(cuid())
+  dirigenteId     String
+  dirigente       Dirigente          @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+
+  tipo            TipoServicioUrbano
+  descripcion     String?
+  colonia         String?
+  seccionElectoral String?
+  lat             Float
+  lng             Float
+  fotoAntesUrl    String
+  fotoDespuesUrl  String
+  activo          Boolean            @default(true)
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([dirigenteId])
+  @@index([tipo])
+  @@index([activo])
+  @@index([createdAt])
 }
 
 /// Persona registrada por un detectado (datos generales INE)

@@ -86,6 +86,7 @@ router.get("/entidades", (_req, res) => {
     "RegistroAsistencia",
     "Notificacion",
     "Convocatoria",
+    "ReporteServicioUrbano",
     "Sesion",
   ]);
 });

@@ -55,6 +55,7 @@ export const AUDIT_ENTIDAD_LABEL: Record<string, string> = {
   RegistroAsistencia: "Registro de asistencia",
   Notificacion: "Notificación",
   Convocatoria: "Convocatoria",
+  ReporteServicioUrbano: "Servicio urbano",
 };
 
 const LOGIN_MOTIVO_LABEL: Record<string, string> = {

@@ -64,6 +64,12 @@ const ADMIN_NAV = [
     match: (p: string) => p.startsWith("/detectados"),
   },
   {
+    href: "/servicios-urbanos",
+    label: "Servicios urbanos",
+    shortLabel: "Servicios",
+    match: (p: string) => p.startsWith("/servicios-urbanos"),
+  },
+  {
     href: "/rc",
     label: "Rep. Casilla",
     shortLabel: "Rep. Casilla",

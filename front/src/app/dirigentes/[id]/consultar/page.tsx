@@ -71,8 +71,8 @@ export default function ConsultarDirigentePage() {
           <div>
             <h2 className="section-title">Mis registros</h2>
             <p className="mt-1 text-sm text-ink-secondary">
-              Administra detectados, representantes de casilla y representantes generales de tu
-              equipo.
+              Administra detectados, servicios urbanos, representantes de casilla y representantes
+              generales de tu equipo.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -81,6 +81,12 @@ export default function ConsultarDirigentePage() {
               className="btn-primary btn-responsive"
             >
               Mis detectados
+            </Link>
+            <Link
+              href={`/servicios-urbanos/dirigentes/${id}`}
+              className="btn-secondary btn-responsive"
+            >
+              Servicios urbanos
             </Link>
             <Link href={enlaceRc(id, user?.rcId)} className="btn-secondary btn-responsive">
               {user?.rcId ? "Rep. de casilla" : "Activar Rep. Casilla"}

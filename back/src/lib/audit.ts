@@ -295,6 +295,32 @@ export function snapshotRepresentante(r: {
   });
 }
 
+export function snapshotServicioUrbano(r: {
+  id: string;
+  dirigenteId: string;
+  tipo: string;
+  descripcion: string | null;
+  colonia: string | null;
+  seccionElectoral: string | null;
+  lat: number;
+  lng: number;
+  fotoAntesUrl: string;
+  fotoDespuesUrl: string;
+  activo: boolean;
+}) {
+  return sanitizarObjeto({
+    id: r.id,
+    dirigenteId: r.dirigenteId,
+    tipo: r.tipo,
+    descripcion: r.descripcion,
+    colonia: r.colonia,
+    seccionElectoral: r.seccionElectoral,
+    lat: r.lat,
+    lng: r.lng,
+    activo: r.activo,
+  });
+}
+
 export function snapshotEventoAsistencia(e: {
   id: string;
   titulo: string;

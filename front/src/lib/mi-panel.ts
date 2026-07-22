@@ -80,6 +80,8 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
     if (pathname === `/nominas/${dirigenteId}`) return true;
     if (pathname === `/detectados/dirigentes/${dirigenteId}`) return true;
     if (pathname === `/detectados/dirigentes/${dirigenteId}/nuevo`) return true;
+    if (pathname === `/servicios-urbanos/dirigentes/${dirigenteId}`) return true;
+    if (pathname === `/servicios-urbanos/dirigentes/${dirigenteId}/nuevo`) return true;
     if (pathname === `/rc/por-dirigente/${dirigenteId}`) return true;
     if (pathname === `/rg/por-dirigente/${dirigenteId}`) return true;
     if (/^\/detectados\/[^/]+$/.test(pathname) && !pathname.startsWith("/detectados/dirigentes")) {
@@ -89,6 +91,9 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
       /^\/detectados\/[^/]+\/personas\//.test(pathname) &&
       !pathname.startsWith("/detectados/dirigentes")
     ) {
+      return true;
+    }
+    if (/^\/servicios-urbanos\/[^/]+$/.test(pathname) && !pathname.startsWith("/servicios-urbanos/dirigentes")) {
       return true;
     }
   }
@@ -169,6 +174,15 @@ export function navItemsForUser(user: SessionUser): NavItem[] {
       match: (p) =>
         p === `/detectados/dirigentes/${user.dirigenteId}` ||
         (/^\/detectados\/[^/]+$/.test(p) && !p.startsWith("/detectados/dirigentes")),
+    });
+    items.push({
+      href: `/servicios-urbanos/dirigentes/${user.dirigenteId}`,
+      label: "Servicios urbanos",
+      shortLabel: "Servicios",
+      match: (p) =>
+        p === `/servicios-urbanos/dirigentes/${user.dirigenteId}` ||
+        p === `/servicios-urbanos/dirigentes/${user.dirigenteId}/nuevo` ||
+        (/^\/servicios-urbanos\/[^/]+$/.test(p) && !p.startsWith("/servicios-urbanos/dirigentes")),
     });
   }
 
