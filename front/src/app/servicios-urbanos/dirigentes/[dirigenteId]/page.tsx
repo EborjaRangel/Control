@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/api";
 import { TIPO_DIRIGENTE_LABEL } from "@/lib/dirigentes";
 import { canViewOwnDirigente } from "@/lib/mi-panel";
 import {
+  estatusBadgeClass,
   formatReporteFecha,
   type DirigenteServiciosUrbanosPanelDTO,
 } from "@/lib/servicios-urbanos";
@@ -138,12 +139,16 @@ export default function DirigenteServiciosUrbanosPage() {
                         href={`/servicios-urbanos/${rep.id}`}
                         className="break-words font-bold text-pin hover:underline"
                       >
-                        {rep.tipoLabel}
+                        {rep.folio}
                       </Link>
+                      <p className="mt-1 font-medium text-ink">{rep.tipoLabel}</p>
                       <p className="mt-1 text-xs text-ink-secondary">
                         {formatReporteFecha(rep.createdAt)}
                       </p>
                     </div>
+                    <span className={`${estatusBadgeClass(rep.estatus)} shrink-0`}>
+                      {rep.estatusLabel}
+                    </span>
                   </div>
                   <Link href={`/servicios-urbanos/${rep.id}`} className="btn-ghost btn-sm btn-responsive">
                     Ver detalle
@@ -157,7 +162,9 @@ export default function DirigenteServiciosUrbanosPage() {
                 <table className="w-full min-w-[640px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-line text-xs text-ink-secondary">
+                      <th className="py-2 pr-3">Folio</th>
                       <th className="py-2 pr-3">Servicio</th>
+                      <th className="py-2 pr-3">Estatus</th>
                       <th className="py-2 pr-3">Fecha</th>
                       <th className="py-2" />
                     </tr>
@@ -168,10 +175,14 @@ export default function DirigenteServiciosUrbanosPage() {
                         <td className="py-2.5 pr-3">
                           <Link
                             href={`/servicios-urbanos/${rep.id}`}
-                            className="font-medium text-pin hover:underline"
+                            className="font-mono font-medium text-pin hover:underline"
                           >
-                            {rep.tipoLabel}
+                            {rep.folio}
                           </Link>
+                        </td>
+                        <td className="py-2.5 pr-3">{rep.tipoLabel}</td>
+                        <td className="py-2.5 pr-3">
+                          <span className={estatusBadgeClass(rep.estatus)}>{rep.estatusLabel}</span>
                         </td>
                         <td className="py-2.5 pr-3 text-ink-secondary">
                           {formatReporteFecha(rep.createdAt)}

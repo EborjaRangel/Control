@@ -100,6 +100,14 @@ enum TipoServicioUrbano {
   LUMINARIAS_FUNDIDAS
 }
 
+/// Estatus del trámite de un reporte de servicios urbanos
+enum EstatusReporteServicioUrbano {
+  ENVIADO
+  RECIBIDO
+  ATENDIDO
+  DESECHADO
+}
+
 model Dirigente {
   id String @id @default(cuid())
 
@@ -256,27 +264,33 @@ model Detectado {
 
 /// Reporte de servicios urbanos registrado por un dirigente (antes/después + georreferencia)
 model ReporteServicioUrbano {
-  id              String             @id @default(cuid())
-  dirigenteId     String
-  dirigente       Dirigente          @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  id               String                        @id @default(cuid())
+  folio            String                        @unique
+  dirigenteId      String
+  dirigente        Dirigente                     @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
 
-  tipo            TipoServicioUrbano
-  descripcion     String?
-  colonia         String?
+  tipo             TipoServicioUrbano
+  descripcion      String?
+  colonia          String?
   seccionElectoral String?
-  lat             Float
-  lng             Float
-  fotoAntesUrl    String
-  fotoDespuesUrl  String
-  activo          Boolean            @default(true)
+  direccion        String
+  lat              Float
+  lng              Float
+  fotoAntesUrl     String
+  fotoDespuesUrl   String
+  estatus          EstatusReporteServicioUrbano  @default(ENVIADO)
+  estatusAt        DateTime                      @default(now())
+  activo           Boolean                       @default(true)
 
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  createdAt        DateTime                      @default(now())
+  updatedAt        DateTime                      @updatedAt
 
   @@index([dirigenteId])
   @@index([tipo])
+  @@index([estatus])
   @@index([activo])
   @@index([createdAt])
+  @@index([folio])
 }
 
 /// Persona registrada por un detectado (datos generales INE)

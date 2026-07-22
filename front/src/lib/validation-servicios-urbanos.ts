@@ -11,6 +11,7 @@ const TIPOS = [
 export type ServicioUrbanoFormValues = {
   tipo: (typeof TIPOS)[number] | "";
   descripcion: string;
+  direccion: string;
   lat: number | null;
   lng: number | null;
   fotoAntesUrl: string;
@@ -22,18 +23,19 @@ export const servicioUrbanoFormSchema = Yup.object({
     .oneOf([...TIPOS], "Selecciona el tipo de servicio")
     .required("Selecciona el tipo de servicio"),
   descripcion: Yup.string().trim().max(2000, "Máximo 2000 caracteres"),
+  direccion: Yup.string().trim().required("Marca la ubicación en el mapa"),
   lat: Yup.number()
     .nullable()
-    .typeError("Captura la ubicación GPS")
+    .typeError("Marca la ubicación en el mapa")
     .min(-90, "Latitud inválida")
     .max(90, "Latitud inválida")
-    .required("Captura la ubicación GPS"),
+    .required("Marca la ubicación en el mapa"),
   lng: Yup.number()
     .nullable()
-    .typeError("Captura la ubicación GPS")
+    .typeError("Marca la ubicación en el mapa")
     .min(-180, "Longitud inválida")
     .max(180, "Longitud inválida")
-    .required("Captura la ubicación GPS"),
+    .required("Marca la ubicación en el mapa"),
   fotoAntesUrl: Yup.string().trim().required("Sube la foto del antes"),
   fotoDespuesUrl: Yup.string().trim().required("Sube la foto del después"),
 });

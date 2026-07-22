@@ -10,6 +10,14 @@ import {
   snapshotServicioUrbano,
 } from "../lib/audit.js";
 import {
+  servicioUrbanoCreateSchema,
+  servicioUrbanoEstatusSchema,
+  servicioUrbanoUpdateSchema,
+} from "../lib/validation-servicios-urbanos.js";
+import { generarFolioServicioUrbano } from "../lib/folio-servicio-urbano.js";
+import type { EstatusReporteServicioUrbano } from "../generated/prisma/client.js";
+import {
+  ESTATUS_SERVICIO_URBANO_LABEL,
   serializeReporteServicioUrbano,
   TIPO_SERVICIO_URBANO_LABEL,
 } from "../lib/serialize-servicio-urbano.js";
@@ -17,10 +25,6 @@ import {
   dirigenteResumenServiciosUrbanosSelect,
   serializeDirigenteServiciosUrbanos,
 } from "../lib/serialize-dirigente-servicios-urbanos.js";
-import {
-  servicioUrbanoCreateSchema,
-  servicioUrbanoUpdateSchema,
-} from "../lib/validation-servicios-urbanos.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -37,6 +41,10 @@ router.get("/", requireStaff, async (req, res) => {
   try {
     const buscar = typeof req.query.buscar === "string" ? req.query.buscar.trim() : "";
     const tipo = typeof req.query.tipo === "string" ? req.query.tipo.trim() : "";
+    const estatusRaw = typeof req.query.estatus === "string" ? req.query.estatus.trim() : "";
+    const estatus = ["ENVIADO", "RECIBIDO", "ATENDIDO", "DESECHADO"].includes(estatusRaw)
+      ? (estatusRaw as EstatusReporteServicioUrbano)
+      : undefined;
     const dirigenteId =
       typeof req.query.dirigenteId === "string" ? req.query.dirigenteId.trim() : "";
     const incluirBajas = req.query.incluirBajas === "true";
@@ -45,9 +53,12 @@ router.get("/", requireStaff, async (req, res) => {
       ...(incluirBajas ? {} : { activo: true }),
       ...(dirigenteId ? { dirigenteId } : {}),
       ...(tipo ? { tipo: tipo as TipoServicioUrbano } : {}),
+      ...(estatus ? { estatus } : {}),
       ...(buscar
         ? {
             OR: [
+              { folio: { contains: buscar, mode: "insensitive" } },
+              { direccion: { contains: buscar, mode: "insensitive" } },
               { descripcion: { contains: buscar, mode: "insensitive" } },
               { colonia: { contains: buscar, mode: "insensitive" } },
               { dirigente: { nombre: { contains: buscar, mode: "insensitive" } } },
@@ -74,6 +85,12 @@ router.get("/", requireStaff, async (req, res) => {
 router.get("/tipos", (_req, res) => {
   res.json(
     Object.entries(TIPO_SERVICIO_URBANO_LABEL).map(([value, label]) => ({ value, label })),
+  );
+});
+
+router.get("/estatus", (_req, res) => {
+  res.json(
+    Object.entries(ESTATUS_SERVICIO_URBANO_LABEL).map(([value, label]) => ({ value, label })),
   );
 });
 
@@ -190,26 +207,33 @@ router.post("/", requireAuth, async (req, res) => {
       return;
     }
 
-    const reporte = await prisma.reporteServicioUrbano.create({
-      data: {
-        dirigenteId: data.dirigenteId,
-        tipo: data.tipo as TipoServicioUrbano,
-        descripcion: data.descripcion?.trim() || null,
-        colonia: dirigente.colonia,
-        seccionElectoral: dirigente.seccionElectoral,
-        lat: data.lat,
-        lng: data.lng,
-        fotoAntesUrl: data.fotoAntesUrl,
-        fotoDespuesUrl: data.fotoDespuesUrl,
-      },
-      include: reporteInclude,
+    const reporte = await prisma.$transaction(async (tx) => {
+      const folio = await generarFolioServicioUrbano(tx);
+      return tx.reporteServicioUrbano.create({
+        data: {
+          folio,
+          dirigenteId: data.dirigenteId,
+          tipo: data.tipo as TipoServicioUrbano,
+          descripcion: data.descripcion?.trim() || null,
+          colonia: dirigente.colonia,
+          seccionElectoral: dirigente.seccionElectoral,
+          direccion: data.direccion.trim(),
+          lat: data.lat,
+          lng: data.lng,
+          fotoAntesUrl: data.fotoAntesUrl,
+          fotoDespuesUrl: data.fotoDespuesUrl,
+          estatus: "ENVIADO",
+          estatusAt: new Date(),
+        },
+        include: reporteInclude,
+      });
     });
 
     await registrarAuditoria(req, {
       accion: "CREATE",
       entidad: "ReporteServicioUrbano",
       entidadId: reporte.id,
-      entidadLabel: TIPO_SERVICIO_URBANO_LABEL[reporte.tipo],
+      entidadLabel: reporte.folio,
       dirigenteId: reporte.dirigenteId,
       despues: snapshotServicioUrbano(reporte),
     });
@@ -281,6 +305,7 @@ router.put("/:id", requireAuth, async (req, res) => {
       data: {
         tipo: data.tipo as TipoServicioUrbano,
         descripcion: data.descripcion?.trim() || null,
+        direccion: data.direccion.trim(),
         lat: data.lat,
         lng: data.lng,
         fotoAntesUrl: data.fotoAntesUrl,
@@ -293,10 +318,57 @@ router.put("/:id", requireAuth, async (req, res) => {
       accion: "UPDATE",
       entidad: "ReporteServicioUrbano",
       entidadId: id,
-      entidadLabel: TIPO_SERVICIO_URBANO_LABEL[reporte.tipo],
+      entidadLabel: reporte.folio,
       dirigenteId: reporte.dirigenteId,
       antes,
       despues: snapshotServicioUrbano(reporte),
+    });
+
+    res.json(serializeReporteServicioUrbano(reporte));
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
+      return;
+    }
+    console.error(error);
+    res.status(500).json({ error: "Error al actualizar reporte" });
+  }
+});
+
+router.patch("/:id/estatus", requireStaff, async (req, res) => {
+  try {
+    const id = paramId(req.params.id);
+    const existing = await prisma.reporteServicioUrbano.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ error: "No encontrado" });
+      return;
+    }
+
+    const data = await servicioUrbanoEstatusSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+
+    const antes = snapshotServicioUrbano(existing);
+
+    const reporte = await prisma.reporteServicioUrbano.update({
+      where: { id },
+      data: {
+        estatus: data.estatus as EstatusReporteServicioUrbano,
+        estatusAt: new Date(),
+      },
+      include: reporteInclude,
+    });
+
+    await registrarAuditoria(req, {
+      accion: "STATE_CHANGE",
+      entidad: "ReporteServicioUrbano",
+      entidadId: id,
+      entidadLabel: reporte.folio,
+      dirigenteId: reporte.dirigenteId,
+      antes,
+      despues: snapshotServicioUrbano(reporte),
+      metadata: { estatus: data.estatus },
     });
 
     res.json(serializeReporteServicioUrbano(reporte));
@@ -331,7 +403,7 @@ router.delete("/:id", requireStaff, async (req, res) => {
       accion: reactivar ? "STATE_CHANGE" : "DELETE",
       entidad: "ReporteServicioUrbano",
       entidadId: id,
-      entidadLabel: TIPO_SERVICIO_URBANO_LABEL[reporte.tipo],
+      entidadLabel: reporte.folio,
       dirigenteId: reporte.dirigenteId,
       antes: snapshotServicioUrbano(existing),
       despues: snapshotServicioUrbano(reporte),

@@ -6,11 +6,15 @@ import { useCallback, useEffect, useState } from "react";
 import { UploadImage } from "@/components/UploadImage";
 import { useAuth } from "@/components/AuthProvider";
 import { ServicioUrbanoForm } from "@/components/ServicioUrbanoForm";
+import { ServicioUrbanoMapPicker } from "@/components/ServicioUrbanoMapPicker";
 import { apiFetch } from "@/lib/api";
 import { canViewOwnDirigente } from "@/lib/mi-panel";
 import {
+  ESTATUS_SERVICIO_URBANO,
+  estatusBadgeClass,
   formatReporteFecha,
   mapsUrl,
+  type EstatusServicioUrbano,
   type ReporteServicioUrbanoDTO,
 } from "@/lib/servicios-urbanos";
 import type { ServicioUrbanoFormValues } from "@/lib/validation-servicios-urbanos";
@@ -19,6 +23,7 @@ function reporteToFormValues(r: ReporteServicioUrbanoDTO): ServicioUrbanoFormVal
   return {
     tipo: r.tipo,
     descripcion: r.descripcion ?? "",
+    direccion: r.direccion,
     lat: r.lat,
     lng: r.lng,
     fotoAntesUrl: r.fotoAntesUrl,
@@ -33,6 +38,9 @@ export default function ServicioUrbanoDetallePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editando, setEditando] = useState(false);
+  const [estatusDraft, setEstatusDraft] = useState<EstatusServicioUrbano>("ENVIADO");
+  const [estatusSaving, setEstatusSaving] = useState(false);
+  const [estatusError, setEstatusError] = useState<string | null>(null);
 
   const canLoad = isStaff || Boolean(user?.dirigenteId);
   const canManage =
@@ -53,7 +61,9 @@ export default function ServicioUrbanoDetallePage() {
     try {
       const res = await apiFetch(`/api/servicios-urbanos/${id}`);
       if (!res.ok) throw new Error("Reporte no encontrado");
-      setReporte((await res.json()) as ReporteServicioUrbanoDTO);
+      const data = (await res.json()) as ReporteServicioUrbanoDTO;
+      setReporte(data);
+      setEstatusDraft(data.estatus);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al cargar");
     } finally {
@@ -73,6 +83,7 @@ export default function ServicioUrbanoDetallePage() {
       body: JSON.stringify({
         tipo: values.tipo,
         descripcion: values.descripcion.trim() || null,
+        direccion: values.direccion.trim(),
         lat: values.lat,
         lng: values.lng,
         fotoAntesUrl: values.fotoAntesUrl,
@@ -85,6 +96,28 @@ export default function ServicioUrbanoDetallePage() {
     }
     setEditando(false);
     await load();
+  }
+
+  async function handleEstatusChange() {
+    if (!reporte || estatusDraft === reporte.estatus) return;
+    setEstatusSaving(true);
+    setEstatusError(null);
+    try {
+      const res = await apiFetch(`/api/servicios-urbanos/${id}/estatus`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estatus: estatusDraft }),
+      });
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string; detalles?: string[] };
+        throw new Error(data.detalles?.join(", ") ?? data.error ?? "Error al actualizar estatus");
+      }
+      await load();
+    } catch (err) {
+      setEstatusError(err instanceof Error ? err.message : "Error al actualizar estatus");
+    } finally {
+      setEstatusSaving(false);
+    }
   }
 
   async function toggleActivo(activo: boolean) {
@@ -125,6 +158,7 @@ export default function ServicioUrbanoDetallePage() {
     <div className="space-y-6 sm:space-y-8">
       <div className="page-header">
         <div>
+          <p className="font-mono text-sm font-semibold text-pin">{reporte.folio}</p>
           <h1 className="page-title">{reporte.tipoLabel}</h1>
           <p className="page-subtitle">
             {reporte.dirigente?.nombreCompleto ?? "Dirigente"} ·{" "}
@@ -136,7 +170,11 @@ export default function ServicioUrbanoDetallePage() {
             Volver
           </Link>
           {canManage && !editando ? (
-            <button type="button" className="btn-secondary btn-responsive" onClick={() => setEditando(true)}>
+            <button
+              type="button"
+              className="btn-secondary btn-responsive"
+              onClick={() => setEditando(true)}
+            >
               Editar
             </button>
           ) : null}
@@ -163,6 +201,46 @@ export default function ServicioUrbanoDetallePage() {
 
       {!reporte.activo ? <p className="alert-warning">Este reporte está dado de baja.</p> : null}
 
+      <section className="card-section flex flex-wrap items-center gap-3">
+        <span className={`${estatusBadgeClass(reporte.estatus)} text-sm`}>
+          {reporte.estatusLabel}
+        </span>
+        <span className="text-sm text-ink-secondary">
+          Actualizado {formatReporteFecha(reporte.estatusAt)}
+        </span>
+      </section>
+
+      {isStaff && !editando ? (
+        <section className="card-section space-y-4">
+          <h2 className="section-title">Estatus del trámite</h2>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="label min-w-[220px]">
+              Cambiar estatus
+              <select
+                className="input"
+                value={estatusDraft}
+                onChange={(e) => setEstatusDraft(e.target.value as EstatusServicioUrbano)}
+              >
+                {ESTATUS_SERVICIO_URBANO.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="btn-primary btn-responsive"
+              disabled={estatusSaving || estatusDraft === reporte.estatus}
+              onClick={() => void handleEstatusChange()}
+            >
+              {estatusSaving ? "Guardando…" : "Actualizar estatus"}
+            </button>
+          </div>
+          {estatusError ? <div className="alert-error">{estatusError}</div> : null}
+        </section>
+      ) : null}
+
       {editando ? (
         <ServicioUrbanoForm
           initialValues={reporteToFormValues(reporte)}
@@ -180,11 +258,15 @@ export default function ServicioUrbanoDetallePage() {
             </section>
           ) : null}
 
-          <section className="card-section space-y-3">
+          <section className="card-section space-y-4">
             <h2 className="section-title">Ubicación</h2>
-            <p className="text-sm text-ink-secondary">
-              Latitud {reporte.lat.toFixed(6)} · Longitud {reporte.lng.toFixed(6)}
-            </p>
+            <ServicioUrbanoMapPicker
+              lat={reporte.lat}
+              lng={reporte.lng}
+              direccion={reporte.direccion}
+              onChange={() => {}}
+              readOnly
+            />
             <a
               href={mapsUrl(reporte.lat, reporte.lng)}
               target="_blank"

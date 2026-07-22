@@ -297,26 +297,30 @@ export function snapshotRepresentante(r: {
 
 export function snapshotServicioUrbano(r: {
   id: string;
+  folio: string;
   dirigenteId: string;
   tipo: string;
   descripcion: string | null;
   colonia: string | null;
   seccionElectoral: string | null;
+  direccion: string;
   lat: number;
   lng: number;
-  fotoAntesUrl: string;
-  fotoDespuesUrl: string;
+  estatus: string;
   activo: boolean;
 }) {
   return sanitizarObjeto({
     id: r.id,
+    folio: r.folio,
     dirigenteId: r.dirigenteId,
     tipo: r.tipo,
     descripcion: r.descripcion,
     colonia: r.colonia,
     seccionElectoral: r.seccionElectoral,
+    direccion: r.direccion,
     lat: r.lat,
     lng: r.lng,
+    estatus: r.estatus,
     activo: r.activo,
   });
 }

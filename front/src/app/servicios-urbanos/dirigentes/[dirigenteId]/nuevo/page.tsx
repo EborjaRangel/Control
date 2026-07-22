@@ -73,6 +73,7 @@ export default function NuevoServicioUrbanoPage() {
         dirigenteId,
         tipo: values.tipo,
         descripcion: values.descripcion.trim() || null,
+        direccion: values.direccion.trim(),
         lat: values.lat,
         lng: values.lng,
         fotoAntesUrl: values.fotoAntesUrl,
@@ -83,7 +84,8 @@ export default function NuevoServicioUrbanoPage() {
       const data = (await res.json()) as { error?: string; detalles?: string[] };
       throw new Error(data.detalles?.join(", ") ?? data.error ?? "Error al crear");
     }
-    router.push(`/servicios-urbanos/dirigentes/${dirigenteId}`);
+    const created = (await res.json()) as { id: string };
+    router.push(`/servicios-urbanos/${created.id}`);
     router.refresh();
   }
 
