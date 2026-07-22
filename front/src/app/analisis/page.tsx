@@ -154,92 +154,123 @@ export default function AnalisisPage() {
       ) : null}
 
       {!loading && tendencias ? (
-        <section className="min-w-0 space-y-2">
-          <p className="text-sm text-ink-secondary">
-            Tendencia 2021 → 2024 (clic para filtrar el listado)
-          </p>
-          <div className="card-section grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            <ResumenTendenciaCard
-              titulo="Favor PAN + aliados"
-              valor={tendencias.favorPan}
-              total={tendencias.comparables}
-              detalle="Tendencia al alza vs MORENA"
-              colorClass="border-pin bg-pin-light"
-              valorClass="text-pin"
-              activo={tendenciaFiltro === "pan"}
-              onClick={() => toggleTendenciaFiltro("pan")}
-            />
-            <ResumenTendenciaCard
-              titulo="Favor MORENA + aliados"
-              valor={tendencias.favorMorena}
-              total={tendencias.comparables}
-              detalle="Tendencia al alza vs PAN"
-              colorClass="border-[#9f2241]/30 bg-[#9f2241]/5"
-              valorClass="text-[#9f2241]"
-              activo={tendenciaFiltro === "morena"}
-              onClick={() => toggleTendenciaFiltro("morena")}
-            />
-            <ResumenTendenciaCard
-              titulo="Empate técnico"
-              valor={tendencias.empate}
-              total={tendencias.comparables}
-              detalle="Variación similar entre bloques"
-              colorClass="border-line bg-surface-soft"
-              valorClass="text-ink"
-              activo={tendenciaFiltro === "empate"}
-              onClick={() => toggleTendenciaFiltro("empate")}
-            />
-            <ResumenTendenciaCard
-              titulo="MC superó al PRI"
-              valor={tendencias.mcSuperoPri}
-              total={tendencias.comparables}
-              detalle="PRI ≥ MC en 2021 · MC > PRI en 2024 · mayor ventaja arriba"
-              colorClass="border-[#e65100]/40 bg-[#fff3e0]"
-              valorClass="text-[#e65100]"
-              activo={tendenciaFiltro === "mc_supero_pri"}
-              onClick={() => toggleTendenciaFiltro("mc_supero_pri")}
-            />
-            <ResumenTendenciaCard
-              titulo="Sin comparación"
-              valor={tendencias.sinComparacion}
-              total={data?.totalSecciones ?? 403}
-              detalle="Faltan datos 2021 o 2024"
-              colorClass="border-line bg-surface-soft"
-              valorClass="text-ink-secondary"
-              ocultarPct
-              activo={tendenciaFiltro === "sin_datos"}
-              onClick={() => toggleTendenciaFiltro("sin_datos")}
-            />
+        <section className="min-w-0 space-y-4">
+          <div>
+            <h2 className="text-base font-semibold text-ink">Panel por sección</h2>
+            <p className="mt-1 text-sm text-ink-secondary">
+              Clic en una tarjeta para filtrar el listado. Dos lecturas distintas:{" "}
+              <strong className="font-medium text-ink">tendencia</strong> (quién crece más 2021→2024) y{" "}
+              <strong className="font-medium text-ink">liderazgo 2024</strong> (quién va arriba en %).
+            </p>
           </div>
-        </section>
-      ) : null}
 
-      {!loading && tendencias ? (
-        <section className="min-w-0 space-y-2">
-          <p className="text-sm text-ink-secondary">
-            Liderazgo por sección en 2024 (% bloque · clic para filtrar · mayor ventaja arriba)
-          </p>
-          <div className="card-section grid gap-3 sm:grid-cols-2">
-            <ResumenTendenciaCard
-              titulo="PAN + aliados arriba"
-              valor={tendencias.panGana2024}
-              total={tendencias.panGana2024 + tendencias.morenaGana2024}
-              detalle="Mayor % PAN vs MORENA en 2024"
-              colorClass="border-pin bg-pin-light"
-              valorClass="text-pin"
-              activo={tendenciaFiltro === "pan_gana_2024"}
-              onClick={() => toggleTendenciaFiltro("pan_gana_2024")}
-            />
-            <ResumenTendenciaCard
-              titulo="MORENA + aliados arriba"
-              valor={tendencias.morenaGana2024}
-              total={tendencias.panGana2024 + tendencias.morenaGana2024}
-              detalle="Mayor % MORENA vs PAN en 2024"
-              colorClass="border-[#9f2241]/30 bg-[#9f2241]/5"
-              valorClass="text-[#9f2241]"
-              activo={tendenciaFiltro === "morena_gana_2024"}
-              onClick={() => toggleTendenciaFiltro("morena_gana_2024")}
-            />
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-secondary">
+              Comparación clave
+            </p>
+            <div className="card-section grid gap-3 lg:grid-cols-2">
+              <ResumenTendenciaCard
+                titulo="MORENA gana terreno"
+                valor={tendencias.favorMorena}
+                total={tendencias.comparables}
+                detalle="Sube más que PAN + aliados (2021→2024)"
+                nota="Tendencia relativa · no significa ganar la sección"
+                colorClass="border-[#9f2241]/40 bg-[#9f2241]/5"
+                valorClass="text-[#9f2241]"
+                destacado
+                activo={tendenciaFiltro === "morena"}
+                onClick={() => toggleTendenciaFiltro("morena")}
+              />
+              <ResumenTendenciaCard
+                titulo="PAN arriba en 2024"
+                valor={tendencias.panGana2024}
+                total={tendencias.panGana2024 + tendencias.morenaGana2024}
+                detalle="Mayor % PAN + aliados que MORENA en 2024"
+                nota="Liderazgo en la sección · explica victoria agregada"
+                colorClass="border-pin bg-pin-light"
+                valorClass="text-pin"
+                destacado
+                activo={tendenciaFiltro === "pan_gana_2024"}
+                onClick={() => toggleTendenciaFiltro("pan_gana_2024")}
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-secondary">
+              Tendencia 2021 → 2024
+            </p>
+            <div className="card-section grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <ResumenTendenciaCard
+                titulo="Favor PAN + aliados"
+                valor={tendencias.favorPan}
+                total={tendencias.comparables}
+                detalle="PAN crece más que MORENA"
+                colorClass="border-pin/30 bg-surface-soft"
+                valorClass="text-pin"
+                activo={tendenciaFiltro === "pan"}
+                onClick={() => toggleTendenciaFiltro("pan")}
+              />
+              <ResumenTendenciaCard
+                titulo="Empate técnico"
+                valor={tendencias.empate}
+                total={tendencias.comparables}
+                detalle="Variación similar entre bloques"
+                colorClass="border-line bg-surface-soft"
+                valorClass="text-ink"
+                activo={tendenciaFiltro === "empate"}
+                onClick={() => toggleTendenciaFiltro("empate")}
+              />
+              <ResumenTendenciaCard
+                titulo="MC superó al PRI"
+                valor={tendencias.mcSuperoPri}
+                total={tendencias.comparables}
+                detalle="PRI ≥ MC en 2021 · MC > PRI en 2024"
+                colorClass="border-[#e65100]/40 bg-[#fff3e0]"
+                valorClass="text-[#e65100]"
+                activo={tendenciaFiltro === "mc_supero_pri"}
+                onClick={() => toggleTendenciaFiltro("mc_supero_pri")}
+              />
+              <ResumenTendenciaCard
+                titulo="Sin comparación"
+                valor={tendencias.sinComparacion}
+                total={data?.totalSecciones ?? 403}
+                detalle="Faltan datos 2021 o 2024"
+                colorClass="border-line bg-surface-soft"
+                valorClass="text-ink-secondary"
+                ocultarPct
+                activo={tendenciaFiltro === "sin_datos"}
+                onClick={() => toggleTendenciaFiltro("sin_datos")}
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-secondary">
+              Liderazgo en 2024
+            </p>
+            <div className="card-section grid gap-3 sm:grid-cols-2">
+              <ResumenTendenciaCard
+                titulo="MORENA arriba en 2024"
+                valor={tendencias.morenaGana2024}
+                total={tendencias.panGana2024 + tendencias.morenaGana2024}
+                detalle="Mayor % MORENA + aliados que PAN"
+                colorClass="border-[#9f2241]/30 bg-[#9f2241]/5"
+                valorClass="text-[#9f2241]"
+                activo={tendenciaFiltro === "morena_gana_2024"}
+                onClick={() => toggleTendenciaFiltro("morena_gana_2024")}
+              />
+              <ResumenTendenciaCard
+                titulo="PAN arriba en 2024"
+                valor={tendencias.panGana2024}
+                total={tendencias.panGana2024 + tendencias.morenaGana2024}
+                detalle="Mayor % PAN + aliados que MORENA"
+                colorClass="border-pin/30 bg-surface-soft"
+                valorClass="text-pin"
+                activo={tendenciaFiltro === "pan_gana_2024"}
+                onClick={() => toggleTendenciaFiltro("pan_gana_2024")}
+              />
+            </div>
           </div>
         </section>
       ) : null}
@@ -496,9 +527,11 @@ function ResumenTendenciaCard({
   valor,
   total,
   detalle,
+  nota,
   colorClass,
   valorClass,
   ocultarPct = false,
+  destacado = false,
   activo = false,
   onClick,
 }: {
@@ -506,9 +539,11 @@ function ResumenTendenciaCard({
   valor: number;
   total: number;
   detalle: string;
+  nota?: string;
   colorClass: string;
   valorClass: string;
   ocultarPct?: boolean;
+  destacado?: boolean;
   activo?: boolean;
   onClick?: () => void;
 }) {
@@ -520,13 +555,14 @@ function ResumenTendenciaCard({
       onClick={onClick}
       className={`min-w-0 rounded-pin border p-4 text-left transition-shadow ${colorClass} ${
         activo ? "ring-2 ring-pin shadow-pin" : "hover:shadow-pin"
-      } ${onClick ? "cursor-pointer" : ""}`}
+      } ${destacado && !activo ? "ring-1 ring-line" : ""} ${onClick ? "cursor-pointer" : ""}`}
     >
       <p className="text-sm font-medium text-ink-secondary">{titulo}</p>
       <p className={`mt-1 text-3xl font-bold ${valorClass}`}>{valor}</p>
       <p className="mt-1 break-words text-xs text-ink-secondary">
         {ocultarPct ? `de ${total} secciones` : `${pct}% de ${total} comparables · ${detalle}`}
       </p>
+      {nota ? <p className="mt-2 text-xs font-medium text-ink">{nota}</p> : null}
       {activo ? <p className="mt-2 text-xs font-semibold text-pin">Filtro activo</p> : null}
     </button>
   );
