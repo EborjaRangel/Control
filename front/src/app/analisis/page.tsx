@@ -3,14 +3,13 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import { AnalisisSeccionDashboard } from "@/components/AnalisisSeccionDashboard";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import {
   formatElectores,
-  formatPorcentaje,
   type AnalisisSeccionRow,
   type AnalisisSeccionesResponse,
-  type ResultadoAlcaldiaSeccion,
 } from "@/lib/analisis";
 
 export default function AnalisisPage() {
@@ -71,8 +70,8 @@ export default function AnalisisPage() {
             {loading
               ? "Cargando…"
               : data
-                ? `${filas.length} de ${data.totalSecciones} secciones · casillas, electores y resultados de alcalde (IECM)${data.vigencia ? ` · INE ${data.vigencia}` : ""}`
-                : "Secciones electorales por volumen de casillas, electores y votación de alcalde"}
+                ? `${filas.length} de ${data.totalSecciones} secciones · electores y comparación de alcalde 2021/2024 (IECM)${data.vigencia ? ` · INE ${data.vigencia}` : ""}`
+                : "Secciones electorales con dashboard de votación y tendencias por bloque"}
           </p>
         </div>
       </div>
@@ -147,7 +146,7 @@ export default function AnalisisPage() {
                     <th className="text-right">Electores</th>
                     <th>D. local</th>
                     <th>D. federal</th>
-                    <th className="w-28">Votación</th>
+                    <th className="w-28">Análisis</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -181,7 +180,7 @@ export default function AnalisisPage() {
                       {expandido === fila.seccion ? (
                         <tr>
                           <td colSpan={8} className="bg-surface-soft p-4">
-                            <ResultadosAlcaldePanel fila={fila} />
+                            <AnalisisSeccionDashboard fila={fila} />
                           </td>
                         </tr>
                       ) : null}
@@ -193,122 +192,6 @@ export default function AnalisisPage() {
           </div>
         </>
       ) : null}
-    </div>
-  );
-}
-
-function ResultadosAlcaldePanel({ fila }: { fila: AnalisisSeccionRow }) {
-  return (
-    <div className="space-y-4">
-      {fila.casillasDetalle.length > 0 ? (
-        <div className="panel-soft space-y-3 p-4">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="font-semibold text-ink">Electores por casilla</h3>
-            <p className="text-sm font-medium text-ink">
-              Total {formatElectores(fila.totalElectores)}
-            </p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="data-table min-w-[280px] text-sm">
-              <thead>
-                <tr>
-                  <th>Casilla</th>
-                  <th className="text-right">Electores</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fila.casillasDetalle.map((casilla) => (
-                  <tr key={casilla.etiqueta}>
-                    <td>{casilla.etiqueta}</td>
-                    <td className="text-right whitespace-nowrap">
-                      {formatElectores(casilla.listaNominal)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td className="font-semibold">Total sección</td>
-                  <td className="text-right font-semibold whitespace-nowrap">
-                    {formatElectores(fila.totalElectores)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      ) : null}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ResultadoAlcaldeBlock
-          anio={2024}
-          titulo="Alcalde 2024"
-          resultado={fila.alcalde2024}
-          totalElectores={fila.totalElectores}
-        />
-        <ResultadoAlcaldeBlock
-          anio={2021}
-          titulo="Alcalde 2021"
-          resultado={fila.alcalde2021}
-          totalElectores={fila.totalElectores}
-        />
-      </div>
-    </div>
-  );
-}
-
-function ResultadoAlcaldeBlock({
-  titulo,
-  anio,
-  resultado,
-  totalElectores,
-}: {
-  titulo: string;
-  anio: number;
-  resultado: ResultadoAlcaldiaSeccion | null;
-  totalElectores: number;
-}) {
-  if (!resultado) {
-    return (
-      <div className="panel-soft space-y-2 p-4 text-sm text-ink-secondary">
-        <h3 className="font-semibold text-ink">{titulo}</h3>
-        <p>Sin datos importados del IECM para {anio}.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="panel-soft space-y-3 p-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-semibold text-ink">{titulo}</h3>
-        <p className="text-sm text-ink-secondary">
-          Participación {formatPorcentaje(resultado.participacionPct)} · Nulos{" "}
-          {formatElectores(resultado.votosNulos)} ({formatPorcentaje(resultado.votosNulosPct)})
-        </p>
-      </div>
-      <p className="text-xs text-ink-secondary">
-        Electores {formatElectores(totalElectores)} · Votación total{" "}
-        {formatElectores(resultado.votacionTotal)}
-      </p>
-      <div className="overflow-x-auto">
-        <table className="data-table min-w-[420px] text-sm">
-          <thead>
-            <tr>
-              <th>Partido / fuerza</th>
-              <th className="text-right">Votos</th>
-              <th className="text-right">%</th>
-            </tr>
-          </thead>
-          <tbody>
-            {resultado.partidos.map((partido) => (
-              <tr key={partido.clave}>
-                <td>{partido.etiqueta}</td>
-                <td className="text-right whitespace-nowrap">{formatElectores(partido.votos)}</td>
-                <td className="text-right whitespace-nowrap">{formatPorcentaje(partido.porcentaje)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
@@ -354,9 +237,9 @@ function AnalisisCard({
         </p>
       </div>
       <button type="button" className="btn-ghost btn-sm btn-responsive" onClick={onToggle}>
-        {expandido ? "Ocultar votación alcalde" : "Ver votación alcalde 2021/2024"}
+        {expandido ? "Ocultar análisis" : "Ver análisis 2021/2024"}
       </button>
-      {expandido ? <ResultadosAlcaldePanel fila={fila} /> : null}
+      {expandido ? <AnalisisSeccionDashboard fila={fila} /> : null}
     </li>
   );
 }

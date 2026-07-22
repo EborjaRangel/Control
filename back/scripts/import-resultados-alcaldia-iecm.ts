@@ -101,8 +101,24 @@ function normalizarHeader(value: unknown) {
   return String(value ?? "")
     .trim()
     .toLowerCase()
+    .replace(/_/g, " ")
     .normalize("NFD")
     .replace(/\p{M}/gu, "");
+}
+
+const CLAVES_PARTIDO_EXCLUIDAS = new Set([
+  "CNR",
+  "DISTRITO_LOCAL",
+  "CLAVE_DEM",
+  "ID_CASILLA",
+  "SECCION",
+  "CASILLA",
+  "TIPO_CASILLA",
+  "EXT_CONTIGUA",
+]);
+
+function esClavePartidoValida(clave: string) {
+  return !CLAVES_PARTIDO_EXCLUIDAS.has(clave.toUpperCase());
 }
 
 function etiquetaPartido(clave: string) {
@@ -225,7 +241,7 @@ function parseXlsxAlcaldia(xlsxPath: string, anio: 2021 | 2024): ResultadoAlcald
     }
 
     const partidos: PartidoVotosSeccion[] = [...acumPartidos.entries()]
-      .filter(([, votos]) => votos > 0)
+      .filter(([clave, votos]) => votos > 0 && esClavePartidoValida(clave))
       .map(([clave, votos]) => ({
         clave,
         etiqueta: etiquetaPartido(clave),
