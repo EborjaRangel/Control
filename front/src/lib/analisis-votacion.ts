@@ -7,7 +7,7 @@ import {
 
 export type AnioAlcaldia = 2018 | 2021 | 2024;
 
-export type BloqueVotacion = "morena" | "pan" | "mc" | "otros";
+export type BloqueVotacion = "morena" | "pan" | "mc" | "pri" | "otros";
 
 export type ResumenBloque = {
   bloque: BloqueVotacion;
@@ -70,16 +70,18 @@ const CLAVES_META = new Set([
 export const COLOR_MORENA = "#9f2241";
 export const COLOR_PAN = "#0055a4";
 export const COLOR_MC = "#e65100";
+export const COLOR_PRI = "#007934";
 export const COLOR_OTROS = "#767676";
 
 const ETIQUETAS_BLOQUE: Record<BloqueVotacion, string> = {
   morena: "MORENA y aliados",
   pan: "PAN y aliados",
   mc: "MC",
+  pri: "PRI (independiente)",
   otros: "Otros",
 };
 
-const ORDEN_BLOQUES: BloqueVotacion[] = ["morena", "pan", "mc", "otros"];
+const ORDEN_BLOQUES: BloqueVotacion[] = ["morena", "pan", "mc", "pri", "otros"];
 
 export function esPartidoValido(clave: string): boolean {
   return !CLAVES_META.has(clave.toUpperCase());
@@ -90,9 +92,8 @@ function esAliadoPan2018(clave: string): boolean {
   return k === "MC" || k === "CONVERGENCIA" || k.includes("CONVERGENCIA");
 }
 
-function esAliadoPan(clave: string, anio?: AnioAlcaldia): boolean {
+function esAliadoPan(clave: string): boolean {
   const k = clave.toUpperCase();
-  if (anio === 2018 && (k === "PRI" || k.startsWith("PRI_"))) return false;
   return (
     k === "PAN" ||
     k.startsWith("PAN_") ||
@@ -106,7 +107,8 @@ function esAliadoPan(clave: string, anio?: AnioAlcaldia): boolean {
 export function clasificarBloque(clave: string, anio?: AnioAlcaldia): BloqueVotacion {
   const k = clave.toUpperCase();
   if (k === "MORENA" || k.includes("MORENA")) return "morena";
-  if (esAliadoPan(clave, anio)) return "pan";
+  if (anio === 2018 && (k === "PRI" || k.startsWith("PRI_"))) return "pri";
+  if (esAliadoPan(clave)) return "pan";
   if (anio === 2018 && esAliadoPan2018(clave)) return "pan";
   if (k === "MC") return "mc";
   return "otros";
@@ -114,7 +116,7 @@ export function clasificarBloque(clave: string, anio?: AnioAlcaldia): BloqueVota
 
 function etiquetaBloque(bloque: BloqueVotacion, anio?: AnioAlcaldia): string {
   if (anio === 2018 && bloque === "pan") {
-    return "PAN y aliados (incl. MC, PRD; PRI aparte)";
+    return "PAN y aliados (incl. MC, PRD)";
   }
   if (bloque === "pan") {
     return "PAN y aliados (PAN, PRI, PRD)";
@@ -133,7 +135,13 @@ function pctVotos(resultado: ResultadoAlcaldiaSeccion, clave: string): number {
 }
 
 function resumirBloques(resultado: ResultadoAlcaldiaSeccion, anio?: AnioAlcaldia): ResumenBloque[] {
-  const acum: Record<BloqueVotacion, number> = { morena: 0, pan: 0, mc: 0, otros: 0 };
+  const acum: Record<BloqueVotacion, number> = {
+    morena: 0,
+    pan: 0,
+    mc: 0,
+    pri: 0,
+    otros: 0,
+  };
 
   for (const partido of filtrarPartidos(resultado.partidos)) {
     acum[clasificarBloque(partido.clave, anio)] += partido.votos;
@@ -144,6 +152,7 @@ function resumirBloques(resultado: ResultadoAlcaldiaSeccion, anio?: AnioAlcaldia
     morena: COLOR_MORENA,
     pan: COLOR_PAN,
     mc: COLOR_MC,
+    pri: COLOR_PRI,
     otros: COLOR_OTROS,
   };
 
@@ -302,7 +311,7 @@ function generarConclusion(
 
   if (tiene2018) {
     partes.push(
-      "En 2018, MC se contabiliza dentro de PAN y aliados por la coalición PAN-PRD-MC.",
+      "En 2018, MC y PRD se contabilizan en PAN y aliados (coalición PAN-PRD-MC). El PRI va en bloque independiente.",
     );
   }
 
@@ -529,6 +538,7 @@ export function colorPartido(clave: string, anio?: AnioAlcaldia): string {
   const bloque = clasificarBloque(clave, anio);
   if (bloque === "morena") return COLOR_MORENA;
   if (bloque === "pan") return COLOR_PAN;
+  if (bloque === "pri") return COLOR_PRI;
   return COLOR_OTROS;
 }
 

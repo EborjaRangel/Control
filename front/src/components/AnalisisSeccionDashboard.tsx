@@ -137,7 +137,7 @@ export function AnalisisSeccionDashboard({
           anio={2018}
           resultado={fila.alcalde2018}
           partidos={comparacion.topPartidos2018}
-          nota="MC y PRD en PAN y aliados. PRI contado aparte (Otros)."
+          nota="MC y PRD en PAN y aliados. PRI en bloque independiente."
         />
         <AnioDashboard
           titulo="Alcalde 2021"
@@ -224,7 +224,8 @@ function BloquesChart({
   maxPct: number;
 }) {
   const bloquesVisibles = bloques.filter(
-    (bloque) => bloque.bloque !== "mc" || bloque.porcentaje > 0,
+    (bloque) =>
+      (bloque.bloque !== "mc" && bloque.bloque !== "pri") || bloque.porcentaje > 0,
   );
 
   return (
