@@ -18,6 +18,8 @@ import {
   ETIQUETAS_ORDEN_ANALISIS,
   ETIQUETAS_TENDENCIA,
   etiquetaFiltroTendencia2124,
+  liderazgoBloques2024,
+  ventajaMorenaSobrePan2024,
   metricasOrdenListadoAnalisis,
   resumirTendenciasAlcaldia,
   seccionMcSuperoPriDesde2021,
@@ -81,6 +83,10 @@ export default function AnalisisPage() {
       if (distritoLocal && String(fila.distritoLocal ?? "") !== distritoLocal) return false;
       if (tendenciaFiltro === "mc_supero_pri") {
         if (!seccionMcSuperoPriDesde2021(fila, promedios)) return false;
+      } else if (tendenciaFiltro === "pan_gana_2024") {
+        if (liderazgoBloques2024(fila, promedios) !== "pan") return false;
+      } else if (tendenciaFiltro === "morena_gana_2024") {
+        if (liderazgoBloques2024(fila, promedios) !== "morena") return false;
       } else if (tendenciaFiltro && tendenciaPorSeccion.get(fila.seccion) !== tendenciaFiltro) {
         return false;
       }
@@ -187,6 +193,36 @@ export default function AnalisisPage() {
         </section>
       ) : null}
 
+      {!loading && tendencias ? (
+        <section className="min-w-0 space-y-2">
+          <p className="text-sm text-ink-secondary">
+            Liderazgo por sección en 2024 (% bloque · clic para filtrar · mayor ventaja arriba)
+          </p>
+          <div className="card-section grid gap-3 sm:grid-cols-2">
+            <ResumenTendenciaCard
+              titulo="PAN + aliados arriba"
+              valor={tendencias.panGana2024}
+              total={tendencias.panGana2024 + tendencias.morenaGana2024}
+              detalle="Mayor % PAN vs MORENA en 2024"
+              colorClass="border-pin bg-pin-light"
+              valorClass="text-pin"
+              activo={tendenciaFiltro === "pan_gana_2024"}
+              onClick={() => toggleTendenciaFiltro("pan_gana_2024")}
+            />
+            <ResumenTendenciaCard
+              titulo="MORENA + aliados arriba"
+              valor={tendencias.morenaGana2024}
+              total={tendencias.panGana2024 + tendencias.morenaGana2024}
+              detalle="Mayor % MORENA vs PAN en 2024"
+              colorClass="border-[#9f2241]/30 bg-[#9f2241]/5"
+              valorClass="text-[#9f2241]"
+              activo={tendenciaFiltro === "morena_gana_2024"}
+              onClick={() => toggleTendenciaFiltro("morena_gana_2024")}
+            />
+          </div>
+        </section>
+      ) : null}
+
       <section className="card-section grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="min-w-0">
           <label className="label" htmlFor="analisis-buscar">
@@ -215,6 +251,8 @@ export default function AnalisisPage() {
             <option value="pan">{ETIQUETAS_TENDENCIA.pan}</option>
             <option value="empate">{ETIQUETAS_TENDENCIA.empate}</option>
             <option value="mc_supero_pri">{etiquetaFiltroTendencia2124("mc_supero_pri")}</option>
+            <option value="pan_gana_2024">{etiquetaFiltroTendencia2124("pan_gana_2024")}</option>
+            <option value="morena_gana_2024">{etiquetaFiltroTendencia2124("morena_gana_2024")}</option>
             <option value="sin_datos">{ETIQUETAS_TENDENCIA.sin_datos}</option>
           </select>
         </div>
@@ -340,6 +378,7 @@ function AnalisisCard({
   onToggle: () => void;
 }) {
   const metricas = metricasOrdenListadoAnalisis(fila, promedios);
+  const ventajaMorena2024 = ventajaMorenaSobrePan2024(fila, promedios);
   const duelo = compararVotacionSeccion(
     fila.alcalde2018,
     fila.alcalde2021,
@@ -365,6 +404,20 @@ function AnalisisCard({
         </div>
         <TendenciaBadge tendencia={tendencia} />
       </div>
+      {tendenciaFiltro === "pan_gana_2024" && metricas.panPct2024 != null && metricas.morenaPct2024 != null ? (
+        <p className="text-sm font-semibold text-pin">
+          PAN {formatPorcentaje(metricas.panPct2024)} vs MORENA {formatPorcentaje(metricas.morenaPct2024)} ·
+          ventaja PAN +{metricas.ventajaPan2024?.toFixed(2)} pp
+        </p>
+      ) : null}
+      {tendenciaFiltro === "morena_gana_2024" &&
+      metricas.panPct2024 != null &&
+      metricas.morenaPct2024 != null ? (
+        <p className="text-sm font-semibold text-[#9f2241]">
+          MORENA {formatPorcentaje(metricas.morenaPct2024)} vs PAN {formatPorcentaje(metricas.panPct2024)} ·
+          ventaja MORENA +{ventajaMorena2024?.toFixed(2)} pp
+        </p>
+      ) : null}
       {tendenciaFiltro === "mc_supero_pri" && duelo ? (
         <p className="text-sm font-semibold text-[#e65100]">
           Ventaja MC vs PRI en 2024: +{duelo.ventajaMc2024.toFixed(2)} pp · PRI{" "}

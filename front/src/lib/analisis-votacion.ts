@@ -673,13 +673,22 @@ export type ResumenTendenciasAlcaldia = {
   favorPan: number;
   empate: number;
   mcSuperoPri: number;
+  panGana2024: number;
+  morenaGana2024: number;
   sinComparacion: number;
   comparables: number;
 };
 
 export type TendenciaSeccion = "morena" | "pan" | "empate" | "sin_datos";
 
-export type TendenciaSeccionFiltro = "" | TendenciaSeccion | "mc_supero_pri";
+export type LiderazgoBloque2024 = "pan" | "morena" | "empate";
+
+export type TendenciaSeccionFiltro =
+  | ""
+  | TendenciaSeccion
+  | "mc_supero_pri"
+  | "pan_gana_2024"
+  | "morena_gana_2024";
 
 export const ETIQUETAS_TENDENCIA: Record<TendenciaSeccion, string> = {
   morena: "Favor MORENA + aliados",
@@ -693,7 +702,58 @@ export function etiquetaFiltroTendencia2124(filtro: TendenciaSeccionFiltro): str
   if (filtro === "mc_supero_pri") {
     return "MC superó al PRI (2021→2024)";
   }
+  if (filtro === "pan_gana_2024") {
+    return "PAN + aliados arriba en 2024";
+  }
+  if (filtro === "morena_gana_2024") {
+    return "MORENA + aliados arriba en 2024";
+  }
   return ETIQUETAS_TENDENCIA[filtro];
+}
+
+function pctBloqueAlcalde2024(
+  fila: AnalisisSeccionRow,
+  promedios: PromediosAlcaldia | null,
+  bloque: "pan" | "morena",
+): number | null {
+  if (!fila.alcalde2024) return null;
+  const cmp = compararVotacionSeccion(
+    fila.alcalde2018,
+    fila.alcalde2021,
+    fila.alcalde2024,
+    promedios,
+  );
+  return cmp?.bloques2024.find((b) => b.bloque === bloque)?.porcentaje ?? null;
+}
+
+export function liderazgoBloques2024(
+  fila: AnalisisSeccionRow,
+  promedios: PromediosAlcaldia | null = null,
+): LiderazgoBloque2024 | null {
+  const pan = pctBloqueAlcalde2024(fila, promedios, "pan");
+  const morena = pctBloqueAlcalde2024(fila, promedios, "morena");
+  if (pan == null || morena == null) return null;
+  if (Math.abs(pan - morena) <= UMBRAL_PP) return "empate";
+  return pan > morena ? "pan" : "morena";
+}
+
+export function ventajaPanSobreMorena2024(
+  fila: AnalisisSeccionRow,
+  promedios: PromediosAlcaldia | null = null,
+): number | null {
+  const pan = pctBloqueAlcalde2024(fila, promedios, "pan");
+  const morena = pctBloqueAlcalde2024(fila, promedios, "morena");
+  if (pan == null || morena == null) return null;
+  return Math.round((pan - morena) * 100) / 100;
+}
+
+export function ventajaMorenaSobrePan2024(
+  fila: AnalisisSeccionRow,
+  promedios: PromediosAlcaldia | null = null,
+): number | null {
+  const ventaja = ventajaPanSobreMorena2024(fila, promedios);
+  if (ventaja == null) return null;
+  return Math.round(-ventaja * 100) / 100;
 }
 
 export function seccionMcSuperoPriDesde2021(
@@ -734,18 +794,37 @@ export const ETIQUETAS_ORDEN_ANALISIS: Record<OrdenListadoAnalisis, string> = {
 export function metricasOrdenListadoAnalisis(
   fila: AnalisisSeccionRow,
   promedios: PromediosAlcaldia | null,
-): { deltaMorena: number | null; panPct2024: number | null } {
+): {
+  deltaMorena: number | null;
+  panPct2024: number | null;
+  morenaPct2024: number | null;
+  ventajaPan2024: number | null;
+} {
   const cmp = compararVotacionSeccion(
     fila.alcalde2018,
     fila.alcalde2021,
     fila.alcalde2024,
     promedios,
   );
-  if (!cmp) return { deltaMorena: null, panPct2024: null };
+  if (!cmp) {
+    return {
+      deltaMorena: null,
+      panPct2024: null,
+      morenaPct2024: null,
+      ventajaPan2024: null,
+    };
+  }
+  const panPct2024 = cmp.bloques2024.find((b) => b.bloque === "pan")?.porcentaje ?? null;
+  const morenaPct2024 = cmp.bloques2024.find((b) => b.bloque === "morena")?.porcentaje ?? null;
   return {
     deltaMorena:
       fila.alcalde2021 && fila.alcalde2024 ? cmp.deltaMorenaPct : null,
-    panPct2024: cmp.bloques2024.find((b) => b.bloque === "pan")?.porcentaje ?? null,
+    panPct2024,
+    morenaPct2024,
+    ventajaPan2024:
+      panPct2024 != null && morenaPct2024 != null
+        ? Math.round((panPct2024 - morenaPct2024) * 100) / 100
+        : null,
   };
 }
 
@@ -772,6 +851,16 @@ export function compararFilasAnalisis(
   if (tendenciaFiltro === "mc_supero_pri") {
     const va = ventajaMcVsPri2024(a, promedios) ?? Number.NEGATIVE_INFINITY;
     const vb = ventajaMcVsPri2024(b, promedios) ?? Number.NEGATIVE_INFINITY;
+    return vb - va || Number(a.seccion) - Number(b.seccion);
+  }
+  if (tendenciaFiltro === "pan_gana_2024") {
+    const va = ventajaPanSobreMorena2024(a, promedios) ?? Number.NEGATIVE_INFINITY;
+    const vb = ventajaPanSobreMorena2024(b, promedios) ?? Number.NEGATIVE_INFINITY;
+    return vb - va || Number(a.seccion) - Number(b.seccion);
+  }
+  if (tendenciaFiltro === "morena_gana_2024") {
+    const va = ventajaMorenaSobrePan2024(a, promedios) ?? Number.NEGATIVE_INFINITY;
+    const vb = ventajaMorenaSobrePan2024(b, promedios) ?? Number.NEGATIVE_INFINITY;
     return vb - va || Number(a.seccion) - Number(b.seccion);
   }
 
@@ -806,9 +895,17 @@ export function resumirTendenciasAlcaldia(
   let favorPan = 0;
   let empate = 0;
   let mcSuperoPri = 0;
+  let panGana2024 = 0;
+  let morenaGana2024 = 0;
   let sinComparacion = 0;
 
   for (const fila of filas) {
+    if (fila.alcalde2024) {
+      const liderazgo = liderazgoBloques2024(fila, promedios);
+      if (liderazgo === "pan") panGana2024 += 1;
+      else if (liderazgo === "morena") morenaGana2024 += 1;
+    }
+
     const cmp = compararVotacionSeccion(
       fila.alcalde2018,
       fila.alcalde2021,
@@ -830,6 +927,8 @@ export function resumirTendenciasAlcaldia(
     favorPan,
     empate,
     mcSuperoPri,
+    panGana2024,
+    morenaGana2024,
     sinComparacion,
     comparables: favorMorena + favorPan + empate,
   };
