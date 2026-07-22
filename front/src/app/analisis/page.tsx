@@ -133,6 +133,27 @@ export default function AnalisisPage() {
       {error ? <div className="alert-error">{error}</div> : null}
 
       {!loading && tendencias ? (
+        <div className="rounded-pin border border-line bg-surface-soft p-4 text-sm leading-relaxed text-ink-secondary">
+          <p>
+            En{" "}
+            <span className="font-semibold text-[#9f2241]">
+              {tendencias.comparables > 0
+                ? Math.round((tendencias.favorMorena / tendencias.comparables) * 1000) / 10
+                : 0}
+              %
+            </span>{" "}
+            de las secciones ({tendencias.favorMorena} de {tendencias.comparables}), MORENA y aliados
+            ganaron terreno frente a PAN y aliados entre 2021 y 2024. Aun así, en 2024 PAN y aliados
+            siguió arriba en{" "}
+            <span className="font-semibold text-pin">{tendencias.panGana2024} secciones</span> y
+            MORENA y aliados en{" "}
+            <span className="font-semibold text-[#9f2241]">{tendencias.morenaGana2024}</span>. La
+            tendencia mide quién crece más; el liderazgo en 2024 mide quién va arriba en porcentaje.
+          </p>
+        </div>
+      ) : null}
+
+      {!loading && tendencias ? (
         <section className="min-w-0 space-y-2">
           <p className="text-sm text-ink-secondary">
             Tendencia 2021 → 2024 (clic para filtrar el listado)
