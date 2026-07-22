@@ -1,14 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import {
   formatElectores,
+  formatPorcentaje,
   type AnalisisSeccionRow,
   type AnalisisSeccionesResponse,
+  type ResultadoAlcaldiaSeccion,
 } from "@/lib/analisis";
 
 export default function AnalisisPage() {
@@ -19,6 +21,7 @@ export default function AnalisisPage() {
   const [error, setError] = useState<string | null>(null);
   const [distritoLocal, setDistritoLocal] = useState("");
   const [buscar, setBuscar] = useState("");
+  const [expandido, setExpandido] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,8 +71,8 @@ export default function AnalisisPage() {
             {loading
               ? "Cargando…"
               : data
-                ? `${filas.length} de ${data.totalSecciones} secciones · ordenadas por casillas (mayor a menor)${data.vigencia ? ` · INE ${data.vigencia}` : ""}`
-                : "Secciones electorales por volumen de casillas y electores"}
+                ? `${filas.length} de ${data.totalSecciones} secciones · casillas, electores y resultados de alcalde (IECM)${data.vigencia ? ` · INE ${data.vigencia}` : ""}`
+                : "Secciones electorales por volumen de casillas, electores y votación de alcalde"}
           </p>
         </div>
       </div>
@@ -121,7 +124,14 @@ export default function AnalisisPage() {
         <>
           <ul className="mobile-only-list">
             {filas.map((fila) => (
-              <AnalisisCard key={fila.seccion} fila={fila} />
+              <AnalisisCard
+                key={fila.seccion}
+                fila={fila}
+                expandido={expandido === fila.seccion}
+                onToggle={() =>
+                  setExpandido(expandido === fila.seccion ? null : fila.seccion)
+                }
+              />
             ))}
           </ul>
 
@@ -137,24 +147,45 @@ export default function AnalisisPage() {
                     <th className="text-right">Electores</th>
                     <th>D. local</th>
                     <th>D. federal</th>
+                    <th className="w-28">Votación</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filas.map((fila) => (
-                    <tr key={fila.seccion}>
-                      <td className="whitespace-nowrap font-semibold">{fila.seccion}</td>
-                      <td>
-                        <div className="font-medium">{fila.totalCasillas}</div>
-                        <div className="text-xs text-ink-secondary">{fila.casillas}</div>
-                      </td>
-                      <td className="max-w-[220px] break-words text-sm">{fila.unidadesTerritoriales}</td>
-                      <td className="max-w-[260px] break-words text-sm">{fila.colonias}</td>
-                      <td className="whitespace-nowrap text-right font-medium">
-                        {formatElectores(fila.totalElectores)}
-                      </td>
-                      <td className="whitespace-nowrap">{fila.distritoLocal ?? "—"}</td>
-                      <td className="whitespace-nowrap">{fila.distritoFederal ?? "—"}</td>
-                    </tr>
+                    <Fragment key={fila.seccion}>
+                      <tr>
+                        <td className="whitespace-nowrap font-semibold">{fila.seccion}</td>
+                        <td>
+                          <div className="font-medium">{fila.totalCasillas}</div>
+                          <div className="text-xs text-ink-secondary">{fila.casillas}</div>
+                        </td>
+                        <td className="max-w-[220px] break-words text-sm">{fila.unidadesTerritoriales}</td>
+                        <td className="max-w-[260px] break-words text-sm">{fila.colonias}</td>
+                        <td className="whitespace-nowrap text-right font-medium">
+                          {formatElectores(fila.totalElectores)}
+                        </td>
+                        <td className="whitespace-nowrap">{fila.distritoLocal ?? "—"}</td>
+                        <td className="whitespace-nowrap">{fila.distritoFederal ?? "—"}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn-ghost btn-sm"
+                            onClick={() =>
+                              setExpandido(expandido === fila.seccion ? null : fila.seccion)
+                            }
+                          >
+                            {expandido === fila.seccion ? "Ocultar" : "Ver"}
+                          </button>
+                        </td>
+                      </tr>
+                      {expandido === fila.seccion ? (
+                        <tr>
+                          <td colSpan={8} className="bg-surface-soft p-4">
+                            <ResultadosAlcaldePanel fila={fila} />
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -166,7 +197,79 @@ export default function AnalisisPage() {
   );
 }
 
-function AnalisisCard({ fila }: { fila: AnalisisSeccionRow }) {
+function ResultadosAlcaldePanel({ fila }: { fila: AnalisisSeccionRow }) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <ResultadoAlcaldeBlock anio={2024} titulo="Alcalde 2024" resultado={fila.alcalde2024} />
+      <ResultadoAlcaldeBlock anio={2021} titulo="Alcalde 2021" resultado={fila.alcalde2021} />
+    </div>
+  );
+}
+
+function ResultadoAlcaldeBlock({
+  titulo,
+  anio,
+  resultado,
+}: {
+  titulo: string;
+  anio: number;
+  resultado: ResultadoAlcaldiaSeccion | null;
+}) {
+  if (!resultado) {
+    return (
+      <div className="panel-soft space-y-2 p-4 text-sm text-ink-secondary">
+        <h3 className="font-semibold text-ink">{titulo}</h3>
+        <p>Sin datos importados del IECM para {anio}.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="panel-soft space-y-3 p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="font-semibold text-ink">{titulo}</h3>
+        <p className="text-sm text-ink-secondary">
+          Participación {formatPorcentaje(resultado.participacionPct)} · Nulos{" "}
+          {formatElectores(resultado.votosNulos)} ({formatPorcentaje(resultado.votosNulosPct)})
+        </p>
+      </div>
+      <p className="text-xs text-ink-secondary">
+        Lista nominal {formatElectores(resultado.listaNominal)} · Votación total{" "}
+        {formatElectores(resultado.votacionTotal)}
+      </p>
+      <div className="overflow-x-auto">
+        <table className="data-table min-w-[420px] text-sm">
+          <thead>
+            <tr>
+              <th>Partido / fuerza</th>
+              <th className="text-right">Votos</th>
+              <th className="text-right">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {resultado.partidos.map((partido) => (
+              <tr key={partido.clave}>
+                <td>{partido.etiqueta}</td>
+                <td className="text-right whitespace-nowrap">{formatElectores(partido.votos)}</td>
+                <td className="text-right whitespace-nowrap">{formatPorcentaje(partido.porcentaje)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function AnalisisCard({
+  fila,
+  expandido,
+  onToggle,
+}: {
+  fila: AnalisisSeccionRow;
+  expandido: boolean;
+  onToggle: () => void;
+}) {
   return (
     <li className="list-card space-y-3">
       <div className="list-card-header">
@@ -198,6 +301,10 @@ function AnalisisCard({ fila }: { fila: AnalisisSeccionRow }) {
           local {fila.distritoLocal ?? "—"} · federal {fila.distritoFederal ?? "—"}
         </p>
       </div>
+      <button type="button" className="btn-ghost btn-sm btn-responsive" onClick={onToggle}>
+        {expandido ? "Ocultar votación alcalde" : "Ver votación alcalde 2021/2024"}
+      </button>
+      {expandido ? <ResultadosAlcaldePanel fila={fila} /> : null}
     </li>
   );
 }

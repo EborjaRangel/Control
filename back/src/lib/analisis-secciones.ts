@@ -5,6 +5,11 @@ import {
   type SeccionCasillasResumenDTO,
 } from "./casillas-electorales.js";
 import {
+  cargarResultadosAlcaldiaCoyoacan,
+  resultadosAlcaldiaDisponibles,
+  type ResultadoAlcaldiaSeccion,
+} from "./resultados-alcaldia-iecm.js";
+import {
   SECCIONES_ELECTORALES_COYOACAN,
   distritoLocalDeSeccion,
 } from "./secciones-electorales.js";
@@ -20,6 +25,8 @@ export type AnalisisSeccionRow = {
   totalElectores: number;
   distritoLocal: number | null;
   distritoFederal: number | null;
+  alcalde2021: ResultadoAlcaldiaSeccion | null;
+  alcalde2024: ResultadoAlcaldiaSeccion | null;
 };
 
 export type AnalisisSeccionesResponse = {
@@ -100,6 +107,7 @@ export async function analisisSeccionesElectorales(): Promise<AnalisisSeccionesR
   const [coloniasMap, utsMap] = await Promise.all([coloniasPorSeccion(), utsPorSeccion()]);
 
   const dataset = casillasDatasetDisponible() ? cargarCasillasCoyoacan() : null;
+  const resultados = resultadosAlcaldiaDisponibles() ? cargarResultadosAlcaldiaCoyoacan() : null;
 
   const filas: AnalisisSeccionRow[] = SECCIONES_ELECTORALES_COYOACAN.map((seccion) => {
     const info = dataset?.porSeccion[seccion] ?? null;
@@ -114,6 +122,8 @@ export async function analisisSeccionesElectorales(): Promise<AnalisisSeccionesR
       totalElectores: totalElectoresSeccion(info),
       distritoLocal: distritoLocalDeSeccion(seccion),
       distritoFederal: distritoFederalSeccion(info),
+      alcalde2021: resultados?.["2021"]?.porSeccion[seccion] ?? null,
+      alcalde2024: resultados?.["2024"]?.porSeccion[seccion] ?? null,
     };
   }).sort(
     (a, b) =>

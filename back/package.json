@@ -17,6 +17,7 @@
     "geo:import-colonias": "tsx scripts/import-colonias-sepomex.ts",
     "geo:import-uts": "tsx scripts/import-unidades-territoriales-iecm.ts",
     "electoral:import-casillas": "tsx scripts/import-casillas-ine.ts",
+    "electoral:import-resultados-alcaldia": "tsx scripts/import-resultados-alcaldia-iecm.ts",
     "db:seed": "tsx scripts/seed-admin.ts",
     "db:reset-admin": "tsx scripts/reset-admin.ts",
     "db:prepare-dirigentes-carga": "tsx scripts/prepare-dirigentes-carga-sheet.ts",
