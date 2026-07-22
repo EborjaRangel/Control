@@ -182,6 +182,46 @@ function resumirBloques(resultado: ResultadoAlcaldiaSeccion, anio?: AnioAlcaldia
   }));
 }
 
+export type VotoDesgloseBloque = {
+  clave: string;
+  etiqueta: string;
+  votos: number;
+};
+
+function ordenDesgloseBloque(a: VotoDesgloseBloque, b: VotoDesgloseBloque): number {
+  const rank = (clave: string) => {
+    const k = clave.toUpperCase();
+    if (k === "PAN") return 0;
+    if (k === "PRD") return 1;
+    if (k === "PRI") return 2;
+    if (k === "MC") return 3;
+    if (k.startsWith("PAN_")) return 4;
+    if (k.startsWith("PRI_")) return 5;
+    if (k.startsWith("PRD_")) return 6;
+    if (k === "MORENA") return 0;
+    if (k.includes("MORENA")) return 1;
+    return 10;
+  };
+  return rank(a.clave) - rank(b.clave) || b.votos - a.votos || a.etiqueta.localeCompare(b.etiqueta, "es");
+}
+
+/** Partidos del IECM que suman a un bloque (para cuadrar cifras con la tabla de alcalde). */
+export function desgloseVotosBloque(
+  resultado: ResultadoAlcaldiaSeccion | null,
+  bloque: BloqueVotacion,
+  anio: AnioAlcaldia,
+): VotoDesgloseBloque[] {
+  if (!resultado) return [];
+  return filtrarPartidos(resultado.partidos)
+    .filter((partido) => clasificarBloque(partido.clave, anio) === bloque)
+    .map((partido) => ({
+      clave: partido.clave,
+      etiqueta: partido.etiqueta,
+      votos: partido.votos,
+    }))
+    .sort(ordenDesgloseBloque);
+}
+
 function pctBloque(bloques: ResumenBloque[], bloque: BloqueVotacion): number {
   return bloques.find((b) => b.bloque === bloque)?.porcentaje ?? 0;
 }

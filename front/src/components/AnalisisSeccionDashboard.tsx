@@ -14,10 +14,12 @@ import {
   COLOR_PRI,
   colorPartido,
   compararVotacionSeccion,
+  desgloseVotosBloque,
   indicadorVsPromedio,
   type AnioAlcaldia,
   type PromediosAlcaldia,
   type ResumenBloque,
+  type VotoDesgloseBloque,
 } from "@/lib/analisis-votacion";
 
 export function AnalisisSeccionDashboard({
@@ -112,9 +114,27 @@ export function AnalisisSeccionDashboard({
             va por separado y no se suma a PAN y aliados.
           </p>
           <div className="grid gap-6 lg:grid-cols-3">
-            <BloquesChart titulo="2018" bloques={comparacion.bloques2018} maxPct={maxBloquePct} />
-            <BloquesChart titulo="2021" bloques={comparacion.bloques2021} maxPct={maxBloquePct} />
-            <BloquesChart titulo="2024" bloques={comparacion.bloques2024} maxPct={maxBloquePct} />
+            <BloquesChart
+              titulo="2018"
+              bloques={comparacion.bloques2018}
+              maxPct={maxBloquePct}
+              resultado={fila.alcalde2018}
+              anio={2018}
+            />
+            <BloquesChart
+              titulo="2021"
+              bloques={comparacion.bloques2021}
+              maxPct={maxBloquePct}
+              resultado={fila.alcalde2021}
+              anio={2021}
+            />
+            <BloquesChart
+              titulo="2024"
+              bloques={comparacion.bloques2024}
+              maxPct={maxBloquePct}
+              resultado={fila.alcalde2024}
+              anio={2024}
+            />
           </div>
           <DeltaBloques comparacion={comparacion} promedios={promedios} />
         </section>
@@ -125,8 +145,20 @@ export function AnalisisSeccionDashboard({
             PAN y aliados incluye PAN, PRI, PRD y sus coaliciones registradas (p. ej. PAN-PRI-PRD).
           </p>
           <div className="grid gap-6 lg:grid-cols-2">
-            <BloquesChart titulo="2021" bloques={comparacion.bloques2021} maxPct={maxBloquePct} />
-            <BloquesChart titulo="2024" bloques={comparacion.bloques2024} maxPct={maxBloquePct} />
+            <BloquesChart
+              titulo="2021"
+              bloques={comparacion.bloques2021}
+              maxPct={maxBloquePct}
+              resultado={fila.alcalde2021}
+              anio={2021}
+            />
+            <BloquesChart
+              titulo="2024"
+              bloques={comparacion.bloques2024}
+              maxPct={maxBloquePct}
+              resultado={fila.alcalde2024}
+              anio={2024}
+            />
           </div>
           <DeltaBloques comparacion={comparacion} promedios={promedios} />
         </section>
@@ -138,7 +170,9 @@ export function AnalisisSeccionDashboard({
           anio={2018}
           resultado={fila.alcalde2018}
           partidos={comparacion.topPartidos2018}
-          nota="MC y PRD en PAN y aliados. PRI en bloque independiente."
+          nota="MC y PRD entran en PAN y aliados (incluye filas de coalición). PRI en bloque independiente."
+          desglosePan={desgloseVotosBloque(fila.alcalde2018, "pan", 2018)}
+          totalPan={comparacion.bloques2018.find((b) => b.bloque === "pan")?.votos}
         />
         <AnioDashboard
           titulo="Alcalde 2021"
@@ -265,10 +299,14 @@ function BloquesChart({
   titulo,
   bloques,
   maxPct,
+  resultado,
+  anio,
 }: {
   titulo: string;
   bloques: ResumenBloque[];
   maxPct: number;
+  resultado?: ResultadoAlcaldiaSeccion | null;
+  anio?: AnioAlcaldia;
 }) {
   const bloquesVisibles = bloques.filter(
     (bloque) =>
@@ -278,17 +316,46 @@ function BloquesChart({
   return (
     <div className="space-y-3">
       <h4 className="text-sm font-semibold text-ink">{titulo}</h4>
-      {bloquesVisibles.map((bloque) => (
-        <BarraHorizontal
-          key={bloque.bloque}
-          etiqueta={bloque.etiqueta}
-          porcentaje={bloque.porcentaje}
-          votos={bloque.votos}
-          maxPct={maxPct}
-          color={bloque.color}
-        />
-      ))}
+      {bloquesVisibles.map((bloque) => {
+        const desglose =
+          resultado && anio ? desgloseVotosBloque(resultado, bloque.bloque, anio) : [];
+        return (
+          <div key={bloque.bloque} className="space-y-1">
+            <BarraHorizontal
+              etiqueta={bloque.etiqueta}
+              porcentaje={bloque.porcentaje}
+              votos={bloque.votos}
+              maxPct={maxPct}
+              color={bloque.color}
+            />
+            <DesgloseBloqueLinea items={desglose} total={bloque.votos} />
+          </div>
+        );
+      })}
     </div>
+  );
+}
+
+function DesgloseBloqueLinea({
+  items,
+  total,
+}: {
+  items: VotoDesgloseBloque[];
+  total: number;
+}) {
+  if (items.length < 2) return null;
+
+  return (
+    <p className="border-l-2 border-pin-muted pl-2 text-[0.6875rem] leading-relaxed text-ink-secondary">
+      <span className="font-medium text-ink-secondary">Suma: </span>
+      {items.map((item, index) => (
+        <span key={item.clave}>
+          {index > 0 ? " + " : ""}
+          {item.etiqueta} {formatElectores(item.votos)}
+        </span>
+      ))}{" "}
+      = <span className="font-semibold text-ink">{formatElectores(total)}</span>
+    </p>
   );
 }
 
@@ -408,12 +475,16 @@ function AnioDashboard({
   resultado,
   partidos,
   nota,
+  desglosePan,
+  totalPan,
 }: {
   titulo: string;
   anio: AnioAlcaldia;
   resultado: ResultadoAlcaldiaSeccion | null;
   partidos: PartidoVotosSeccion[];
   nota?: string;
+  desglosePan?: VotoDesgloseBloque[];
+  totalPan?: number;
 }) {
   if (!resultado) {
     return (
@@ -436,6 +507,12 @@ function AnioDashboard({
         </p>
       </div>
       {nota ? <p className="text-xs text-ink-secondary">{nota}</p> : null}
+      {desglosePan && desglosePan.length >= 2 && totalPan != null ? (
+        <div className="rounded-pin border border-line bg-surface p-2.5 text-[0.6875rem] leading-relaxed text-ink-secondary">
+          <p className="font-semibold text-ink">PAN y aliados en bloques = filas de esta tabla</p>
+          <DesgloseBloqueLinea items={desglosePan} total={totalPan} />
+        </div>
+      ) : null}
       <div className="space-y-2">
         {partidos.map((partido) => (
           <BarraHorizontal
