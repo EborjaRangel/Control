@@ -898,6 +898,31 @@ export function ventajaMcVsPri2024(
   return cmp?.analisisMcVsPri?.ventajaMc2024 ?? null;
 }
 
+/** Diferencia relativa MORENA − PAN (2021→2024); positivo favorece a MORENA. */
+export function ventajaRelativa2124(
+  fila: AnalisisSeccionRow,
+  promedios: PromediosAlcaldia | null = null,
+): number | null {
+  const cmp = compararVotacionSeccion(
+    fila.alcalde2018,
+    fila.alcalde2021,
+    fila.alcalde2024,
+    promedios,
+  );
+  return cmp?.resumen2124?.diffRelativo ?? null;
+}
+
+function compararPorMetricaDesc(
+  a: AnalisisSeccionRow,
+  b: AnalisisSeccionRow,
+  va: number | null,
+  vb: number | null,
+): number {
+  const na = va ?? Number.NEGATIVE_INFINITY;
+  const nb = vb ?? Number.NEGATIVE_INFINITY;
+  return nb - na || Number(a.seccion) - Number(b.seccion);
+}
+
 export function compararFilasAnalisis(
   a: AnalisisSeccionRow,
   b: AnalisisSeccionRow,
@@ -906,19 +931,33 @@ export function compararFilasAnalisis(
   tendenciaFiltro: TendenciaSeccionFiltro = "",
 ): number {
   if (tendenciaFiltro === "mc_supero_pri") {
-    const va = ventajaMcVsPri2024(a, promedios) ?? Number.NEGATIVE_INFINITY;
-    const vb = ventajaMcVsPri2024(b, promedios) ?? Number.NEGATIVE_INFINITY;
-    return vb - va || Number(a.seccion) - Number(b.seccion);
+    return compararPorMetricaDesc(
+      a,
+      b,
+      ventajaMcVsPri2024(a, promedios),
+      ventajaMcVsPri2024(b, promedios),
+    );
   }
   if (tendenciaFiltro === "pan_gana_2024") {
-    const va = ventajaPanSobreMorena2024(a, promedios) ?? Number.NEGATIVE_INFINITY;
-    const vb = ventajaPanSobreMorena2024(b, promedios) ?? Number.NEGATIVE_INFINITY;
-    return vb - va || Number(a.seccion) - Number(b.seccion);
+    return compararPorMetricaDesc(
+      a,
+      b,
+      ventajaPanSobreMorena2024(a, promedios),
+      ventajaPanSobreMorena2024(b, promedios),
+    );
   }
-  if (tendenciaFiltro === "morena_gana_2024") {
-    const va = ventajaMorenaSobrePan2024(a, promedios) ?? Number.NEGATIVE_INFINITY;
-    const vb = ventajaMorenaSobrePan2024(b, promedios) ?? Number.NEGATIVE_INFINITY;
-    return vb - va || Number(a.seccion) - Number(b.seccion);
+  if (tendenciaFiltro === "morena_gana_2024" || tendenciaFiltro === "morena") {
+    return compararPorMetricaDesc(
+      a,
+      b,
+      ventajaRelativa2124(a, promedios),
+      ventajaRelativa2124(b, promedios),
+    );
+  }
+  if (tendenciaFiltro === "pan") {
+    const da = ventajaRelativa2124(a, promedios);
+    const db = ventajaRelativa2124(b, promedios);
+    return compararPorMetricaDesc(a, b, da != null ? -da : null, db != null ? -db : null);
   }
 
   if (orden === "default") {

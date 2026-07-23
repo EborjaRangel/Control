@@ -21,6 +21,7 @@ import {
   liderazgoBloques2024,
   ventajaMorenaSobrePan2024,
   metricasOrdenListadoAnalisis,
+  ventajaRelativa2124,
   resumirTendenciasAlcaldia,
   seccionMcSuperoPriDesde2021,
   type ResumenEtiqueta2124,
@@ -434,6 +435,7 @@ function AnalisisCard({
     promedios,
   );
   const duelo = comparacion?.analisisMcVsPri;
+  const ventajaRelativa = ventajaRelativa2124(fila, promedios);
 
   return (
     <li
@@ -465,6 +467,25 @@ function AnalisisCard({
         <p className="text-sm font-semibold text-[#9f2241]">
           MORENA {formatPorcentaje(metricas.morenaPct2024)} vs PAN {formatPorcentaje(metricas.panPct2024)} ·
           ventaja MORENA +{ventajaMorena2024?.toFixed(2)} pp
+          {ventajaRelativa != null && ventajaRelativa >= 1
+            ? ` · amplía ventaja relativa +${ventajaRelativa.toFixed(2)} pp`
+            : null}
+        </p>
+      ) : null}
+      {(tendenciaFiltro === "morena" || tendenciaFiltro === "pan") && ventajaRelativa != null ? (
+        <p
+          className={`text-sm font-semibold ${
+            tendenciaFiltro === "morena" ? "text-[#9f2241]" : "text-pin"
+          }`}
+        >
+          Ventaja relativa 2021→2024: {ventajaRelativa >= 0 ? "+" : ""}
+          {ventajaRelativa.toFixed(2)} pp
+          {tendenciaFiltro === "pan" && ventajaRelativa < 0
+            ? ` · PAN amplía ventaja +${Math.abs(ventajaRelativa).toFixed(2)} pp`
+            : null}
+          {tendenciaFiltro === "morena" && ventajaRelativa > 0
+            ? ` · MORENA amplía ventaja +${ventajaRelativa.toFixed(2)} pp`
+            : null}
         </p>
       ) : null}
       {tendenciaFiltro === "mc_supero_pri" && duelo ? (
