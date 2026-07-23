@@ -187,6 +187,8 @@ export function AnalisisSeccionDashboard({
           resultado={fila.alcalde2024}
           partidos={comparacion.topPartidos2024}
           nota="PAN y aliados incluye PAN, PRI, PRD y coaliciones PAN-PRI-PRD."
+          desglosePan={desgloseVotosBloque(fila.alcalde2024, "pan", 2024)}
+          totalPan={comparacion.bloques2024.find((b) => b.bloque === "pan")?.votos}
         />
       </div>
     </div>
