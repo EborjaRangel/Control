@@ -180,6 +180,8 @@ export function AnalisisSeccionDashboard({
           resultado={fila.alcalde2021}
           partidos={comparacion.topPartidos2021}
           nota="PAN y aliados incluye PAN, PRI, PRD y coaliciones PAN-PRI-PRD."
+          desglosePan={desgloseVotosBloque(fila.alcalde2021, "pan", 2021)}
+          totalPan={comparacion.bloques2021.find((b) => b.bloque === "pan")?.votos}
         />
         <AnioDashboard
           titulo="Alcalde 2024"
