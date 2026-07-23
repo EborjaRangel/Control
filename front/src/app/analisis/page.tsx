@@ -459,6 +459,11 @@ function AnalisisCard({
         <p className="text-sm font-semibold text-pin">
           PAN {formatPorcentaje(metricas.panPct2024)} vs MORENA {formatPorcentaje(metricas.morenaPct2024)} ·
           ventaja PAN +{metricas.ventajaPan2024?.toFixed(2)} pp
+          {ventajaRelativa != null && ventajaRelativa <= -1
+            ? ` · PAN amplía ventaja relativa +${Math.abs(ventajaRelativa).toFixed(2)} pp`
+            : ventajaRelativa != null && ventajaRelativa >= 1
+              ? ` · MORENA recorta ventaja +${ventajaRelativa.toFixed(2)} pp`
+              : null}
         </p>
       ) : null}
       {tendenciaFiltro === "morena_gana_2024" &&

@@ -939,12 +939,9 @@ export function compararFilasAnalisis(
     );
   }
   if (tendenciaFiltro === "pan_gana_2024") {
-    return compararPorMetricaDesc(
-      a,
-      b,
-      ventajaPanSobreMorena2024(a, promedios),
-      ventajaPanSobreMorena2024(b, promedios),
-    );
+    const da = ventajaRelativa2124(a, promedios);
+    const db = ventajaRelativa2124(b, promedios);
+    return compararPorMetricaDesc(a, b, da != null ? -da : null, db != null ? -db : null);
   }
   if (tendenciaFiltro === "morena_gana_2024" || tendenciaFiltro === "morena") {
     return compararPorMetricaDesc(
