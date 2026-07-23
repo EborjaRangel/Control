@@ -23,6 +23,7 @@ import {
   metricasOrdenListadoAnalisis,
   resumirTendenciasAlcaldia,
   seccionMcSuperoPriDesde2021,
+  type ResumenEtiqueta2124,
   tendenciaSeccion,
   type OrdenListadoAnalisis,
   type PromediosAlcaldia,
@@ -389,25 +390,20 @@ export default function AnalisisPage() {
   );
 }
 
-function TendenciaBadge({ tendencia }: { tendencia: TendenciaSeccion }) {
-  const estilos: Record<TendenciaSeccion, string> = {
-    morena: "bg-[#9f2241]/10 text-[#9f2241] ring-[#9f2241]/25",
-    pan: "bg-pin-light text-pin ring-pin/20",
-    empate: "bg-surface-muted text-ink-secondary ring-line",
-    sin_datos: "bg-surface-soft text-ink-secondary ring-line",
-  };
+function TendenciaBadge({ resumen }: { resumen: ResumenEtiqueta2124 | null }) {
+  if (!resumen) {
+    return (
+      <span className="inline-flex max-w-full rounded-full bg-surface-soft px-2 py-0.5 text-[0.6875rem] font-semibold leading-snug text-ink-secondary ring-1 ring-inset ring-line break-words">
+        Sin comparación
+      </span>
+    );
+  }
 
   return (
     <span
-      className={`inline-flex max-w-full rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold leading-snug ring-1 ring-inset break-words ${estilos[tendencia]}`}
+      className={`inline-flex max-w-full rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold leading-snug ring-1 ring-inset break-words ${resumen.badgeRingClass}`}
     >
-      {tendencia === "morena"
-        ? "MORENA + aliados"
-        : tendencia === "pan"
-          ? "PAN + aliados"
-          : tendencia === "empate"
-            ? "Empate técnico"
-            : "Sin comparación"}
+      {resumen.etiqueta}
     </span>
   );
 }
@@ -431,12 +427,13 @@ function AnalisisCard({
 }) {
   const metricas = metricasOrdenListadoAnalisis(fila, promedios);
   const ventajaMorena2024 = ventajaMorenaSobrePan2024(fila, promedios);
-  const duelo = compararVotacionSeccion(
+  const comparacion = compararVotacionSeccion(
     fila.alcalde2018,
     fila.alcalde2021,
     fila.alcalde2024,
     promedios,
-  )?.analisisMcVsPri;
+  );
+  const duelo = comparacion?.analisisMcVsPri;
 
   return (
     <li
@@ -454,7 +451,7 @@ function AnalisisCard({
             ) : null}
           </p>
         </div>
-        <TendenciaBadge tendencia={tendencia} />
+        <TendenciaBadge resumen={comparacion?.resumen2124 ?? null} />
       </div>
       {tendenciaFiltro === "pan_gana_2024" && metricas.panPct2024 != null && metricas.morenaPct2024 != null ? (
         <p className="text-sm font-semibold text-pin">

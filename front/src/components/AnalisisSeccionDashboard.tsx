@@ -220,12 +220,10 @@ function ConclusionCard({
 }: {
   comparacion: NonNullable<ReturnType<typeof compararVotacionSeccion>>;
 }) {
-  const badge =
-    comparacion.tendencia === "morena"
-      ? { label: "Favor MORENA + aliados (2021→2024)", className: "bg-[#9f2241] text-white" }
-      : comparacion.tendencia === "pan"
-        ? { label: "Favor PAN + aliados (2021→2024)", className: "bg-pin text-white" }
-        : { label: "Empate 2021→2024", className: "bg-surface-muted text-ink-secondary" };
+  const resumen = comparacion.resumen2124;
+  const badge = resumen
+    ? { label: resumen.etiqueta, className: resumen.badgeClass }
+    : { label: "Sin comparación 2021→2024", className: "bg-surface-muted text-ink-secondary" };
 
   const tiene2124 =
     comparacion.bloques2021.length > 0 && comparacion.bloques2024.length > 0;
@@ -235,8 +233,10 @@ function ConclusionCard({
     <section className="rounded-pin border border-line bg-surface p-4 shadow-pin">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h3 className="font-semibold text-ink">Conclusión por sección (2018 → 2024)</h3>
-        {tiene2124 ? (
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.className}`}>
+        {tiene2124 && resumen ? (
+          <span
+            className={`max-w-full rounded-full px-2.5 py-0.5 text-left text-xs font-semibold leading-snug break-words ${badge.className}`}
+          >
             {badge.label}
           </span>
         ) : null}

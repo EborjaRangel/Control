@@ -55,6 +55,15 @@ export type ComparacionBloquesSeccion = {
   participacion2018: number | null;
   participacion2021: number | null;
   participacion2024: number | null;
+  resumen2124: ResumenEtiqueta2124 | null;
+};
+
+export type ResumenEtiqueta2124 = {
+  ganador2024: "pan" | "morena" | "empate";
+  diffRelativo: number;
+  etiqueta: string;
+  badgeClass: string;
+  badgeRingClass: string;
 };
 
 export type AnalisisMcVsPri = {
@@ -334,6 +343,67 @@ function deltaPct(actual: number, anterior: number): number {
 }
 
 const UMBRAL_PP = 0.5;
+const UMBRAL_TENDENCIA_SIN_CAMBIOS = 1;
+
+export function calcularResumenEtiqueta2124(
+  bloques2024: ResumenBloque[],
+  deltaMorenaPct: number,
+  deltaPanPct: number,
+): ResumenEtiqueta2124 | null {
+  if (!bloques2024.length) return null;
+
+  const morena2024 = pctBloque(bloques2024, "morena");
+  const pan2024 = pctBloque(bloques2024, "pan");
+  const diffRelativo = deltaMorenaPct - deltaPanPct;
+  const diffAbs = Math.abs(diffRelativo);
+  const pct = diffAbs.toFixed(2);
+
+  let ganador2024: ResumenEtiqueta2124["ganador2024"];
+  if (Math.abs(pan2024 - morena2024) <= UMBRAL_PP) ganador2024 = "empate";
+  else if (pan2024 > morena2024) ganador2024 = "pan";
+  else ganador2024 = "morena";
+
+  let etiqueta: string;
+  if (ganador2024 === "pan") {
+    if (diffAbs < UMBRAL_TENDENCIA_SIN_CAMBIOS) {
+      etiqueta = "PAN ganó · tendencia sin cambios";
+    } else if (diffRelativo > 0) {
+      etiqueta = `PAN ganó · sin embargo MORENA recorta ventaja del ${pct}%`;
+    } else {
+      etiqueta = `PAN ganó · PAN amplía ventaja del ${pct}%`;
+    }
+  } else if (ganador2024 === "morena") {
+    if (diffAbs < UMBRAL_TENDENCIA_SIN_CAMBIOS) {
+      etiqueta = "MORENA ganó · tendencia sin cambios";
+    } else if (diffRelativo < 0) {
+      etiqueta = `MORENA ganó · sin embargo PAN recorta ventaja del ${pct}%`;
+    } else {
+      etiqueta = `MORENA ganó · MORENA amplía ventaja del ${pct}%`;
+    }
+  } else if (diffAbs < UMBRAL_TENDENCIA_SIN_CAMBIOS) {
+    etiqueta = "Empate 2024 · tendencia sin cambios";
+  } else if (diffRelativo > 0) {
+    etiqueta = `Empate 2024 · MORENA gana terreno del ${pct}%`;
+  } else {
+    etiqueta = `Empate 2024 · PAN gana terreno del ${pct}%`;
+  }
+
+  const badgeClass =
+    ganador2024 === "pan"
+      ? "bg-pin text-white"
+      : ganador2024 === "morena"
+        ? "bg-[#9f2241] text-white"
+        : "bg-surface-muted text-ink-secondary";
+
+  const badgeRingClass =
+    ganador2024 === "pan"
+      ? "bg-pin-light text-pin ring-pin/20"
+      : ganador2024 === "morena"
+        ? "bg-[#9f2241]/10 text-[#9f2241] ring-[#9f2241]/25"
+        : "bg-surface-muted text-ink-secondary ring-line";
+
+  return { ganador2024, diffRelativo, etiqueta, badgeClass, badgeRingClass };
+}
 
 function analizarMcVsPri(
   alcalde2021: ResultadoAlcaldiaSeccion | null,
@@ -505,28 +575,11 @@ function generarConclusion(
     return partes.join(" ");
   }
 
-  let cierre: string;
+  const resumen2124 = calcularResumenEtiqueta2124(bloques2024, deltaMorenaPct, deltaPanPct);
+  let cierre = resumen2124
+    ? `Conclusión 2021→2024: ${resumen2124.etiqueta}.`
+    : "Conclusión 2021→2024: sin datos suficientes.";
   const diffBloques = deltaMorenaPct - deltaPanPct;
-  if (Math.abs(diffBloques) <= 0.5) {
-    cierre =
-      "Conclusión 2021→2024: la tendencia entre MORENA+aliados y PAN+aliados es equilibrada; no hay un bloque claramente favorecido.";
-  } else if (diffBloques > 0) {
-    const dir =
-      deltaMorenaPct > 0
-        ? "con avance al alza"
-        : deltaMorenaPct < 0
-          ? "aunque con retroceso, menos pronunciado que el PAN"
-          : "manteniéndose estable";
-    cierre = `Conclusión 2021→2024: la tendencia favorece a MORENA y sus aliados (${dir}) frente al PAN y sus aliados.`;
-  } else {
-    const dir =
-      deltaPanPct > 0
-        ? "con avance al alza"
-        : deltaPanPct < 0
-          ? "aunque con retroceso, menos pronunciado que MORENA"
-          : "manteniéndose estable";
-    cierre = `Conclusión 2021→2024: la tendencia favorece al PAN y sus aliados (${dir}) frente a MORENA y sus aliados.`;
-  }
 
   if (tiene2018 && bloques2024.length > 0) {
     const diffLargo = deltaMorena2018_2024 - deltaPan2018_2024;
@@ -643,6 +696,10 @@ export function compararVotacionSeccion(
     participacion2018,
     participacion2021,
     participacion2024,
+    resumen2124:
+      alcalde2021 && alcalde2024
+        ? calcularResumenEtiqueta2124(bloques2024, deltaMorenaPct, deltaPanPct)
+        : null,
   };
 }
 
