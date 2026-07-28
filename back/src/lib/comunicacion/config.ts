@@ -22,6 +22,10 @@ export type ComunicacionConfig = ConvocatoriaConfig;
 export type CanalComunicacion = CanalConvocatoria;
 
 export function obtenerConfigConvocatoria(): ConvocatoriaConfig {
+  const resendOk = Boolean(
+    process.env.RESEND_API_KEY?.trim() &&
+      (process.env.RESEND_FROM?.trim() || process.env.SMTP_FROM?.trim()),
+  );
   const smtpOk = Boolean(
     process.env.SMTP_HOST?.trim() &&
       process.env.SMTP_FROM?.trim() &&
@@ -35,8 +39,8 @@ export function obtenerConfigConvocatoria(): ConvocatoriaConfig {
 
   return {
     email: {
-      habilitado: smtpOk,
-      from: process.env.SMTP_FROM?.trim() ?? null,
+      habilitado: resendOk || smtpOk,
+      from: process.env.RESEND_FROM?.trim() ?? process.env.SMTP_FROM?.trim() ?? null,
     },
     sms: {
       habilitado: twilioOk && Boolean(process.env.TWILIO_SMS_FROM?.trim()),
@@ -85,9 +89,13 @@ export function smtpModoDesarrolloActivo(): boolean {
 export function faltantesConfigConvocatoria(): string[] {
   const faltantes: string[] = [];
   if (!process.env.SMTP_HOST?.trim()) faltantes.push("SMTP_HOST");
-  if (!process.env.SMTP_FROM?.trim()) faltantes.push("SMTP_FROM");
-  if (!process.env.SMTP_USER?.trim()) faltantes.push("SMTP_USER");
-  if (!process.env.SMTP_PASS?.trim()) faltantes.push("SMTP_PASS");
+  if (!process.env.SMTP_FROM?.trim() && !process.env.RESEND_FROM?.trim()) {
+    faltantes.push("SMTP_FROM o RESEND_FROM");
+  }
+  if (!process.env.RESEND_API_KEY?.trim()) {
+    if (!process.env.SMTP_USER?.trim()) faltantes.push("SMTP_USER");
+    if (!process.env.SMTP_PASS?.trim()) faltantes.push("SMTP_PASS");
+  }
   if (!process.env.TWILIO_ACCOUNT_SID?.trim()) faltantes.push("TWILIO_ACCOUNT_SID");
   if (!process.env.TWILIO_AUTH_TOKEN?.trim()) faltantes.push("TWILIO_AUTH_TOKEN");
   if (!process.env.TWILIO_SMS_FROM?.trim()) faltantes.push("TWILIO_SMS_FROM");

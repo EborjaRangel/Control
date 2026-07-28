@@ -2,6 +2,7 @@ import dns from "node:dns";
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import { obtenerConfigConvocatoria, smtpUsaValoresEjemplo, mensajeSmtpNoConfigurado } from "./config.js";
+import { enviarCorreoResend, resendConfigurado } from "./email-resend.js";
 
 dns.setDefaultResultOrder("ipv4first");
 
@@ -66,7 +67,10 @@ function mensajeErrorSmtp(err: unknown): string {
   }
 
   if (/timeout|ENETUNREACH|ETIMEDOUT|ECONNREFUSED/i.test(raw)) {
-    return "No se pudo conectar al servidor SMTP desde el servidor. Intenta de nuevo en unos minutos.";
+    return (
+      "No se pudo conectar al servidor SMTP desde Railway. En plan Hobby SMTP está bloqueado; " +
+      "usa RESEND_API_KEY o sube a Railway Pro."
+    );
   }
 
   return raw;
@@ -80,18 +84,22 @@ export async function enviarCorreo(input: {
 }): Promise<ResultadoEnvio> {
   const config = obtenerConfigConvocatoria();
 
-  if (smtpUsaValoresEjemplo()) {
-    return {
-      ok: false,
-      error: mensajeSmtpNoConfigurado(),
-    };
-  }
-
   if (!config.email.habilitado || !config.email.from) {
     return {
       ok: false,
       error:
-        "Correo no configurado. Define SMTP_HOST, SMTP_FROM, SMTP_USER y SMTP_PASS en back/.env.",
+        "Correo no configurado. Define RESEND_API_KEY + RESEND_FROM, o SMTP_HOST/SMTP_FROM/SMTP_USER/SMTP_PASS.",
+    };
+  }
+
+  if (resendConfigurado()) {
+    return enviarCorreoResend(input);
+  }
+
+  if (smtpUsaValoresEjemplo()) {
+    return {
+      ok: false,
+      error: mensajeSmtpNoConfigurado(),
     };
   }
 
