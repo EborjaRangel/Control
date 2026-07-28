@@ -11,6 +11,10 @@ function getTransporter(): Transporter {
       host: process.env.SMTP_HOST,
       port,
       secure: port === 465,
+      family: 4,
+      connectionTimeout: 20_000,
+      greetingTimeout: 20_000,
+      socketTimeout: 30_000,
       auth:
         process.env.SMTP_USER?.trim() && process.env.SMTP_PASS?.trim()
           ? {
