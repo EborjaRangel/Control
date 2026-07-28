@@ -8,30 +8,36 @@ function apiBaseUrl() {
   );
 }
 
+function forwardRequestHeaders(request: NextRequest) {
+  const headers = new Headers();
+  const allowed = ["content-type", "authorization", "accept", "accept-language"];
+
+  for (const name of allowed) {
+    const value = request.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+
+  return headers;
+}
+
 async function proxyRequest(request: NextRequest, path: string[]) {
-  const targetPath = path.map(encodeURIComponent).join("/");
-  const target = `${apiBaseUrl()}/api/${targetPath}${request.nextUrl.search}`;
-
-  const headers = new Headers(request.headers);
-  headers.delete("host");
-
+  const target = `${apiBaseUrl()}/api/${path.join("/")}${request.nextUrl.search}`;
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
   const body = hasBody ? await request.text() : undefined;
 
   const upstream = await fetch(target, {
     method: request.method,
-    headers,
+    headers: forwardRequestHeaders(request),
     body,
     cache: "no-store",
   });
 
-  const responseHeaders = new Headers(upstream.headers);
-  responseHeaders.delete("content-encoding");
-  responseHeaders.delete("content-length");
+  const responseBody = await upstream.arrayBuffer();
+  const contentType = upstream.headers.get("content-type") ?? "application/json";
 
-  return new NextResponse(upstream.body, {
+  return new NextResponse(responseBody, {
     status: upstream.status,
-    headers: responseHeaders,
+    headers: { "Content-Type": contentType },
   });
 }
 
