@@ -43,6 +43,10 @@ function mensajeErrorSmtp(err: unknown): string {
     return "No se pudo autenticar con el servidor SMTP. Revisa SMTP_USER y SMTP_PASS en back/.env.";
   }
 
+  if (/timeout|ENETUNREACH|ETIMEDOUT|ECONNREFUSED/i.test(raw)) {
+    return "No se pudo conectar al servidor SMTP desde el servidor. Intenta de nuevo en unos minutos.";
+  }
+
   return raw;
 }
 
