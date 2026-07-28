@@ -1,6 +1,9 @@
+import dns from "node:dns";
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import { obtenerConfigConvocatoria, smtpUsaValoresEjemplo, mensajeSmtpNoConfigurado } from "./config.js";
+
+dns.setDefaultResultOrder("ipv4first");
 
 let transporter: Transporter | null = null;
 
@@ -15,6 +18,9 @@ function getTransporter(): Transporter {
       connectionTimeout: 20_000,
       greetingTimeout: 20_000,
       socketTimeout: 30_000,
+      lookup: (hostname, _options, callback) => {
+        dns.lookup(hostname, { family: 4, all: false }, callback);
+      },
       auth:
         process.env.SMTP_USER?.trim() && process.env.SMTP_PASS?.trim()
           ? {
