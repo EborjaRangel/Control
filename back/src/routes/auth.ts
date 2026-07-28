@@ -11,10 +11,24 @@ import {
   verifyPassword,
   verifyToken,
 } from "../lib/auth.js";
-import { loginSchema } from "../lib/auth-validation.js";
+import { loginSchema, recuperarContrasenaSchema, restablecerContrasenaSchema } from "../lib/auth-validation.js";
 import { auditarCierreSesion, auditarInicioSesion } from "../lib/audit.js";
+import {
+  buscarUsuarioPorCorreoRegistrado,
+  correoRegistradoUsuario,
+  crearTokenRecuperacion,
+  enviarCorreoRecuperacion,
+  marcarTokenRecuperacionUsado,
+  normalizarCorreo,
+  urlRestablecerContrasena,
+  validarTokenRecuperacion,
+} from "../lib/password-reset.js";
+import { smtpModoDesarrolloActivo, smtpUsaValoresEjemplo, mensajeSmtpNoConfigurado } from "../lib/comunicacion/config.js";
 
 const router = Router();
+
+const MENSAJE_RECUPERACION_ENVIADA =
+  "Si el correo está registrado en el sistema, recibirás un enlace para restablecer tu contraseña.";
 
 router.post("/login", async (req, res) => {
   try {
@@ -143,6 +157,135 @@ router.post("/login", async (req, res) => {
     }
     console.error(error);
     res.status(500).json({ error: "Error al iniciar sesión" });
+  }
+});
+
+router.post("/recuperar-contrasena", async (req, res) => {
+  try {
+    const { correo } = await recuperarContrasenaSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+
+    const correoNorm = normalizarCorreo(correo);
+    const usuario = await buscarUsuarioPorCorreoRegistrado(correoNorm);
+
+    if (!usuario) {
+      res.json({ ok: true, mensaje: MENSAJE_RECUPERACION_ENVIADA });
+      return;
+    }
+
+    const correoRegistrado = correoRegistradoUsuario(usuario);
+    if (!correoRegistrado) {
+      res.json({ ok: true, mensaje: MENSAJE_RECUPERACION_ENVIADA });
+      return;
+    }
+
+    const token = await crearTokenRecuperacion(usuario.id);
+
+    if (smtpUsaValoresEjemplo()) {
+      if (smtpModoDesarrolloActivo()) {
+        const enlace = urlRestablecerContrasena(token);
+        console.log("\n[dev] Recuperación de contraseña (SMTP no configurado):");
+        console.log(`  Usuario: ${usuario.username}`);
+        console.log(`  Correo: ${correoRegistrado}`);
+        console.log(`  Enlace: ${enlace}\n`);
+        res.json({
+          ok: true,
+          mensaje:
+            "Modo desarrollo: no se envió correo. Usa el enlace de abajo para restablecer tu contraseña.",
+          devEnlace: enlace,
+        });
+        return;
+      }
+
+      res.status(503).json({
+        error: mensajeSmtpNoConfigurado(),
+      });
+      return;
+    }
+
+    const envio = await enviarCorreoRecuperacion({
+      to: correoRegistrado,
+      username: usuario.username,
+      token,
+    });
+
+    if (!envio.ok) {
+      res.status(503).json({
+        error:
+          envio.error ??
+          "No se pudo enviar el correo. Intenta más tarde o contacta al administrador.",
+      });
+      return;
+    }
+
+    res.json({ ok: true, mensaje: MENSAJE_RECUPERACION_ENVIADA });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
+      return;
+    }
+    console.error(error);
+    res.status(500).json({ error: "Error al solicitar la recuperación de contraseña" });
+  }
+});
+
+router.get("/restablecer-contrasena", async (req, res) => {
+  try {
+    const token = typeof req.query.token === "string" ? req.query.token.trim() : "";
+    if (!token) {
+      res.status(400).json({ error: "Enlace inválido o expirado" });
+      return;
+    }
+
+    const registro = await validarTokenRecuperacion(token);
+    if (!registro) {
+      res.status(400).json({ error: "Enlace inválido o expirado" });
+      return;
+    }
+
+    res.json({
+      ok: true,
+      username: registro.usuario.username,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al validar el enlace" });
+  }
+});
+
+router.post("/restablecer-contrasena", async (req, res) => {
+  try {
+    const { token, password } = await restablecerContrasenaSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+
+    const registro = await validarTokenRecuperacion(token);
+    if (!registro) {
+      res.status(400).json({ error: "Enlace inválido o expirado" });
+      return;
+    }
+
+    await prisma.usuario.update({
+      where: { id: registro.usuario.id },
+      data: {
+        passwordHash: await hashPassword(password),
+        passwordPlano: password,
+      },
+    });
+
+    await marcarTokenRecuperacionUsado(token);
+
+    res.json({ ok: true });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
+      return;
+    }
+    console.error(error);
+    res.status(500).json({ error: "Error al restablecer la contraseña" });
   }
 });
 

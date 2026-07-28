@@ -23,7 +23,10 @@ export type CanalComunicacion = CanalConvocatoria;
 
 export function obtenerConfigConvocatoria(): ConvocatoriaConfig {
   const smtpOk = Boolean(
-    process.env.SMTP_HOST?.trim() && process.env.SMTP_FROM?.trim(),
+    process.env.SMTP_HOST?.trim() &&
+      process.env.SMTP_FROM?.trim() &&
+      process.env.SMTP_USER?.trim() &&
+      process.env.SMTP_PASS?.trim(),
   );
   const twilioOk = Boolean(
     process.env.TWILIO_ACCOUNT_SID?.trim() &&
@@ -48,11 +51,43 @@ export function obtenerConfigConvocatoria(): ConvocatoriaConfig {
 
 export const obtenerConfigComunicacion = obtenerConfigConvocatoria;
 
+export function smtpUsaValoresEjemplo(): boolean {
+  const user = process.env.SMTP_USER?.trim().toLowerCase() ?? "";
+  const pass = process.env.SMTP_PASS?.trim().toLowerCase() ?? "";
+
+  return (
+    user.includes("tu-correo") ||
+    user.includes("nombre@gmail.com") ||
+    user.includes("example.com") ||
+    pass.includes("contraseña-de-aplicacion") ||
+    pass.includes("contrasena-de-aplicacion") ||
+    pass.includes("pega-aqui") ||
+    pass.includes("tu-contraseña") ||
+    pass.includes("tu-contrasena") ||
+    pass === "abcdefghijklmnop"
+  );
+}
+
+export function mensajeSmtpNoConfigurado(): string {
+  const pass = process.env.SMTP_PASS?.trim().toLowerCase() ?? "";
+  if (pass.includes("pega-aqui") || pass.includes("contraseña-de-aplicacion")) {
+    return "Falta la contraseña de aplicación de Gmail en SMTP_PASS (back/.env). Créala en https://myaccount.google.com/apppasswords";
+  }
+  return "SMTP aún tiene valores de ejemplo en back/.env. Configura SMTP_USER y SMTP_PASS con controldirigentes@gmail.com y su contraseña de aplicación.";
+}
+
+/** Solo para pruebas locales: define SMTP_DEV_LOG=true en back/.env */
+export function smtpModoDesarrolloActivo(): boolean {
+  return process.env.SMTP_DEV_LOG === "true";
+}
+
 /** Lista qué falta configurar para envíos reales. */
 export function faltantesConfigConvocatoria(): string[] {
   const faltantes: string[] = [];
   if (!process.env.SMTP_HOST?.trim()) faltantes.push("SMTP_HOST");
   if (!process.env.SMTP_FROM?.trim()) faltantes.push("SMTP_FROM");
+  if (!process.env.SMTP_USER?.trim()) faltantes.push("SMTP_USER");
+  if (!process.env.SMTP_PASS?.trim()) faltantes.push("SMTP_PASS");
   if (!process.env.TWILIO_ACCOUNT_SID?.trim()) faltantes.push("TWILIO_ACCOUNT_SID");
   if (!process.env.TWILIO_AUTH_TOKEN?.trim()) faltantes.push("TWILIO_AUTH_TOKEN");
   if (!process.env.TWILIO_SMS_FROM?.trim()) faltantes.push("TWILIO_SMS_FROM");

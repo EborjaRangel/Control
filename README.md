@@ -66,7 +66,9 @@ Monorepo: el backend va en **Railway** y el frontend en **Vercel**. Sube el proy
 | `ADMIN_USERNAME` | Usuario admin inicial |
 | `ADMIN_PASSWORD` | Contraseña admin inicial |
 
-Opcionales: `SMTP_*`, `TWILIO_*` (convocatorias).
+Opcionales: `SMTP_*` (recuperación de contraseña y convocatorias por correo), `TWILIO_*` (SMS/WhatsApp).
+
+Para **recuperación de contraseña** en producción son obligatorias las variables SMTP en Railway (ver sección abajo).
 
 6. Tras el primer deploy, crea el admin:
 
@@ -98,6 +100,84 @@ railway run npm run db:seed
 - Frontend: inicia sesión con el usuario admin creado en el seed.
 
 Si cambias la URL del API en Railway, actualiza `API_PROXY_URL` en Vercel y vuelve a desplegar.
+
+## Recuperación de contraseña (correo SMTP)
+
+Flujo en producción:
+
+1. El usuario ingresa su **correo registrado** en `/login/recuperar`.
+2. El backend envía un correo con enlace válido 1 hora.
+3. El usuario abre `/login/restablecer/[token]` y define una nueva contraseña.
+
+### Gmail (recomendado para empezar)
+
+1. Usa una cuenta Gmail o Google Workspace dedicada al sistema.
+2. Activa **verificación en 2 pasos**: https://myaccount.google.com/security
+3. Crea una **contraseña de aplicación**: https://myaccount.google.com/apppasswords
+4. Configura estas variables (local `back/.env` y Railway):
+
+| Variable | Ejemplo |
+|----------|---------|
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` | `control@gmail.com` (correo completo) |
+| `SMTP_PASS` | 16 caracteres sin espacios (contraseña de aplicación) |
+| `SMTP_FROM` | `Control Coyoacán <control@gmail.com>` |
+
+`SMTP_USER` y el correo dentro de `SMTP_FROM` deben coincidir.
+
+`PUBLIC_APP_URL` y `FRONTEND_URL` deben ser la URL pública de Vercel (ej. `https://tu-app.vercel.app`) para que el enlace del correo apunte al frontend correcto.
+
+### Prueba local antes del deploy
+
+1. Completa `back/.env` con SMTP real.
+2. Reinicia el backend (`npm run dev:back`).
+3. Usa un correo que exista en la ficha de un dirigente activo.
+4. Revisa bandeja de entrada y spam.
+
+Modo desarrollo sin correo (solo pruebas): `SMTP_DEV_LOG=true` en `back/.env`. Muestra el enlace en pantalla; **no uses esto en Railway/Vercel**.
+
+### Variables en Railway (backend)
+
+Además de `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `PUBLIC_APP_URL`:
+
+```
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tu-correo@gmail.com
+SMTP_PASS=contraseña-de-aplicacion-16-chars
+SMTP_FROM=Control Coyoacán <tu-correo@gmail.com>
+FRONTEND_URL=https://tu-app.vercel.app
+PUBLIC_APP_URL=https://tu-app.vercel.app
+NODE_ENV=production
+```
+
+Tras guardar variables → **Redeploy** del servicio en Railway.
+
+### Variables en Vercel (frontend)
+
+```
+API_PROXY_URL=https://tu-api.up.railway.app
+NEXT_PUBLIC_APP_URL=https://tu-app.vercel.app
+```
+
+### Deploy (push)
+
+```bash
+git add .
+git commit -m "Recuperación de contraseña por correo SMTP"
+git push origin main
+```
+
+Railway y Vercel despliegan automáticamente si el repo está conectado.
+
+### Verificación en producción
+
+1. `https://tu-api.up.railway.app/health` → `{"ok":true}`
+2. Abre `https://tu-app.vercel.app/login/recuperar`
+3. Ingresa un correo registrado en un dirigente
+4. Recibe el correo, abre el enlace y cambia la contraseña
+5. Inicia sesión con la nueva contraseña
 
 ## Estructura
 

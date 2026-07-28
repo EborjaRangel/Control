@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
-import { obtenerConfigConvocatoria } from "./config.js";
+import { obtenerConfigConvocatoria, smtpUsaValoresEjemplo, mensajeSmtpNoConfigurado } from "./config.js";
 
 let transporter: Transporter | null = null;
 
@@ -12,10 +12,10 @@ function getTransporter(): Transporter {
       port,
       secure: port === 465,
       auth:
-        process.env.SMTP_USER && process.env.SMTP_PASS
+        process.env.SMTP_USER?.trim() && process.env.SMTP_PASS?.trim()
           ? {
-              user: process.env.SMTP_USER,
-              pass: process.env.SMTP_PASS,
+              user: process.env.SMTP_USER.trim(),
+              pass: process.env.SMTP_PASS.trim(),
             }
           : undefined,
     });
@@ -29,6 +29,23 @@ export type ResultadoEnvio = {
   error?: string;
 };
 
+function mensajeErrorSmtp(err: unknown): string {
+  const raw = err instanceof Error ? err.message : "Error al enviar correo";
+
+  if (/535|BadCredentials|Username and Password not accepted/i.test(raw)) {
+    return (
+      "Gmail rechazó el usuario o la contraseña SMTP. Usa SMTP_USER con tu correo completo " +
+      "y SMTP_PASS con una contraseña de aplicación de 16 caracteres (no tu contraseña normal de Gmail)."
+    );
+  }
+
+  if (/EAUTH|Invalid login/i.test(raw)) {
+    return "No se pudo autenticar con el servidor SMTP. Revisa SMTP_USER y SMTP_PASS en back/.env.";
+  }
+
+  return raw;
+}
+
 export async function enviarCorreo(input: {
   to: string;
   subject: string;
@@ -37,10 +54,18 @@ export async function enviarCorreo(input: {
 }): Promise<ResultadoEnvio> {
   const config = obtenerConfigConvocatoria();
 
+  if (smtpUsaValoresEjemplo()) {
+    return {
+      ok: false,
+      error: mensajeSmtpNoConfigurado(),
+    };
+  }
+
   if (!config.email.habilitado || !config.email.from) {
     return {
       ok: false,
-      error: "Correo no configurado. Define SMTP_HOST y SMTP_FROM en el servidor.",
+      error:
+        "Correo no configurado. Define SMTP_HOST, SMTP_FROM, SMTP_USER y SMTP_PASS en back/.env.",
     };
   }
 
@@ -54,8 +79,8 @@ export async function enviarCorreo(input: {
     });
     return { ok: true, proveedorId: info.messageId };
   } catch (err) {
-    const error = err instanceof Error ? err.message : "Error al enviar correo";
-    console.error("[convocatoria][email]", error);
+    const error = mensajeErrorSmtp(err);
+    console.error("[email]", err instanceof Error ? err.message : err);
     return { ok: false, error };
   }
 }

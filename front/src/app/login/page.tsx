@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Form, Formik } from "formik";
 import { useAuth } from "@/components/AuthProvider";
@@ -62,6 +63,12 @@ export default function LoginPage() {
               <button type="submit" className="btn-primary btn-responsive w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Entrando…" : "Iniciar sesión"}
               </button>
+
+              <p className="text-center text-sm">
+                <Link href="/login/recuperar" className="font-medium text-pin hover:underline">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </p>
             </Form>
           )}
         </Formik>

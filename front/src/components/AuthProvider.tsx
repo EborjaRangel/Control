@@ -36,7 +36,11 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const PUBLIC_PATHS = new Set(["/login"]);
+const PUBLIC_PATHS = new Set(["/login", "/login/recuperar"]);
+
+function isPublicPath(pathname: string) {
+  return PUBLIC_PATHS.has(pathname) || pathname.startsWith("/login/restablecer/");
+}
 
 type LoginResponse = SessionUser & {
   token?: string;
@@ -79,11 +83,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
-    if (!user && !PUBLIC_PATHS.has(pathname)) {
+    if (!user && !isPublicPath(pathname)) {
       router.replace("/login");
       return;
     }
-    if (user && pathname === "/login") {
+    if (user && isPublicPath(pathname)) {
       router.replace(homeForUser(user));
       return;
     }
@@ -144,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user, loading, login, logout, refresh],
   );
 
-  if (loading && !PUBLIC_PATHS.has(pathname)) {
+  if (loading && !isPublicPath(pathname)) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center text-ink-secondary">
         <span className="size-5 animate-pulse rounded-full bg-pin-light" />
@@ -153,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user && !PUBLIC_PATHS.has(pathname)) return null;
+  if (!user && !isPublicPath(pathname)) return null;
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
