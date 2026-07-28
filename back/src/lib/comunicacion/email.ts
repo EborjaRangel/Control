@@ -5,32 +5,44 @@ import { obtenerConfigConvocatoria, smtpUsaValoresEjemplo, mensajeSmtpNoConfigur
 
 dns.setDefaultResultOrder("ipv4first");
 
-let transporter: Transporter | null = null;
+let transporterPromise: Promise<Transporter> | null = null;
 
-function getTransporter(): Transporter {
-  if (!transporter) {
-    const port = Number(process.env.SMTP_PORT ?? 587);
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port,
-      secure: port === 465,
-      family: 4,
-      connectionTimeout: 20_000,
-      greetingTimeout: 20_000,
-      socketTimeout: 30_000,
-      lookup: (hostname, _options, callback) => {
-        dns.lookup(hostname, { family: 4, all: false }, callback);
-      },
-      auth:
-        process.env.SMTP_USER?.trim() && process.env.SMTP_PASS?.trim()
-          ? {
-              user: process.env.SMTP_USER.trim(),
-              pass: process.env.SMTP_PASS.trim(),
-            }
-          : undefined,
-    });
+async function createTransporter(): Promise<Transporter> {
+  const hostname = process.env.SMTP_HOST?.trim() ?? "smtp.gmail.com";
+  const port = Number(process.env.SMTP_PORT ?? 587);
+
+  let connectHost = hostname;
+  try {
+    const resolved = await dns.promises.lookup(hostname, { family: 4, all: false });
+    connectHost = resolved.address;
+    console.log(`[email] SMTP ${hostname} -> IPv4 ${connectHost}:${port}`);
+  } catch (err) {
+    console.error("[email] No se pudo resolver IPv4 para SMTP, usando hostname", err);
   }
-  return transporter;
+
+  return nodemailer.createTransport({
+    host: connectHost,
+    port,
+    secure: port === 465,
+    tls: {
+      servername: hostname,
+    },
+    connectionTimeout: 20_000,
+    greetingTimeout: 20_000,
+    socketTimeout: 30_000,
+    auth:
+      process.env.SMTP_USER?.trim() && process.env.SMTP_PASS?.trim()
+        ? {
+            user: process.env.SMTP_USER.trim(),
+            pass: process.env.SMTP_PASS.trim(),
+          }
+        : undefined,
+  });
+}
+
+async function getTransporter(): Promise<Transporter> {
+  transporterPromise ??= createTransporter();
+  return transporterPromise;
 }
 
 export type ResultadoEnvio = {
@@ -84,7 +96,8 @@ export async function enviarCorreo(input: {
   }
 
   try {
-    const info = await getTransporter().sendMail({
+    const transporter = await getTransporter();
+    const info = await transporter.sendMail({
       from: config.email.from,
       to: input.to,
       subject: input.subject,
@@ -93,6 +106,7 @@ export async function enviarCorreo(input: {
     });
     return { ok: true, proveedorId: info.messageId };
   } catch (err) {
+    transporterPromise = null;
     const error = mensajeErrorSmtp(err);
     console.error("[email]", err instanceof Error ? err.message : err);
     return { ok: false, error };
