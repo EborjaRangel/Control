@@ -73,7 +73,9 @@ router.get("/", requireAdminPrivileges, async (req, res) => {
         conceptos: true,
         dirigente: { select: dirigenteResumenSelect },
       },
-      orderBy: [{ dirigente: { activo: "desc" } }, { dirigente: { primerApellido: "asc" } }],
+      orderBy: tipo
+        ? [{ totalGeneral: "desc" }, { dirigente: { primerApellido: "asc" } }]
+        : [{ dirigente: { activo: "desc" } }, { dirigente: { primerApellido: "asc" } }],
     });
 
     res.json(

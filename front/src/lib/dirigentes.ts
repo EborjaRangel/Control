@@ -21,3 +21,21 @@ export {
 } from "./composicion-sueldo";
 
 export { formatMxn, nombreCompleto } from "./composicion-sueldo";
+
+/** Orden alfabético: primer apellido, segundo apellido, nombre. */
+export function compararDirigentePorApellidosNombre(
+  a: { nombre: string; primerApellido: string; segundoApellido?: string | null },
+  b: { nombre: string; primerApellido: string; segundoApellido?: string | null },
+): number {
+  const cmpApellido = a.primerApellido.localeCompare(b.primerApellido, "es", {
+    sensitivity: "base",
+  });
+  if (cmpApellido !== 0) return cmpApellido;
+
+  const cmpMaterno = (a.segundoApellido ?? "").localeCompare(b.segundoApellido ?? "", "es", {
+    sensitivity: "base",
+  });
+  if (cmpMaterno !== 0) return cmpMaterno;
+
+  return a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" });
+}
