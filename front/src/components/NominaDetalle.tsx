@@ -3,15 +3,15 @@
 import Link from "next/link";
 import {
   CONCEPTO_SUELDO_LABEL,
-  CONCEPTOS_SUELDO_CATALOGO,
   formatMxn,
+  normalizarDesglose,
   TIPO_DIRIGENTE_LABEL,
   type TipoDirigente,
 } from "@/lib/dirigentes";
 import { tipoDetalleSueldoLabel } from "@/lib/composicion-sueldo";
 import { type NominaDTO } from "@/lib/nominas";
 import { TableWrap } from "@/components/TableWrap";
-import { SueldoDesglose } from "@/components/SueldoDesglose";
+import { DesgloseConceptosResumen } from "@/components/DesgloseConceptosResumen";
 import { NominaForm } from "@/components/NominaForm";
 import { nominaToFormValues } from "@/lib/nominas";
 import type { NominaFormValues } from "@/lib/validation";
@@ -59,18 +59,7 @@ export function NominaDetalle({
         <p className="alert-warning">Este dirigente está dado de baja.</p>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-        <div className="card text-center sm:col-span-2 lg:col-span-1">
-          <p className="text-xl font-bold text-pin">{formatMxn(n.desglose.total)}</p>
-          <p className="text-xs text-ink-secondary">Total mensual</p>
-        </div>
-        {CONCEPTOS_SUELDO_CATALOGO.map((key) => (
-          <div key={key} className="card text-center">
-            <p className="text-xl font-bold text-ink">{formatMxn(n.desglose[key])}</p>
-            <p className="text-xs text-ink-secondary">{CONCEPTO_SUELDO_LABEL[key]}</p>
-          </div>
-        ))}
-      </div>
+      <DesgloseConceptosResumen desglose={n.desglose} />
 
       <section className="card-section space-y-4">
         <div>
@@ -151,8 +140,6 @@ export function NominaDetalle({
           <p className="text-sm text-ink-secondary">Sin conceptos registrados.</p>
         )}
       </section>
-
-      <SueldoDesglose desglose={n.desglose} />
 
       {editing && onSave ? (
         <NominaForm

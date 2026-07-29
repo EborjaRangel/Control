@@ -1,7 +1,6 @@
 "use client";
 
-import { formatMxn } from "@/lib/composicion-sueldo";
-import { CONCEPTO_SUELDO_LABEL, CONCEPTOS_SUELDO_CATALOGO } from "@/lib/composicion-sueldo";
+import { CONCEPTO_SUELDO_LABEL, CONCEPTOS_SUELDO_CATALOGO, formatMxn, normalizarDesglose } from "@/lib/composicion-sueldo";
 import type { NominaResumenGlobalDTO } from "@/lib/nominas";
 
 type Props = {
@@ -9,7 +8,7 @@ type Props = {
 };
 
 export function NominaResumenGlobalPanel({ resumen }: Props) {
-  const { desglose, nominasActivas } = resumen;
+  const desglose = normalizarDesglose(resumen.desglose);
 
   return (
     <section className="card-section space-y-4">
@@ -17,7 +16,7 @@ export function NominaResumenGlobalPanel({ resumen }: Props) {
         <div>
           <h2 className="section-title">Totales por concepto</h2>
           <p className="mt-1 text-sm text-ink-secondary">
-            Resumen global de {nominasActivas} nómina(s) activa(s), persistido en base de datos.
+            Resumen global de {resumen.nominasActivas} nómina(s) activa(s), persistido en base de datos.
           </p>
         </div>
         <div className="rounded-pin-lg border border-pin/30 bg-pin/5 px-4 py-3 text-right">

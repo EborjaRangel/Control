@@ -57,11 +57,12 @@ export function ComposicionSueldoFields({ namePrefix }: Props) {
             {conceptos.map((_, index) => (
               <div
                 key={index}
-                className="panel-soft grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(9rem,1fr)_5.5rem_5.5rem_minmax(7.5rem,auto)_auto] lg:items-end"
+                className="panel-soft grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(5.5rem,1fr)_minmax(4.5rem,2fr)_minmax(6rem,4fr)_minmax(7rem,auto)_auto] lg:items-end"
               >
                 <FormSelect
                   label="Concepto"
                   name={`${arrayName}.${index}.concepto`}
+                  className="min-w-0"
                 >
                   {CONCEPTOS_SUELDO_CATALOGO.map((c) => (
                     <option key={c} value={c}>
@@ -85,6 +86,7 @@ export function ComposicionSueldoFields({ namePrefix }: Props) {
                 <FormSelect
                   label="Tipo"
                   name={`${arrayName}.${index}.tipoDetalle`}
+                  className="min-w-0"
                 >
                   {TIPOS_DETALLE_SUELDO.map((t) => (
                     <option key={t} value={t}>

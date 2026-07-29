@@ -8,7 +8,7 @@ import { NominaResumenGlobalPanel } from "@/components/NominaResumenGlobalPanel"
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import { NOMBRES_COLONIAS_COYOACAN } from "@/lib/colonias";
-import { formatMxn, TIPO_DIRIGENTE_LABEL, TIPOS_DIRIGENTE, CONCEPTO_SUELDO_LABEL, CONCEPTOS_SUELDO_CATALOGO } from "@/lib/dirigentes";
+import { formatMxn, TIPO_DIRIGENTE_LABEL, TIPOS_DIRIGENTE, CONCEPTO_SUELDO_LABEL, CONCEPTOS_SUELDO_CATALOGO, normalizarDesglose } from "@/lib/dirigentes";
 import { type NominaDTO, type NominaResumenGlobalDTO } from "@/lib/nominas";
 
 export default function NominasPage() {
@@ -161,7 +161,7 @@ export default function NominasPage() {
         <>
           <div className="card-section desktop-only-table">
             <TableWrap>
-              <table className="w-full min-w-[960px] text-left text-sm">
+              <table className="w-full min-w-[1080px] text-left text-sm">
               <thead>
                 <tr className="border-b border-line text-xs text-ink-secondary">
                   <th className="py-2 pr-3">Dirigente</th>
@@ -202,7 +202,7 @@ export default function NominasPage() {
                       <td className="py-2.5 pr-3 text-ink-secondary">{d.colonia}</td>
                       {CONCEPTOS_SUELDO_CATALOGO.map((key) => (
                         <td key={key} className="py-2.5 pr-3 text-right">
-                          {formatMxn(n.desglose[key])}
+                          {formatMxn(normalizarDesglose(n.desglose)[key])}
                         </td>
                       ))}
                       <td className="py-2.5 pr-3 text-right font-bold text-pin">
@@ -225,7 +225,7 @@ export default function NominasPage() {
                     </td>
                     {CONCEPTOS_SUELDO_CATALOGO.map((key) => (
                       <td key={key} className="py-3 pr-3 text-right text-pin">
-                        {formatMxn(resumen.desglose[key])}
+                        {formatMxn(normalizarDesglose(resumen.desglose)[key])}
                       </td>
                     ))}
                     <td className="py-3 pr-3 text-right text-lg text-pin">
@@ -263,7 +263,9 @@ export default function NominasPage() {
                     {CONCEPTOS_SUELDO_CATALOGO.map((key) => (
                       <div key={key}>
                         <dt className="text-ink-secondary">{CONCEPTO_SUELDO_LABEL[key]}</dt>
-                        <dd className="font-medium text-ink">{formatMxn(n.desglose[key])}</dd>
+                        <dd className="font-medium text-ink">
+                          {formatMxn(normalizarDesglose(n.desglose)[key])}
+                        </dd>
                       </div>
                     ))}
                   </dl>

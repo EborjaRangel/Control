@@ -1,6 +1,7 @@
 import {
   calcularSueldo,
   nombreCompleto,
+  normalizarDesglose,
   type ConceptoComposicionInput,
   type DesgloseSueldo,
 } from "./composicion-sueldo.js";
@@ -75,7 +76,7 @@ function desgloseFromConceptos(conceptos: ConceptoRow[]): DesgloseSueldo {
 
 function desgloseFromNomina(nomina: NominaCore): DesgloseSueldo {
   if (nomina.totalGeneral != null) {
-    return {
+    return normalizarDesglose({
       BASE: n(nomina.totalBase),
       HONORARIOS: n(nomina.totalHonorarios),
       COSSOC: n(nomina.totalCossoc),
@@ -84,9 +85,9 @@ function desgloseFromNomina(nomina: NominaCore): DesgloseSueldo {
       NOMINA_8: n(nomina.totalNomina8),
       ESTRUCTURA: n(nomina.totalEstructura),
       total: n(nomina.totalGeneral),
-    };
+    });
   }
-  return desgloseFromConceptos(nomina.conceptos);
+  return normalizarDesglose(desgloseFromConceptos(nomina.conceptos));
 }
 
 export type NominaDTO = ReturnType<typeof serializeNomina>;

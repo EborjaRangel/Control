@@ -60,6 +60,22 @@ export type DesgloseSueldo = Record<ConceptoSueldo, number> & {
   total: number;
 };
 
+/** Garantiza todas las columnas del catálogo (p. ej. Estructura) aunque falten en BD/API. */
+export function normalizarDesglose(
+  desglose: Partial<DesgloseSueldo> & { total?: number },
+): DesgloseSueldo {
+  const porConcepto = {} as Record<ConceptoSueldo, number>;
+  for (const key of CONCEPTOS_SUELDO_CATALOGO) {
+    porConcepto[key] = round2(num(desglose[key]));
+  }
+  const totalCalculado = CONCEPTOS_SUELDO_CATALOGO.reduce((sum, key) => sum + porConcepto[key], 0);
+  const total =
+    desglose.total != null && Number.isFinite(Number(desglose.total))
+      ? round2(num(desglose.total))
+      : round2(totalCalculado);
+  return { ...porConcepto, total };
+}
+
 function num(value: unknown): number {
   const n = typeof value === "number" ? value : Number(value);
   return Number.isFinite(n) ? n : 0;

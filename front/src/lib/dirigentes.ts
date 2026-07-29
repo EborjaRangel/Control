@@ -14,6 +14,7 @@ export {
   MAX_CONCEPTOS_COMPOSICION,
   calcularSueldo,
   etiquetaConceptoComposicion,
+  normalizarDesglose,
   type ConceptoComposicionInput,
   type ConceptoSueldo,
   type DesgloseSueldo,

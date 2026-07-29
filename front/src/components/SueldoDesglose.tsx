@@ -1,6 +1,6 @@
 "use client";
 
-import { CONCEPTO_SUELDO_LABEL, CONCEPTOS_SUELDO_CATALOGO, formatMxn } from "@/lib/composicion-sueldo";
+import { CONCEPTO_SUELDO_LABEL, CONCEPTOS_SUELDO_CATALOGO, formatMxn, normalizarDesglose } from "@/lib/composicion-sueldo";
 import type { DesgloseSueldo } from "@/lib/composicion-sueldo";
 
 type Props = {
@@ -8,9 +8,10 @@ type Props = {
 };
 
 export function SueldoDesglose({ desglose }: Props) {
+  const normalizado = normalizarDesglose(desglose);
   const rows = CONCEPTOS_SUELDO_CATALOGO.map((key) => ({
     label: CONCEPTO_SUELDO_LABEL[key],
-    value: desglose[key],
+    value: normalizado[key],
   }));
 
   return (
@@ -25,7 +26,7 @@ export function SueldoDesglose({ desglose }: Props) {
         ))}
         <div className="divider flex justify-between pt-3 font-bold text-pin">
           <dt>Total mensual</dt>
-          <dd>{formatMxn(desglose.total)}</dd>
+          <dd>{formatMxn(normalizado.total)}</dd>
         </div>
       </dl>
     </div>

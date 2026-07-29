@@ -1,6 +1,6 @@
 import type { prisma as prismaClient } from "./prisma.js";
 import type { DesgloseSueldo } from "./composicion-sueldo.js";
-import { calcularSueldo, type ConceptoComposicionInput } from "./composicion-sueldo.js";
+import { calcularSueldo, type ConceptoComposicionInput, normalizarDesglose } from "./composicion-sueldo.js";
 
 type Tx = Omit<
   typeof prismaClient,
@@ -84,7 +84,7 @@ export function serializeResumenGlobal(row: {
   nominasActivas: number;
   updatedAt: Date;
 }) {
-  const desglose: DesgloseSueldo = {
+  const desglose: DesgloseSueldo = normalizarDesglose({
     BASE: n(row.totalBase),
     HONORARIOS: n(row.totalHonorarios),
     COSSOC: n(row.totalCossoc),
@@ -93,7 +93,7 @@ export function serializeResumenGlobal(row: {
     NOMINA_8: n(row.totalNomina8),
     ESTRUCTURA: n(row.totalEstructura),
     total: n(row.totalGeneral),
-  };
+  });
 
   return {
     desglose,
