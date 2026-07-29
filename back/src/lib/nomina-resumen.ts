@@ -19,6 +19,7 @@ export function desgloseToNominaTotals(desglose: DesgloseSueldo) {
     totalSetentaTreinta: desglose.SETENTA_TREINTA,
     totalPf: desglose.PF,
     totalNomina8: desglose.NOMINA_8,
+    totalEstructura: desglose.ESTRUCTURA,
     totalGeneral: desglose.total,
   };
 }
@@ -37,6 +38,7 @@ export async function recalcularResumenGlobalNomina(tx: Tx) {
       totalSetentaTreinta: true,
       totalPf: true,
       totalNomina8: true,
+      totalEstructura: true,
       totalGeneral: true,
     },
     _count: true,
@@ -52,6 +54,7 @@ export async function recalcularResumenGlobalNomina(tx: Tx) {
       totalSetentaTreinta: n(agg._sum.totalSetentaTreinta),
       totalPf: n(agg._sum.totalPf),
       totalNomina8: n(agg._sum.totalNomina8),
+      totalEstructura: n(agg._sum.totalEstructura),
       totalGeneral: n(agg._sum.totalGeneral),
       nominasActivas: agg._count,
     },
@@ -62,6 +65,7 @@ export async function recalcularResumenGlobalNomina(tx: Tx) {
       totalSetentaTreinta: n(agg._sum.totalSetentaTreinta),
       totalPf: n(agg._sum.totalPf),
       totalNomina8: n(agg._sum.totalNomina8),
+      totalEstructura: n(agg._sum.totalEstructura),
       totalGeneral: n(agg._sum.totalGeneral),
       nominasActivas: agg._count,
     },
@@ -75,6 +79,7 @@ export function serializeResumenGlobal(row: {
   totalSetentaTreinta: unknown;
   totalPf: unknown;
   totalNomina8: unknown;
+  totalEstructura: unknown;
   totalGeneral: unknown;
   nominasActivas: number;
   updatedAt: Date;
@@ -86,6 +91,7 @@ export function serializeResumenGlobal(row: {
     SETENTA_TREINTA: n(row.totalSetentaTreinta),
     PF: n(row.totalPf),
     NOMINA_8: n(row.totalNomina8),
+    ESTRUCTURA: n(row.totalEstructura),
     total: n(row.totalGeneral),
   };
 

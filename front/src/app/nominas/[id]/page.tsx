@@ -62,7 +62,7 @@ export default function NominaDirigentePage() {
             concepto: c.concepto,
             monto: Number(c.monto),
             nombre: c.nombre?.trim() || null,
-            tipoDetalle: c.tipoDetalle?.trim() || null,
+            tipoDetalle: c.tipoDetalle,
           })),
         }),
       });

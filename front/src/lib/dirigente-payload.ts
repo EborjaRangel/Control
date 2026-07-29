@@ -50,7 +50,7 @@ export function prepareDirigentePayload(
       concepto: c.concepto,
       monto: toNumber(c.monto),
       nombre: emptyToNull(c.nombre ?? ""),
-      tipoDetalle: emptyToNull(c.tipoDetalle ?? ""),
+      tipoDetalle: c.tipoDetalle,
     })),
     estudios: (values.estudios ?? [])
       .filter((e) => e.descripcion.trim())

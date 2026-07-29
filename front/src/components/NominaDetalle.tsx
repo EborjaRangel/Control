@@ -8,6 +8,7 @@ import {
   TIPO_DIRIGENTE_LABEL,
   type TipoDirigente,
 } from "@/lib/dirigentes";
+import { tipoDetalleSueldoLabel } from "@/lib/composicion-sueldo";
 import { type NominaDTO } from "@/lib/nominas";
 import { TableWrap } from "@/components/TableWrap";
 import { SueldoDesglose } from "@/components/SueldoDesglose";
@@ -92,7 +93,7 @@ export function NominaDetalle({
                     </div>
                     <div>
                       <dt className="text-ink-secondary">Tipo</dt>
-                      <dd className="font-medium text-ink">{c.tipoDetalle ?? "—"}</dd>
+                      <dd className="font-medium text-ink">{tipoDetalleSueldoLabel(c.tipoDetalle)}</dd>
                     </div>
                     <div className="col-span-2">
                       <dt className="text-ink-secondary">Monto</dt>
@@ -127,7 +128,7 @@ export function NominaDetalle({
                       {CONCEPTO_SUELDO_LABEL[c.concepto]}
                     </td>
                     <td className="py-2.5 pr-3 text-ink-secondary">{c.nombre ?? "—"}</td>
-                    <td className="py-2.5 pr-3 text-ink-secondary">{c.tipoDetalle ?? "—"}</td>
+                    <td className="py-2.5 pr-3 text-ink-secondary">{tipoDetalleSueldoLabel(c.tipoDetalle)}</td>
                     <td className="py-2.5 text-right font-medium text-ink">
                       {formatMxn(c.monto)}
                     </td>

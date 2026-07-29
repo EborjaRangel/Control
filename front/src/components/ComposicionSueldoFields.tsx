@@ -6,6 +6,8 @@ import {
   CONCEPTOS_SUELDO_CATALOGO,
   CONCEPTO_SUELDO_LABEL,
   MAX_CONCEPTOS_COMPOSICION,
+  TIPO_DETALLE_SUELDO_LABEL,
+  TIPOS_DETALLE_SUELDO,
 } from "@/lib/composicion-sueldo";
 import type { NominaFormValues } from "@/lib/validation";
 
@@ -42,7 +44,7 @@ export function ComposicionSueldoFields({ namePrefix }: Props) {
               className="btn-secondary btn-sm btn-responsive"
               disabled={conceptos.length >= MAX_CONCEPTOS_COMPOSICION}
               onClick={() =>
-                push({ concepto: "BASE", monto: 0, nombre: "", tipoDetalle: "" })
+                push({ concepto: "BASE", monto: 0, nombre: "", tipoDetalle: "TITULAR" })
               }
             >
               + Agregar otro sueldo
@@ -55,7 +57,7 @@ export function ComposicionSueldoFields({ namePrefix }: Props) {
             {conceptos.map((_, index) => (
               <div
                 key={index}
-                className="panel-soft grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_1fr_1fr_1fr_auto]"
+                className="panel-soft grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(9rem,1fr)_5.5rem_5.5rem_minmax(7.5rem,auto)_auto] lg:items-end"
               >
                 <FormSelect
                   label="Concepto"
@@ -73,15 +75,23 @@ export function ComposicionSueldoFields({ namePrefix }: Props) {
                   type="number"
                   min={0}
                   step="0.01"
+                  className="w-full min-w-0"
                 />
                 <FormField
                   label="Nombre"
                   name={`${arrayName}.${index}.nombre`}
+                  className="w-full min-w-0"
                 />
-                <FormField
+                <FormSelect
                   label="Tipo"
                   name={`${arrayName}.${index}.tipoDetalle`}
-                />
+                >
+                  {TIPOS_DETALLE_SUELDO.map((t) => (
+                    <option key={t} value={t}>
+                      {TIPO_DETALLE_SUELDO_LABEL[t]}
+                    </option>
+                  ))}
+                </FormSelect>
                 <div className="flex items-end sm:col-span-2 lg:col-span-1">
                   <button
                     type="button"

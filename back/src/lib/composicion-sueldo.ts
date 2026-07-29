@@ -7,6 +7,7 @@ export const CONCEPTOS_SUELDO_CATALOGO = [
   "SETENTA_TREINTA",
   "PF",
   "NOMINA_8",
+  "ESTRUCTURA",
 ] as const;
 
 export type ConceptoSueldo = (typeof CONCEPTOS_SUELDO_CATALOGO)[number];
@@ -18,15 +19,41 @@ export const CONCEPTO_SUELDO_LABEL: Record<ConceptoSueldo, string> = {
   SETENTA_TREINTA: "70/30",
   PF: "PF",
   NOMINA_8: "Nómina 8",
+  ESTRUCTURA: "Estructura",
 };
 
 export const MAX_CONCEPTOS_COMPOSICION = 30;
+
+export const TIPOS_DETALLE_SUELDO = ["TITULAR", "CHAMBELAN"] as const;
+
+export type TipoDetalleSueldo = (typeof TIPOS_DETALLE_SUELDO)[number];
+
+export const TIPO_DETALLE_SUELDO_LABEL: Record<TipoDetalleSueldo, string> = {
+  TITULAR: "Titular",
+  CHAMBELAN: "Chambelán",
+};
+
+export function tipoDetalleSueldoParaFormulario(
+  value: string | null | undefined,
+): TipoDetalleSueldo {
+  if (value && (TIPOS_DETALLE_SUELDO as readonly string[]).includes(value)) {
+    return value as TipoDetalleSueldo;
+  }
+  return "TITULAR";
+}
+
+export function tipoDetalleSueldoLabel(value: string | null | undefined): string {
+  if (value && (TIPOS_DETALLE_SUELDO as readonly string[]).includes(value)) {
+    return TIPO_DETALLE_SUELDO_LABEL[value as TipoDetalleSueldo];
+  }
+  return value?.trim() || "—";
+}
 
 export type ConceptoComposicionInput = {
   concepto: ConceptoSueldo;
   monto: number;
   nombre?: string | null;
-  tipoDetalle?: string | null;
+  tipoDetalle?: TipoDetalleSueldo | string | null;
 };
 
 export type DesgloseSueldo = Record<ConceptoSueldo, number> & {
@@ -50,6 +77,7 @@ export function calcularSueldo(conceptos: ConceptoComposicionInput[]): DesgloseS
     SETENTA_TREINTA: 0,
     PF: 0,
     NOMINA_8: 0,
+    ESTRUCTURA: 0,
   };
 
   for (const c of conceptos ?? []) {
@@ -67,6 +95,7 @@ export function calcularSueldo(conceptos: ConceptoComposicionInput[]): DesgloseS
     SETENTA_TREINTA: round2(porConcepto.SETENTA_TREINTA),
     PF: round2(porConcepto.PF),
     NOMINA_8: round2(porConcepto.NOMINA_8),
+    ESTRUCTURA: round2(porConcepto.ESTRUCTURA),
     total: round2(total),
   };
 }
@@ -92,6 +121,6 @@ export function nombreCompleto(d: {
 export function etiquetaConceptoComposicion(c: ConceptoComposicionInput & { id?: string }): string {
   const partes = [CONCEPTO_SUELDO_LABEL[c.concepto]];
   if (c.nombre?.trim()) partes.push(c.nombre.trim());
-  if (c.tipoDetalle?.trim()) partes.push(`(${c.tipoDetalle.trim()})`);
+  if (c.tipoDetalle?.trim()) partes.push(`(${tipoDetalleSueldoLabel(c.tipoDetalle)})`);
   return partes.join(" · ");
 }

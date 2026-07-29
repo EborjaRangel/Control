@@ -1,6 +1,7 @@
 import type { DirigenteFormValues } from "@/lib/validation";
 import type { StatusDirigente } from "@/lib/dirigente-spec";
 import type { ConceptoSueldo, DesgloseSueldo } from "@/lib/composicion-sueldo";
+import { tipoDetalleSueldoParaFormulario } from "@/lib/composicion-sueldo";
 import { NOMBRES_COLONIAS_COYOACAN } from "@/lib/colonias";
 import { SECCIONES_ELECTORALES_COYOACAN } from "@/lib/secciones-electorales";
 import {
@@ -214,7 +215,7 @@ export function dtoToFormValues(d: DirigenteDTO): DirigenteFormValues {
       concepto: c.concepto,
       monto: c.monto,
       nombre: c.nombre ?? "",
-      tipoDetalle: c.tipoDetalle ?? "",
+      tipoDetalle: tipoDetalleSueldoParaFormulario(c.tipoDetalle),
     })),
     status: d.status,
     usuario: d.usuario ?? usuarioDesdeNombreApellido(d.nombre, d.primerApellido),

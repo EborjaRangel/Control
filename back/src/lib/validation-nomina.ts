@@ -1,5 +1,5 @@
 import * as Yup from "yup";
-import { CONCEPTOS_SUELDO_CATALOGO, MAX_CONCEPTOS_COMPOSICION } from "./composicion-sueldo.js";
+import { CONCEPTOS_SUELDO_CATALOGO, MAX_CONCEPTOS_COMPOSICION, TIPOS_DETALLE_SUELDO } from "./composicion-sueldo.js";
 
 function montoSueldo(label = "Monto inválido") {
   return Yup.number()
@@ -19,7 +19,9 @@ export const conceptoComposicionSchema = Yup.object({
     .required("Selecciona un concepto"),
   monto: montoSueldo(),
   nombre: Yup.string().trim().nullable(),
-  tipoDetalle: Yup.string().trim().nullable(),
+  tipoDetalle: Yup.string()
+    .oneOf([...TIPOS_DETALLE_SUELDO], "Selecciona Titular o Chambelán")
+    .required("Selecciona Titular o Chambelán"),
 });
 
 export const nominaSchema = Yup.object({

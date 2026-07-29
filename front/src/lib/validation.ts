@@ -1,6 +1,6 @@
 import * as Yup from "yup";
 import { TIPOS_DIRIGENTE } from "./dirigentes";
-import { CONCEPTOS_SUELDO_CATALOGO, MAX_CONCEPTOS_COMPOSICION } from "./composicion-sueldo";
+import { CONCEPTOS_SUELDO_CATALOGO, MAX_CONCEPTOS_COMPOSICION, TIPOS_DETALLE_SUELDO } from "./composicion-sueldo";
 import { COLONIAS_COYOACAN, coloniaCoincideConCp, CODIGOS_POSTALES_COYOACAN, esColoniaValida } from "./colonias";
 import { SECCIONES_ELECTORALES_COYOACAN, esSeccionValida } from "./secciones-electorales";
 import { credencialesCreateSchema, credencialesUpdateSchema } from "./auth";
@@ -38,7 +38,9 @@ export const conceptoComposicionSchema = Yup.object({
     .required("Selecciona un concepto"),
   monto: montoSueldo(),
   nombre: Yup.string().trim().nullable(),
-  tipoDetalle: Yup.string().trim().nullable(),
+  tipoDetalle: Yup.string()
+    .oneOf([...TIPOS_DETALLE_SUELDO], "Selecciona Titular o Chambelán")
+    .required("Selecciona Titular o Chambelán"),
 });
 
 export const nominaSchema = Yup.object({

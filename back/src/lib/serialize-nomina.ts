@@ -23,6 +23,7 @@ type NominaCore = {
   totalSetentaTreinta?: unknown;
   totalPf?: unknown;
   totalNomina8?: unknown;
+  totalEstructura?: unknown;
   totalGeneral?: unknown;
   conceptos: ConceptoRow[];
 };
@@ -81,6 +82,7 @@ function desgloseFromNomina(nomina: NominaCore): DesgloseSueldo {
       SETENTA_TREINTA: n(nomina.totalSetentaTreinta),
       PF: n(nomina.totalPf),
       NOMINA_8: n(nomina.totalNomina8),
+      ESTRUCTURA: n(nomina.totalEstructura),
       total: n(nomina.totalGeneral),
     };
   }

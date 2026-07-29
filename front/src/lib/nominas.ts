@@ -1,3 +1,4 @@
+import { tipoDetalleSueldoParaFormulario } from "./composicion-sueldo";
 import type { ConceptoSueldo, DesgloseSueldo } from "./composicion-sueldo";
 
 export type ConceptoComposicionDTO = {
@@ -44,7 +45,7 @@ export function nominaToFormValues(nomina: NominaDTO) {
       concepto: c.concepto,
       monto: c.monto,
       nombre: c.nombre ?? "",
-      tipoDetalle: c.tipoDetalle ?? "",
+      tipoDetalle: tipoDetalleSueldoParaFormulario(c.tipoDetalle),
     })),
   };
 }

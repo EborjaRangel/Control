@@ -482,6 +482,7 @@ enum ConceptoSueldo {
   SETENTA_TREINTA
   PF
   NOMINA_8
+  ESTRUCTURA
 }
 
 model Chambelan {
@@ -512,6 +513,7 @@ model Nomina {
   totalSetentaTreinta Decimal     @default(0) @db.Decimal(12, 2)
   totalPf             Decimal     @default(0) @db.Decimal(12, 2)
   totalNomina8        Decimal     @default(0) @db.Decimal(12, 2)
+  totalEstructura     Decimal     @default(0) @db.Decimal(12, 2)
   totalGeneral        Decimal     @default(0) @db.Decimal(12, 2)
   conceptos           Chambelan[]
   createdAt           DateTime    @default(now())
@@ -529,6 +531,7 @@ model NominaResumenGlobal {
   totalSetentaTreinta Decimal  @default(0) @db.Decimal(14, 2)
   totalPf             Decimal  @default(0) @db.Decimal(14, 2)
   totalNomina8        Decimal  @default(0) @db.Decimal(14, 2)
+  totalEstructura     Decimal  @default(0) @db.Decimal(14, 2)
   totalGeneral        Decimal  @default(0) @db.Decimal(14, 2)
   nominasActivas      Int      @default(0)
   updatedAt           DateTime @updatedAt
