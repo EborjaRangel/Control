@@ -1,4 +1,5 @@
 import { nombreCompleto } from "./dirigentes.js";
+import { normalizarCamposNombrePersona } from "./normalizar-texto.js";
 
 type PersonaRow = {
   id: string;
@@ -52,13 +53,12 @@ type DetectadoRow = {
 };
 
 function serializePersona(p: PersonaRow) {
+  const nombres = normalizarCamposNombrePersona(p);
   return {
     id: p.id,
     detectadoId: p.detectadoId,
-    nombre: p.nombre,
-    primerApellido: p.primerApellido,
-    segundoApellido: p.segundoApellido,
-    nombreCompleto: nombreCompleto(p),
+    ...nombres,
+    nombreCompleto: nombreCompleto(nombres),
     fechaNacimiento: p.fechaNacimiento.toISOString().slice(0, 10),
     sexo: p.sexo,
     claveElector: p.claveElector,
@@ -89,13 +89,13 @@ export function serializeDetectado(
     d._count?.personas ??
     (d.personas ? d.personas.filter((p) => p.activo).length : 0);
 
+  const nombres = normalizarCamposNombrePersona(d);
+
   return {
     id: d.id,
     dirigenteId: d.dirigenteId,
-    nombre: d.nombre,
-    primerApellido: d.primerApellido,
-    segundoApellido: d.segundoApellido,
-    nombreCompleto: nombreCompleto(d),
+    ...nombres,
+    nombreCompleto: nombreCompleto(nombres),
     telefonoCelular: d.telefonoCelular,
     seccionElectoral: d.seccionElectoral,
     ineFrenteUrl: d.ineFrenteUrl,

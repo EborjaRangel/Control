@@ -23,6 +23,7 @@ import {
   snapshotDetectado,
   snapshotPersonaDetectada,
 } from "../lib/audit.js";
+import { normalizarCamposNombrePersona } from "../lib/normalizar-texto.js";
 
 const router = Router();
 
@@ -245,6 +246,7 @@ router.post("/", requireAuth, async (req, res) => {
       abortEarly: false,
       stripUnknown: true,
     });
+    const nombres = normalizarCamposNombrePersona(data);
 
     if (!req.user || !(await canAccessDirigentePanel(req.user, data.dirigenteId))) {
       res.status(403).json({ error: "No autorizado" });
@@ -274,9 +276,7 @@ router.post("/", requireAuth, async (req, res) => {
     const detectado = await prisma.detectado.create({
       data: {
         dirigenteId: data.dirigenteId,
-        nombre: data.nombre,
-        primerApellido: data.primerApellido,
-        segundoApellido: data.segundoApellido || null,
+        ...nombres,
         telefonoCelular: data.telefonoCelular || null,
         seccionElectoral: data.seccionElectoral,
         ineFrenteUrl: data.ineFrenteUrl,
@@ -370,6 +370,7 @@ router.put("/:id", requireAuth, async (req, res) => {
       abortEarly: false,
       stripUnknown: true,
     });
+    const nombres = normalizarCamposNombrePersona(data);
 
     const antes = snapshotDetectado(existing);
 
@@ -387,9 +388,7 @@ router.put("/:id", requireAuth, async (req, res) => {
     const detectado = await prisma.detectado.update({
       where: { id },
       data: {
-        nombre: data.nombre,
-        primerApellido: data.primerApellido,
-        segundoApellido: data.segundoApellido || null,
+        ...nombres,
         telefonoCelular: data.telefonoCelular || null,
         seccionElectoral: data.seccionElectoral,
         ineFrenteUrl: data.ineFrenteUrl,
@@ -478,6 +477,7 @@ router.post("/:id/personas", requireAuth, async (req, res) => {
       abortEarly: false,
       stripUnknown: true,
     });
+    const nombres = normalizarCamposNombrePersona(data);
 
     const seccionError = await validarSeccionPersona(detectadoId, data.seccionElectoral);
     if (seccionError) {
@@ -488,9 +488,7 @@ router.post("/:id/personas", requireAuth, async (req, res) => {
     const persona = await prisma.personaDetectada.create({
       data: {
         detectadoId,
-        nombre: data.nombre,
-        primerApellido: data.primerApellido,
-        segundoApellido: data.segundoApellido || null,
+        ...nombres,
         fechaNacimiento: new Date(data.fechaNacimiento),
         sexo: data.sexo || null,
         claveElector: data.claveElector || null,
@@ -571,6 +569,7 @@ router.put("/:id/personas/:personaId", requireAuth, async (req, res) => {
       abortEarly: false,
       stripUnknown: true,
     });
+    const nombres = normalizarCamposNombrePersona(data);
 
     const seccionError = await validarSeccionPersona(detectadoId, data.seccionElectoral);
     if (seccionError) {
@@ -591,9 +590,7 @@ router.put("/:id/personas/:personaId", requireAuth, async (req, res) => {
     const persona = await prisma.personaDetectada.update({
       where: { id: personaId },
       data: {
-        nombre: data.nombre,
-        primerApellido: data.primerApellido,
-        segundoApellido: data.segundoApellido || null,
+        ...nombres,
         fechaNacimiento: new Date(data.fechaNacimiento),
         sexo: data.sexo || null,
         claveElector: data.claveElector || null,

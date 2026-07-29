@@ -27,7 +27,7 @@ import {
   representanteCasillaSchema,
 } from "../lib/validation-rc-rg.js";
 import { nombreColoniaCatalogo, variantesColoniaParaBusqueda } from "../lib/colonias.js";
-import { normalizarTextoGuardado } from "../lib/normalizar-texto.js";
+import { normalizarCamposNombrePersona, normalizarTextoGuardado } from "../lib/normalizar-texto.js";
 import { validarSeccionParaColonia } from "../lib/unidades-territoriales.js";
 import {
   dirigenteResumenSelect,
@@ -338,6 +338,7 @@ router.put("/:id", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const data = await rcUpdateSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+    const nombres = normalizarCamposNombrePersona(data);
     const existing = await prisma.responsableColonia.findUnique({
       where: { id },
       include: { usuario: true },
@@ -356,9 +357,7 @@ router.put("/:id", requireStaff, async (req, res) => {
       await tx.responsableColonia.update({
         where: { id },
         data: {
-          nombre: data.nombre,
-          primerApellido: data.primerApellido,
-          segundoApellido: data.segundoApellido || null,
+          ...nombres,
           telefonoCelular: data.telefonoCelular || null,
           colonia: data.colonia,
         },

@@ -1,4 +1,5 @@
 import { nombreCompleto } from "./dirigentes.js";
+import { normalizarCamposNombrePersona } from "./normalizar-texto.js";
 
 type RepresentanteRow = {
   id: string;
@@ -75,14 +76,13 @@ type RcRow = OperadorRow & { colonia: string };
 type RgRow = OperadorRow;
 
 export function serializeRepresentante(r: RepresentanteRow) {
+  const nombres = normalizarCamposNombrePersona(r);
   return {
     id: r.id,
     responsableColoniaId: r.responsableColoniaId,
     responsableGeneralId: r.responsableGeneralId,
-    nombre: r.nombre,
-    primerApellido: r.primerApellido,
-    segundoApellido: r.segundoApellido,
-    nombreCompleto: nombreCompleto(r),
+    ...nombres,
+    nombreCompleto: nombreCompleto(nombres),
     fechaNacimiento: r.fechaNacimiento.toISOString().slice(0, 10),
     sexo: r.sexo,
     claveElector: r.claveElector,
@@ -112,14 +112,13 @@ function serializeOperadorBase(
   options?: { revealPassword?: boolean },
 ) {
   const registrados = d._count?.representantes ?? d.representantes?.filter((r) => r.activo).length ?? 0;
+  const nombres = normalizarCamposNombrePersona(d);
   return {
     id: d.id,
     dirigenteId: d.dirigenteId ?? d.dirigente?.id ?? null,
     dirigente: serializeDirigenteResumen(d.dirigente),
-    nombre: d.nombre,
-    primerApellido: d.primerApellido,
-    segundoApellido: d.segundoApellido,
-    nombreCompleto: nombreCompleto(d),
+    ...nombres,
+    nombreCompleto: nombreCompleto(nombres),
     telefonoCelular: d.telefonoCelular,
     representantesRegistrados: registrados,
     activo: d.activo,
@@ -157,7 +156,7 @@ export function representanteCreateData(data: {
   ineFrenteUrl: string;
   ineReversoUrl: string;
 }) {
-  return {
+  return normalizarCamposNombrePersona({
     nombre: data.nombre,
     primerApellido: data.primerApellido,
     segundoApellido: data.segundoApellido || null,
@@ -173,5 +172,5 @@ export function representanteCreateData(data: {
     codigoPostal: data.codigoPostal,
     ineFrenteUrl: data.ineFrenteUrl,
     ineReversoUrl: data.ineReversoUrl,
-  };
+  });
 }

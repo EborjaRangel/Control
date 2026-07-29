@@ -544,9 +544,9 @@ export function DirigenteForm({
           <section className="card-section space-y-4">
             <h2 className="section-title">Datos personales</h2>
             <div className="grid gap-4 form-grid">
-              <FormField label="Nombre(s)" name="nombre" autoComplete="given-name" />
-              <FormField label="Primer apellido" name="primerApellido" autoComplete="family-name" />
-              <FormField label="Segundo apellido" name="segundoApellido" autoComplete="family-name" />
+              <FormField label="Nombre(s)" name="nombre" nombrePersona autoComplete="given-name" />
+              <FormField label="Primer apellido" name="primerApellido" nombrePersona autoComplete="family-name" />
+              <FormField label="Segundo apellido" name="segundoApellido" nombrePersona autoComplete="family-name" />
               <FormField label="Fecha de nacimiento" name="fechaNacimiento" type="date" />
               <FormField label="Celular (10 dígitos)" name="telefonoCelular" inputMode="numeric" />
               <FormField label="Correo electrónico" name="correo" type="email" autoComplete="email" />

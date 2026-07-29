@@ -67,9 +67,9 @@ export function OperadorForm(props: RcProps | RgProps) {
               {props.tipo === "rc" ? "Rep. Casilla" : "Res. General"}
             </h2>
             <div className="grid gap-4 form-grid">
-              <FormField label="Nombre(s)" name="nombre" />
-              <FormField label="Primer apellido" name="primerApellido" />
-              <FormField label="Segundo apellido" name="segundoApellido" />
+              <FormField label="Nombre(s)" name="nombre" nombrePersona />
+              <FormField label="Primer apellido" name="primerApellido" nombrePersona />
+              <FormField label="Segundo apellido" name="segundoApellido" nombrePersona />
               <FormField label="Celular" name="telefonoCelular" inputMode="numeric" />
               {props.tipo === "rc" ? (
                 <FormSelect label="Colonia asignada" name="colonia" className="sm:col-span-2">

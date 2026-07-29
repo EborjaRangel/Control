@@ -3,6 +3,7 @@
 import { useField, useFormikContext } from "formik";
 import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
+import { normalizarNombrePersonaEnVivo } from "@/lib/normalizar-texto";
 
 function fieldTextValue(value: unknown): string {
   return value == null ? "" : String(value);
@@ -16,10 +17,19 @@ function useShowFieldError(meta: { touched: boolean; error?: string }) {
 type FormFieldProps = {
   label: string;
   name: string;
+  /** Convierte a mayúsculas sin acentos mientras se escribe (nombre y apellidos). */
+  nombrePersona?: boolean;
 } & InputHTMLAttributes<HTMLInputElement>;
 
-export function FormField({ label, name, className, ...props }: FormFieldProps) {
-  const [field, meta] = useField(name);
+export function FormField({
+  label,
+  name,
+  className,
+  nombrePersona,
+  onChange,
+  ...props
+}: FormFieldProps) {
+  const [field, meta, helpers] = useField(name);
   const hasError = useShowFieldError(meta);
 
   return (
@@ -30,6 +40,11 @@ export function FormField({ label, name, className, ...props }: FormFieldProps) 
         {...props}
         id={name}
         value={fieldTextValue(field.value)}
+        onChange={(e) => {
+          const value = nombrePersona ? normalizarNombrePersonaEnVivo(e.target.value) : e.target.value;
+          void helpers.setValue(value);
+          onChange?.({ ...e, target: { ...e.target, value } });
+        }}
         className={cn("input", hasError && "input-error", className)}
       />
       {hasError ? <p className="field-error">{meta.error}</p> : null}

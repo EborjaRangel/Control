@@ -1,6 +1,7 @@
 import { calcularSueldo, type DesgloseSueldo } from "./dirigentes.js";
 import { urlQrAsistencia, payloadQrDirigente } from "./codigo-qr.js";
 import { nominaFieldsFromRow } from "./serialize-nomina.js";
+import { normalizarCamposNombrePersona } from "./normalizar-texto.js";
 
 type ConceptoRow = {
   id: string;
@@ -120,11 +121,11 @@ export function serializeDirigente(
     ? nominaFieldsFromRow(d.nomina ?? null)
     : nominaFieldsFromRow(null);
 
+  const nombres = normalizarCamposNombrePersona(d);
+
   return {
     id: d.id,
-    nombre: d.nombre,
-    primerApellido: d.primerApellido,
-    segundoApellido: d.segundoApellido,
+    ...nombres,
     fechaNacimiento: d.fechaNacimiento.toISOString().slice(0, 10),
     telefonoCelular: d.telefonoCelular,
     correo: d.correo,
@@ -152,9 +153,7 @@ export function serializeDirigente(
     referente: d.referente
       ? {
           id: d.referente.id,
-          nombre: d.referente.nombre,
-          primerApellido: d.referente.primerApellido,
-          segundoApellido: d.referente.segundoApellido,
+          ...normalizarCamposNombrePersona(d.referente),
         }
       : null,
     antecedentesPoliticos: d.antecedentesPoliticos,

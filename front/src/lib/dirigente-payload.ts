@@ -1,5 +1,6 @@
 import { cpDeColonia, nombreColoniaCatalogo } from "./colonias";
 import type { DirigenteFormValues } from "./validation";
+import { normalizarTextoGuardado } from "./normalizar-texto";
 
 function toNumber(value: unknown): number {
   if (typeof value === "number") return value;
@@ -23,9 +24,9 @@ export function prepareDirigentePayload(
 
   const payload: DirigenteFormValues = {
     ...values,
-    nombre: values.nombre.trim(),
-    primerApellido: values.primerApellido.trim(),
-    segundoApellido: values.segundoApellido?.trim() || "",
+    nombre: normalizarTextoGuardado(values.nombre),
+    primerApellido: normalizarTextoGuardado(values.primerApellido),
+    segundoApellido: normalizarTextoGuardado(values.segundoApellido) || "",
     alias: values.alias?.trim() || "",
     curp: values.curp?.trim().toUpperCase() || "",
     telefonoCelular: values.telefonoCelular.trim(),

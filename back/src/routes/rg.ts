@@ -26,6 +26,7 @@ import {
   validarSeccionParaColonia,
 } from "../lib/unidades-territoriales.js";
 import { nombreColoniaCatalogo } from "../lib/colonias.js";
+import { normalizarCamposNombrePersona } from "../lib/normalizar-texto.js";
 import {
   rgCreateSchema,
   rgUpdateSchema,
@@ -280,6 +281,7 @@ router.put("/:id", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
     const data = await rgUpdateSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+    const nombres = normalizarCamposNombrePersona(data);
     const existing = await prisma.responsableGeneral.findUnique({
       where: { id },
       include: { usuario: true },
@@ -298,9 +300,7 @@ router.put("/:id", requireStaff, async (req, res) => {
       await tx.responsableGeneral.update({
         where: { id },
         data: {
-          nombre: data.nombre,
-          primerApellido: data.primerApellido,
-          segundoApellido: data.segundoApellido || null,
+          ...nombres,
           telefonoCelular: data.telefonoCelular || null,
         },
       });

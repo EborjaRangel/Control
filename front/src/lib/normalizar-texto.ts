@@ -1,3 +1,11 @@
+/** Mayúsculas sin acentos mientras se escribe (conserva espacios intermedios). */
+export function normalizarNombrePersonaEnVivo(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toUpperCase();
+}
+
 /** Mayúsculas sin acentos para persistencia (excepto correo y campos excluidos). */
 export function normalizarTextoGuardado(value: string | null | undefined): string {
   if (value == null) return "";
@@ -14,6 +22,17 @@ export function normalizarTextoGuardadoNullable(
 ): string | null {
   const normalizado = normalizarTextoGuardado(value);
   return normalizado || null;
+}
+
+export function normalizarCamposNombrePersona<
+  T extends { nombre: string; primerApellido: string; segundoApellido?: string | null },
+>(data: T): T {
+  return {
+    ...data,
+    nombre: normalizarTextoGuardado(data.nombre),
+    primerApellido: normalizarTextoGuardado(data.primerApellido),
+    segundoApellido: normalizarTextoGuardadoNullable(data.segundoApellido),
+  };
 }
 
 /** Restaura el valor del catálogo al editar (coincidencia sin acentos/mayúsculas). */

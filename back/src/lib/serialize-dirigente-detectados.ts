@@ -1,4 +1,5 @@
 import { nombreCompleto } from "./dirigentes.js";
+import { normalizarCamposNombrePersona } from "./normalizar-texto.js";
 
 type DirigenteResumen = {
   id: string;
@@ -37,12 +38,12 @@ export function serializeDirigenteDetectados(
         ? 100
         : 0;
 
+  const nombres = normalizarCamposNombrePersona(dirigente);
+
   return {
     id: dirigente.id,
-    nombre: dirigente.nombre,
-    primerApellido: dirigente.primerApellido,
-    segundoApellido: dirigente.segundoApellido,
-    nombreCompleto: nombreCompleto(dirigente),
+    ...nombres,
+    nombreCompleto: nombreCompleto(nombres),
     tipo: dirigente.tipo,
     colonia: dirigente.colonia,
     seccionElectoral: dirigente.seccionElectoral,

@@ -102,9 +102,9 @@ export function PersonaDetectadaForm({
               <strong className="text-ink">{etiquetaSeccion(seccionAsignada)}</strong>.
             </p>
             <div className="grid gap-4 form-grid">
-              <FormField label="Nombre(s)" name="nombre" />
-              <FormField label="Primer apellido" name="primerApellido" />
-              <FormField label="Segundo apellido" name="segundoApellido" />
+              <FormField label="Nombre(s)" name="nombre" nombrePersona />
+              <FormField label="Primer apellido" name="primerApellido" nombrePersona />
+              <FormField label="Segundo apellido" name="segundoApellido" nombrePersona />
               <FormField label="Fecha de nacimiento" name="fechaNacimiento" type="date" />
               <FormSelect label="Sexo" name="sexo">
                 <option value="">Selecciona</option>
