@@ -26,6 +26,8 @@
     "db:import-nomina-matriz": "tsx scripts/import-nomina-matriz-pagos.ts",
     "db:provision-usuarios": "tsx scripts/provision-usuarios-dirigentes.ts",
     "db:sync-to-production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-local-to-production.ps1",
+    "db:sync-from-production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-production-to-local.ps1",
+    "env:sync-from-railway": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-env-from-railway.ps1",
     "uploads:sync-to-production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-uploads-to-production.ps1",
     "postinstall": "prisma generate"
   },

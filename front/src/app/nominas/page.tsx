@@ -2,20 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { NominaResumenGlobalPanel } from "@/components/NominaResumenGlobalPanel";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import { NOMBRES_COLONIAS_COYOACAN } from "@/lib/colonias";
 import { formatMxn, TIPO_DIRIGENTE_LABEL, TIPOS_DIRIGENTE, CONCEPTO_SUELDO_LABEL, CONCEPTOS_SUELDO_CATALOGO, normalizarDesglose } from "@/lib/dirigentes";
-import { type NominaDTO, type NominaResumenGlobalDTO } from "@/lib/nominas";
+import { type NominaDTO, calcularResumenNominas } from "@/lib/nominas";
 
 export default function NominasPage() {
   const pathname = usePathname();
   const { hasAdminPrivileges } = useAuth();
   const [nominas, setNominas] = useState<NominaDTO[]>([]);
-  const [resumen, setResumen] = useState<NominaResumenGlobalDTO | null>(null);
   const [buscar, setBuscar] = useState("");
   const [tipo, setTipo] = useState("");
   const [colonia, setColonia] = useState("");
@@ -39,15 +38,6 @@ export default function NominasPage() {
           setNominas((await res.json()) as NominaDTO[]);
         }),
       ];
-      if (hasAdminPrivileges) {
-        requests.push(
-          apiFetch("/api/nominas/resumen", { signal }).then(async (res) => {
-            if (res.ok) {
-              setResumen((await res.json()) as NominaResumenGlobalDTO);
-            }
-          }),
-        );
-      }
       await Promise.all(requests);
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
@@ -56,7 +46,10 @@ export default function NominasPage() {
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  }, [buscar, tipo, colonia, hasAdminPrivileges]);
+  }, [buscar, tipo, colonia]);
+
+  const hayFiltros = Boolean(tipo || colonia || buscar.trim());
+  const resumen = useMemo(() => calcularResumenNominas(nominas), [nominas]);
 
   useEffect(() => {
     if (!hasAdminPrivileges) return;
@@ -80,9 +73,7 @@ export default function NominasPage() {
           <p className="page-subtitle">
             {loading
               ? "Cargando…"
-              : hasAdminPrivileges && resumen
-                ? `${nominas.length} nómina(s) en la vista · Total general ${formatMxn(resumen.desglose.total)}`
-                : `${nominas.length} nómina(s)`}
+              : `${nominas.length} nómina(s) en la vista · Total ${formatMxn(resumen.desglose.total)}`}
           </p>
         </div>
       </div>
@@ -136,7 +127,9 @@ export default function NominasPage() {
 
       {error ? <div className="alert-error">{error}</div> : null}
 
-      {hasAdminPrivileges && resumen ? <NominaResumenGlobalPanel resumen={resumen} /> : null}
+      {!loading && hasAdminPrivileges && (nominas.length > 0 || hayFiltros) ? (
+        <NominaResumenGlobalPanel resumen={resumen} filtrado={hayFiltros} />
+      ) : null}
 
       {loading ? (
         <div className="flex items-center gap-3 text-ink-secondary">
@@ -161,55 +154,70 @@ export default function NominasPage() {
         <>
           <div className="card-section desktop-only-table">
             <TableWrap>
-              <table className="w-full min-w-[1080px] text-left text-sm">
+              <table className="w-full table-fixed text-left text-xs">
+              <colgroup>
+                <col className="w-[10rem]" />
+                <col className="w-9" />
+                <col className="w-[4.5rem]" />
+                {CONCEPTOS_SUELDO_CATALOGO.map((key) => (
+                  <col key={key} className="w-[3.75rem]" />
+                ))}
+                <col className="w-[4.25rem]" />
+                <col className="w-[4.75rem]" />
+              </colgroup>
               <thead>
-                <tr className="border-b border-line text-xs text-ink-secondary">
-                  <th className="py-2 pr-3">Dirigente</th>
-                  <th className="py-2 pr-3">Tipo</th>
-                  <th className="py-2 pr-3">Colonia</th>
+                <tr className="border-b border-line text-[10px] text-ink-secondary">
+                  <th className="py-2 pr-1.5">Dirigente</th>
+                  <th className="py-2 pr-1">Tipo</th>
+                  <th className="py-2 pr-1">Colonia</th>
                   {CONCEPTOS_SUELDO_CATALOGO.map((key) => (
-                    <th key={key} className="py-2 pr-3 text-right">
+                    <th key={key} className="py-2 pr-1 text-right leading-tight">
                       {CONCEPTO_SUELDO_LABEL[key]}
                     </th>
                   ))}
-                  <th className="py-2 pr-3 text-right">Total</th>
-                  <th className="py-2" />
+                  <th className="sticky right-[4.75rem] z-10 bg-surface py-2 pr-1 text-right shadow-[-6px_0_8px_-6px_rgba(15,23,42,0.08)]">
+                    Total
+                  </th>
+                  <th className="sticky right-0 z-10 bg-surface py-2 shadow-[-6px_0_8px_-6px_rgba(15,23,42,0.08)]" />
                 </tr>
               </thead>
               <tbody>
                 {nominas.map((n) => {
                   const d = n.dirigente;
                   return (
-                    <tr key={n.id} className="border-b border-line/60 hover:bg-surface-muted/50">
-                      <td className="py-2.5 pr-3">
+                    <tr key={n.id} className="group border-b border-line/60 hover:bg-surface-muted/50">
+                      <td className="py-2 pr-1.5 align-top">
                         <Link
                           href={`/nominas/${n.dirigenteId}`}
-                          className="font-medium text-pin hover:underline"
+                          className="block truncate font-medium text-pin hover:underline"
+                          title={d.nombreCompleto}
                         >
                           {d.nombreCompleto}
                         </Link>
                         {!d.activo ? (
-                          <span className="ml-2 badge-muted text-[10px]">Baja</span>
+                          <span className="badge-muted text-[10px]">Baja</span>
                         ) : null}
-                        <p className="mt-0.5 text-xs text-ink-secondary">
-                          Sección {d.seccionElectoral}
-                          {n.conceptosComposicion.length > 0
-                            ? ` · ${n.conceptosComposicion.length} concepto(s)`
-                            : " · Sin conceptos"}
+                        <p className="mt-0.5 truncate text-[10px] text-ink-secondary" title={`Sección ${d.seccionElectoral}`}>
+                          Sec. {d.seccionElectoral}
                         </p>
                       </td>
-                      <td className="py-2.5 pr-3 text-ink-secondary">{d.tipo}</td>
-                      <td className="py-2.5 pr-3 text-ink-secondary">{d.colonia}</td>
+                      <td className="py-2 pr-1 text-ink-secondary">{d.tipo}</td>
+                      <td
+                        className="truncate py-2 pr-1 text-ink-secondary"
+                        title={d.colonia}
+                      >
+                        {d.colonia}
+                      </td>
                       {CONCEPTOS_SUELDO_CATALOGO.map((key) => (
-                        <td key={key} className="py-2.5 pr-3 text-right">
+                        <td key={key} className="whitespace-nowrap py-2 pr-1 text-right tabular-nums">
                           {formatMxn(normalizarDesglose(n.desglose)[key])}
                         </td>
                       ))}
-                      <td className="py-2.5 pr-3 text-right font-bold text-pin">
+                      <td className="sticky right-[4.75rem] z-10 whitespace-nowrap bg-surface py-2 pr-1 text-right font-bold tabular-nums text-pin shadow-[-6px_0_8px_-6px_rgba(15,23,42,0.08)] group-hover:bg-surface-muted/50">
                         {formatMxn(n.desglose.total)}
                       </td>
-                      <td className="py-2.5 text-right">
-                        <Link href={`/nominas/${n.dirigenteId}`} className="btn-ghost btn-sm">
+                      <td className="sticky right-0 z-10 bg-surface py-2 text-right shadow-[-6px_0_8px_-6px_rgba(15,23,42,0.08)] group-hover:bg-surface-muted/50">
+                        <Link href={`/nominas/${n.dirigenteId}`} className="btn-ghost btn-sm whitespace-nowrap px-2">
                           Ver detalle
                         </Link>
                       </td>
@@ -217,21 +225,21 @@ export default function NominasPage() {
                   );
                 })}
               </tbody>
-              {hasAdminPrivileges && resumen ? (
+              {hasAdminPrivileges && nominas.length > 0 ? (
                 <tfoot>
                   <tr className="border-t-2 border-pin/30 bg-pin/5 font-semibold">
-                    <td className="py-3 pr-3" colSpan={3}>
+                    <td className="py-2.5 pr-1.5" colSpan={3}>
                       Totales por concepto
                     </td>
                     {CONCEPTOS_SUELDO_CATALOGO.map((key) => (
-                      <td key={key} className="py-3 pr-3 text-right text-pin">
-                        {formatMxn(normalizarDesglose(resumen.desglose)[key])}
+                      <td key={key} className="whitespace-nowrap py-2.5 pr-1 text-right tabular-nums text-pin">
+                        {formatMxn(resumen.desglose[key])}
                       </td>
                     ))}
-                    <td className="py-3 pr-3 text-right text-lg text-pin">
+                    <td className="sticky right-[4.75rem] z-10 whitespace-nowrap bg-pin/5 py-2.5 pr-1 text-right text-sm tabular-nums text-pin shadow-[-6px_0_8px_-6px_rgba(15,23,42,0.08)]">
                       {formatMxn(resumen.desglose.total)}
                     </td>
-                    <td className="py-3" />
+                    <td className="sticky right-0 z-10 bg-pin/5 py-2.5 shadow-[-6px_0_8px_-6px_rgba(15,23,42,0.08)]" />
                   </tr>
                 </tfoot>
               ) : null}

@@ -5,9 +5,11 @@ import type { NominaResumenGlobalDTO } from "@/lib/nominas";
 
 type Props = {
   resumen: NominaResumenGlobalDTO;
+  /** Si hay filtros activos en la lista (tipo, colonia, búsqueda). */
+  filtrado?: boolean;
 };
 
-export function NominaResumenGlobalPanel({ resumen }: Props) {
+export function NominaResumenGlobalPanel({ resumen, filtrado = false }: Props) {
   const desglose = normalizarDesglose(resumen.desglose);
 
   return (
@@ -16,7 +18,9 @@ export function NominaResumenGlobalPanel({ resumen }: Props) {
         <div>
           <h2 className="section-title">Totales por concepto</h2>
           <p className="mt-1 text-sm text-ink-secondary">
-            Resumen global de {resumen.nominasActivas} nómina(s) activa(s), persistido en base de datos.
+            {filtrado
+              ? `Totales de ${resumen.nominasActivas} nómina(s) con los filtros aplicados.`
+              : `Totales de ${resumen.nominasActivas} nómina(s) activa(s) en la vista.`}
           </p>
         </div>
         <div className="rounded-pin-lg border border-pin/30 bg-pin/5 px-4 py-3 text-right">

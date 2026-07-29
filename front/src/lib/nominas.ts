@@ -1,5 +1,10 @@
-import { tipoDetalleSueldoParaFormulario } from "./composicion-sueldo";
-import type { ConceptoSueldo, DesgloseSueldo } from "./composicion-sueldo";
+import {
+  CONCEPTOS_SUELDO_CATALOGO,
+  normalizarDesglose,
+  tipoDetalleSueldoParaFormulario,
+  type ConceptoSueldo,
+  type DesgloseSueldo,
+} from "./composicion-sueldo";
 
 export type ConceptoComposicionDTO = {
   id: string;
@@ -37,6 +42,30 @@ export type NominaResumenGlobalDTO = {
 
 export function totalNomina(nominas: NominaDTO[]): number {
   return nominas.reduce((sum, n) => sum + n.desglose.total, 0);
+}
+
+/** Suma los desgloses de las nóminas visibles (respeta filtros de tipo, colonia y búsqueda). */
+export function calcularResumenNominas(nominas: NominaDTO[]): NominaResumenGlobalDTO {
+  const porConcepto = {} as Record<ConceptoSueldo, number>;
+  for (const key of CONCEPTOS_SUELDO_CATALOGO) {
+    porConcepto[key] = 0;
+  }
+
+  for (const n of nominas) {
+    const d = normalizarDesglose(n.desglose);
+    for (const key of CONCEPTOS_SUELDO_CATALOGO) {
+      porConcepto[key] += d[key];
+    }
+  }
+
+  const total = CONCEPTOS_SUELDO_CATALOGO.reduce((sum, key) => sum + porConcepto[key], 0);
+  const desglose: DesgloseSueldo = normalizarDesglose({ ...porConcepto, total });
+
+  return {
+    desglose,
+    nominasActivas: nominas.length,
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 export function nominaToFormValues(nomina: NominaDTO) {

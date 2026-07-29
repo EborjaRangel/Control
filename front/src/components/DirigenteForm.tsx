@@ -29,7 +29,6 @@ import { apiFetch } from "@/lib/api";
 import type { UnidadTerritorialResumen } from "@/lib/unidades-territoriales";
 import { etiquetaUnidadTerritorial } from "@/lib/unidades-territoriales";
 import type { DirigenteFormValues } from "@/lib/validation";
-import { STATUS_DIRIGENTE, STATUS_DIRIGENTE_LABEL } from "@/lib/dirigente-spec";
 import { dirigenteCreateSchema, dirigenteUpdateSchema } from "@/lib/validation";
 import { prepareDirigentePayload } from "@/lib/dirigente-payload";
 import { DirigenteExtraFields } from "@/components/DirigenteExtraFields";
@@ -55,7 +54,6 @@ const ETIQUETAS_CAMPO: Record<string, string> = {
   curp: "CURP",
   ineFrenteUrl: "Credencial (frente)",
   ineReversoUrl: "Credencial (reverso)",
-  status: "Estatus",
   unidadTerritorialId: "Unidad territorial",
 };
 
@@ -593,13 +591,6 @@ export function DirigenteForm({
                 {TIPOS_DIRIGENTE.map((t) => (
                   <option key={t} value={t}>
                     {TIPO_DIRIGENTE_LABEL[t]}
-                  </option>
-                ))}
-              </FormSelect>
-              <FormSelect label="Estatus (Excel)" name="status">
-                {STATUS_DIRIGENTE.map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_DIRIGENTE_LABEL[s]}
                   </option>
                 ))}
               </FormSelect>

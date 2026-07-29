@@ -22,7 +22,9 @@
     "db:import-dirigentes": "npm run db:import-dirigentes -w control-back",
     "geo:import-secciones": "npm run geo:import-secciones -w control-back",
     "geo:import-colonias": "npm run geo:import-colonias -w control-back",
-    "lint": "npm run lint -w control-front"
+    "lint": "npm run lint -w control-front",
+    "sync:env": "npm run env:sync-from-railway -w control-back && powershell -NoProfile -ExecutionPolicy Bypass -File front/scripts/sync-env-from-vercel.ps1",
+    "sync:db-from-production": "npm run db:migrate -w control-back && npm run db:sync-from-production -w control-back"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
