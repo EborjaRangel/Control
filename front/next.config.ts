@@ -1,4 +1,10 @@
 import type { NextConfig } from "next";
+import { loadEnvConfig } from "@next/env";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const frontDir = path.dirname(fileURLToPath(import.meta.url));
+loadEnvConfig(frontDir);
 
 function apiBaseUrl() {
   return (
@@ -22,6 +28,12 @@ const nextConfig: NextConfig = {
     ...(apiHost
       ? {
           remotePatterns: [
+            {
+              protocol: "http",
+              hostname: apiHost,
+              pathname: "/uploads/**",
+              search: "",
+            },
             {
               protocol: "https",
               hostname: apiHost,

@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CENTRO_COYOACAN, reverseGeocodeMapbox } from "@/lib/mapbox-geocode";
+import { CENTRO_COYOACAN, MAPBOX_STYLE, MAPBOX_TOKEN, mapboxConfigError } from "@/lib/mapbox-config";
+import { reverseGeocodeMapbox } from "@/lib/mapbox-geocode";
 import { theme } from "@/lib/theme";
-
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? "";
-const MAPBOX_STYLE =
-  process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? "mapbox://styles/mapbox/light-v11";
 
 type Props = {
   lat: number | null;

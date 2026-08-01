@@ -570,15 +570,14 @@ export function DirigenteForm({
                 className="sm:col-span-2"
               />
               <FormField
-                label={modo === "crear" ? "Contraseña" : "Nueva contraseña"}
+                label="Contraseña"
                 name="password"
-                type="password"
+                type={modo === "editar" ? "text" : "password"}
                 autoComplete={modo === "crear" ? "new-password" : "off"}
               />
               {modo === "editar" ? (
                 <p className="text-xs text-ink-secondary sm:col-span-2">
-                  Deja la contraseña en blanco para mantener la actual. Puedes cambiar usuario y
-                  contraseña cuando lo necesites.
+                  Se muestra la contraseña actual del dirigente. Modifícala solo si quieres cambiarla.
                 </p>
               ) : null}
             </div>

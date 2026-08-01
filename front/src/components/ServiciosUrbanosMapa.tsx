@@ -1,16 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { CENTRO_COYOACAN } from "@/lib/mapbox-geocode";
+import { CENTRO_COYOACAN, MAPBOX_STYLE, MAPBOX_TOKEN, mapboxConfigError } from "@/lib/mapbox-config";
 import {
   calcSemaforoTiempoReporte,
   semaforoMarkerColor,
   type ReporteServicioUrbanoDTO,
 } from "@/lib/servicios-urbanos";
-
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? "";
-const MAPBOX_STYLE =
-  process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? "mapbox://styles/mapbox/light-v11";
 
 type Props = {
   reportes: ReporteServicioUrbanoDTO[];

@@ -1,6 +1,4 @@
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? "";
-
-export const CENTRO_COYOACAN = { lat: 19.346, lng: -99.162 };
+import { CENTRO_COYOACAN, MAPBOX_TOKEN } from "@/lib/mapbox-config";
 
 type GeocodeFeature = {
   place_name?: string;

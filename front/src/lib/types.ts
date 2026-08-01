@@ -219,6 +219,6 @@ export function dtoToFormValues(d: DirigenteDTO): DirigenteFormValues {
     })),
     status: d.status,
     usuario: d.usuario ?? usuarioDesdeNombreApellido(d.nombre, d.primerApellido),
-    password: "",
+    password: d.password ?? "",
   };
 }

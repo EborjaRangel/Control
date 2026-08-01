@@ -23,7 +23,7 @@ function forwardRequestHeaders(request: NextRequest) {
 async function proxyRequest(request: NextRequest, path: string[]) {
   const target = `${apiBaseUrl()}/api/${path.join("/")}${request.nextUrl.search}`;
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
-  const body = hasBody ? await request.text() : undefined;
+  const body = hasBody ? await request.arrayBuffer() : undefined;
 
   const upstream = await fetch(target, {
     method: request.method,

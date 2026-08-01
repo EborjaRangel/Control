@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { apiFetch } from "@/lib/api";
+import { CENTRO_COYOACAN, MAPBOX_STYLE, MAPBOX_TOKEN, mapboxConfigError } from "@/lib/mapbox-config";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
 import { theme } from "@/lib/theme";
 
@@ -16,11 +17,6 @@ function esCentroValido(centro: { lat: number; lng: number }) {
     centro.lng <= 180
   );
 }
-
-const CENTRO_COYOACAN = { lat: 19.346, lng: -99.162 };
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? "";
-const MAPBOX_STYLE =
-  process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? "mapbox://styles/mapbox/light-v11";
 
 type MapaResponse = {
   seccion: string;
@@ -359,12 +355,17 @@ export function SeccionElectoralMap({ seccion, colonia }: Props) {
   }
 
   if (!MAPBOX_TOKEN) {
+    const configError = mapboxConfigError();
     return (
       <div className="space-y-3">
         <h3 className="text-sm font-bold text-ink">Mapa de la sección electoral</h3>
         <div className="alert-error">
-          Configura <code className="text-xs">NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN</code> en{" "}
-          <code className="text-xs">front/.env.local</code> para mostrar el mapa con Mapbox.
+          {configError ?? (
+            <>
+              Configura <code className="text-xs">NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN</code> en{" "}
+              <code className="text-xs">front/.env.local</code> para mostrar el mapa con Mapbox.
+            </>
+          )}
         </div>
       </div>
     );

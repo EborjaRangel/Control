@@ -17,6 +17,19 @@ $content = Get-Content $EnvFile -Raw
 $content = $content -replace '(?m)^API_PROXY_URL=.*$', 'API_PROXY_URL="http://localhost:4000"'
 $content = $content -replace '(?m)^NEXT_PUBLIC_APP_URL=.*$', 'NEXT_PUBLIC_APP_URL="http://localhost:3000"'
 
+# Evita sobrescribir tokens válidos con placeholders corruptos de Vercel.
+$existingMapbox = $null
+if (Test-Path $EnvFile) {
+  $prevLine = Get-Content $EnvFile | Where-Object { $_ -match '^NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=' } | Select-Object -First 1
+  if ($prevLine -match '^NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN="(pk\.[^"]+)"') {
+    $existingMapbox = $Matches[1]
+  }
+}
+$newMapboxLine = ($content -split "`n") | Where-Object { $_ -match '^NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=' } | Select-Object -First 1
+if ($existingMapbox -and $newMapboxLine -and $newMapboxLine -notmatch 'NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN="pk\.') {
+  $content = $content -replace '(?m)^NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=.*$', "NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=`"$existingMapbox`""
+}
+
 $stripPrefixes = @(
   "^VERCEL=",
   "^VERCEL_",
