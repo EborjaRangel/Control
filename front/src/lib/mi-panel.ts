@@ -63,6 +63,9 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
     if (!isAdminRol(user.rol) && pathname.startsWith("/analisis")) {
       return false;
     }
+    if (!isAdminRol(user.rol) && pathname.startsWith("/proyeccion-2027")) {
+      return false;
+    }
     return true;
   }
 

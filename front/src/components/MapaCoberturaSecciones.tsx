@@ -349,7 +349,10 @@ export function MapaCoberturaSecciones() {
             <p className="font-semibold text-ink">{etiquetaSeccion(tooltip.seccion)}</p>
             {tooltip.colonias ? (
               <p className="mt-1 text-ink-secondary">
-                <span className="font-medium text-ink">Colonia:</span> {tooltip.colonias}
+                <span className="font-medium text-ink">
+                  {tooltip.colonias.includes("(") ? "Colonias:" : "Colonia:"}
+                </span>{" "}
+                {tooltip.colonias}
               </p>
             ) : null}
             {tooltip.asignada ? (

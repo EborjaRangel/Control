@@ -7,6 +7,8 @@
  *   (formato distinto: hoja ResultadosCasillas)
  * - 2018: https://www.iecm.mx/www/estadisticaresultadospelo2018/archivos/bd2018alccas.xls
  *   (columnas DEM, SECCIÓN, LN, VT, VN)
+ * - 2015: https://www.iecm.mx/www/estadisticaresultadospelo2015/archivos/bd2015jefcas.xls
+ *   (jefaturas delegacionales; descarga manual si el IECM bloquea bots)
  *
  * Uso: npm run electoral:import-resultados-alcaldia -w control-back
  */
@@ -16,6 +18,12 @@ import path from "path";
 import { pipeline } from "stream/promises";
 import XLSX from "xlsx";
 import { SECCIONES_ELECTORALES_COYOACAN } from "../src/lib/secciones-electorales.js";
+import {
+  clavePartidoHomologada2015,
+  esCoalicion2015,
+  esColumnaTicketCoalicion2015,
+  etiquetaPartidoHomologada2015,
+} from "../src/lib/homologacion-partidos-2015.js";
 import type {
   PartidoVotosSeccion,
   ResultadoAlcaldiaAnio,
@@ -45,6 +53,17 @@ const FUENTES = {
     archivo: "bd2018alccas.xls",
     fuente:
       "Instituto Electoral de la Ciudad de México (IECM/IEDF) — Estadística de resultados PELO 2017-2018, elección de alcaldías por casilla",
+  },
+  2015: {
+    url: "https://www.iecm.mx/www/estadisticaresultadospelo2015/archivos/bd2015jefcas.xls",
+    archivo: "bd2015jefcas.xls",
+    archivosAlternativos: ["bd2015jefcas.xlsx", "eleccion2015coyoacan.xlsx"],
+    urlsAlternativas: [
+      "https://www.iecm.mx/www/estadisticaresultadospelo2015/archivos/bd2015jefcas.xlsx",
+      "https://www.iecm.mx/www/estadisticaresultadospelo2015/archivos/downloadjef.php",
+    ],
+    fuente:
+      "Instituto Electoral de la Ciudad de México (IEDF/IECM) — Estadística de resultados PELO 2014-2015, elección de jefaturas delegacionales por casilla",
   },
 } as const;
 
@@ -88,6 +107,21 @@ const META_HEADERS = new Set(
     "Jmpr",
     "Votacion total pt mor pes",
     "Votacion total pan prd mc",
+    "Circunscripcion",
+    "Id estado",
+    "Nombre estado",
+    "Id distrito",
+    "Cabecera distrital",
+    "Id municipio",
+    "Municipio",
+    "Num votos validos",
+    "Total votos",
+    "Num votos nulos",
+    "Num votos can nreg",
+    "Estatus acta",
+    "Tepjf",
+    "Observaciones",
+    "Ruta acta",
   ].map(normalizarHeader),
 );
 
@@ -148,8 +182,22 @@ function esClavePartidoValida(clave: string) {
   return !CLAVES_PARTIDO_EXCLUIDAS.has(clave.toUpperCase());
 }
 
-function etiquetaPartido(clave: string) {
+function etiquetaPartido(clave: string, anio?: AnioImport) {
+  if (anio === 2015) return etiquetaPartidoHomologada2015(clave);
   return clave.replaceAll("_", "-");
+}
+
+function acumularVotoPartido(
+  acum: Record<string, number>,
+  claveRaw: string,
+  votos: number,
+  anio: AnioImport,
+) {
+  if (votos <= 0) return;
+  const claveNorm = anio === 2015 ? clavePartidoHomologada2015(claveRaw) : claveRaw;
+  if (anio === 2015 && esCoalicion2015(claveRaw)) return;
+  if (!esClavePartidoValida(claveNorm)) return;
+  acum[claveNorm] = (acum[claveNorm] ?? 0) + votos;
 }
 
 function cargarDatasetExistente(): ResultadosAlcaldiaCoyoacanDataset {
@@ -177,45 +225,89 @@ function redondearPct(value: number) {
   return Math.round(value * 100) / 100;
 }
 
-async function ensureXlsx(anio: AnioImport) {
-  mkdirSync(rawDir, { recursive: true });
-  const meta = FUENTES[anio];
-  const target = path.join(rawDir, meta.archivo);
-  if (existsSync(target)) {
-    try {
-      if (!esArchivoHojaCalculo(target)) {
-        throw new Error("El archivo descargado no es una hoja de cálculo válida");
-      }
-      XLSX.readFile(target);
-      return target;
-    } catch {
-      console.warn(`Archivo dañado, se volverá a descargar: ${meta.archivo}`);
-    }
-  }
+function candidatosArchivo2015(meta: (typeof FUENTES)[2015]) {
+  return [meta.archivo, ...(meta.archivosAlternativos ?? [])];
+}
 
-  console.log(`Descargando ${meta.archivo} desde IECM…`);
-  const res = await fetch(meta.url, {
+function validarArchivoImport(pathArchivo: string) {
+  if (!esArchivoHojaCalculo(pathArchivo)) {
+    throw new Error("El archivo descargado no es una hoja de cálculo válida");
+  }
+  XLSX.readFile(pathArchivo);
+}
+
+async function descargarArchivoIecm(url: string, destino: string) {
+  const res = await fetch(url, {
     headers: {
       Accept: "*/*",
       "User-Agent": "Mozilla/5.0 (compatible; control-back-import/1.0)",
     },
   });
-  if (!res.ok) {
-    if (anio === 2021 || anio === 2018) {
-      throw new Error(
-        `No se pudo descargar ${meta.archivo} (${res.status}). Descárgalo manualmente desde el IECM (Alcaldías → BASE DE DATOS) y colócalo en data/electoral/raw/`,
-      );
-    }
-    throw new Error(`Descarga IECM fallida (${anio}): ${res.status}`);
-  }
+  if (!res.ok) return res.status;
   if (!res.body) throw new Error("Respuesta vacía al descargar resultados IECM");
-  await pipeline(res.body as unknown as NodeJS.ReadableStream, createWriteStream(target));
-  if (!esArchivoHojaCalculo(target)) {
+  await pipeline(res.body as unknown as NodeJS.ReadableStream, createWriteStream(destino));
+  return 200;
+}
+
+async function ensureXlsx(anio: AnioImport) {
+  mkdirSync(rawDir, { recursive: true });
+  const meta = FUENTES[anio];
+  const candidatos =
+    anio === 2015 ? candidatosArchivo2015(meta) : [meta.archivo];
+
+  for (const nombre of candidatos) {
+    const candidato = path.join(rawDir, nombre);
+    if (!existsSync(candidato)) continue;
+    try {
+      validarArchivoImport(candidato);
+      return candidato;
+    } catch {
+      console.warn(`Archivo dañado, se volverá a descargar: ${nombre}`);
+    }
+  }
+
+  const target = path.join(rawDir, meta.archivo);
+  const urls =
+    anio === 2015
+      ? [
+          meta.url,
+          ...(meta.urlsAlternativas ?? []),
+          ...candidatosArchivo2015(meta).map(
+            (nombre) =>
+              `https://www.iecm.mx/www/estadisticaresultadospelo2015/archivos/${nombre}`,
+          ),
+        ]
+      : [meta.url];
+
+  for (const url of [...new Set(urls)]) {
+    console.log(`Descargando ${meta.archivo} desde ${url}…`);
+    try {
+      const status = await descargarArchivoIecm(url, target);
+      if (status !== 200) continue;
+      validarArchivoImport(target);
+      return target;
+    } catch {
+      // probar siguiente URL
+    }
+  }
+
+  for (const nombre of candidatos) {
+    const candidato = path.join(rawDir, nombre);
+    if (!existsSync(candidato)) continue;
+    try {
+      validarArchivoImport(candidato);
+      return candidato;
+    } catch {
+      // sigue
+    }
+  }
+
+  if (anio === 2021 || anio === 2018 || anio === 2015) {
     throw new Error(
-      `La descarga de ${meta.archivo} no es un Excel válido (¿bloqueo del IECM?). Colócalo manualmente en data/electoral/raw/`,
+      `No se pudo obtener ${candidatos.join(" ni ")}. Descárgalo manualmente desde el IECM (Jefaturas delegacionales 2015 → BASE DE DATOS) y colócalo en data/electoral/raw/`,
     );
   }
-  return target;
+  throw new Error(`Descarga IECM fallida (${anio})`);
 }
 
 type FilaCasilla = {
@@ -238,15 +330,36 @@ function parseXlsxAlcaldia(xlsxPath: string, anio: AnioImport): ResultadoAlcaldi
   headers.forEach((header, index) => {
     const norm = normalizarHeader(header);
     if (!header || META_HEADERS.has(norm)) return;
-    partyColumns.push({ index, clave: header.replace(/\s+/g, "_").toUpperCase() });
+    const clave = header.replace(/\s+/g, "_").toUpperCase();
+    if (/^CAND_IND\d*$/.test(clave)) return;
+    if (anio === 2015 && esColumnaTicketCoalicion2015(clave)) return;
+    if (anio === 2015 && esCoalicion2015(clave)) return;
+    partyColumns.push({ index, clave });
   });
 
-  const idxDem = indiceHeader(headers, "demarcacion territorial", "dem");
+  const idxDem = indiceHeader(
+    headers,
+    "demarcacion territorial",
+    "dem",
+    "municipio",
+    "demarcacion",
+  );
   const idxSeccion = indiceHeader(headers, "seccion electoral", "seccion");
   const idxListaNominal = indiceHeader(headers, "lista nominal", "ln");
-  const idxVotosTotales = indiceHeader(headers, "votos totales", "votacion total", "vt");
-  const idxVotosNulos = indiceHeader(headers, "votos nulos", "vn");
-  const idxVotosCnr = indiceHeader(headers, "votos candidatos no registrados", "cnr");
+  const idxVotosTotales = indiceHeader(
+    headers,
+    "votos totales",
+    "votacion total",
+    "vt",
+    "total votos",
+  );
+  const idxVotosNulos = indiceHeader(headers, "votos nulos", "vn", "num votos nulos");
+  const idxVotosCnr = indiceHeader(
+    headers,
+    "votos candidatos no registrados",
+    "cnr",
+    "num votos can nreg",
+  );
 
   if (
     idxDem < 0 ||
@@ -275,7 +388,7 @@ function parseXlsxAlcaldia(xlsxPath: string, anio: AnioImport): ResultadoAlcaldi
 
     const partidos: Record<string, number> = {};
     for (const col of partyColumns) {
-      partidos[col.clave] = Number(row[col.index]) || 0;
+      acumularVotoPartido(partidos, col.clave, Number(row[col.index]) || 0, anio);
     }
 
     filas.push({ seccion, listaNominal, votosTotales, votosNulos, votosCnr, partidos });
@@ -295,7 +408,10 @@ function parseXlsxAlcaldia(xlsxPath: string, anio: AnioImport): ResultadoAlcaldi
     const acumPartidos = new Map<string, number>();
     for (const casilla of casillas) {
       for (const [clave, votos] of Object.entries(casilla.partidos)) {
-        acumPartidos.set(clave, (acumPartidos.get(clave) ?? 0) + votos);
+        if (anio === 2015 && esCoalicion2015(clave)) continue;
+        const claveNorm = anio === 2015 ? clavePartidoHomologada2015(clave) : clave;
+        if (!esClavePartidoValida(claveNorm)) continue;
+        acumPartidos.set(claveNorm, (acumPartidos.get(claveNorm) ?? 0) + votos);
       }
     }
 
@@ -303,7 +419,7 @@ function parseXlsxAlcaldia(xlsxPath: string, anio: AnioImport): ResultadoAlcaldi
       .filter(([clave, votos]) => votos > 0 && esClavePartidoValida(clave))
       .map(([clave, votos]) => ({
         clave,
-        etiqueta: etiquetaPartido(clave),
+        etiqueta: etiquetaPartido(clave, anio),
         votos,
         porcentaje: votacionTotal > 0 ? redondearPct((votos / votacionTotal) * 100) : 0,
       }))
@@ -345,7 +461,7 @@ async function main() {
     console.log(`Dataset previo: ${Object.keys(dataset).join(", ")}`);
   }
 
-  for (const anio of [2024, 2021, 2018] as const) {
+  for (const anio of [2024, 2021, 2018, 2015] as const) {
     try {
       const xlsxPath = await ensureXlsx(anio);
       console.log(`Procesando ${anio}…`);
@@ -362,8 +478,8 @@ async function main() {
     }
   }
 
-  if (!dataset["2024"] && !dataset["2021"] && !dataset["2018"]) {
-    throw new Error("No se importó ningún año de resultados de alcaldía");
+  if (!dataset["2024"] && !dataset["2021"] && !dataset["2018"] && !dataset["2015"]) {
+    throw new Error("No se importó ningún año de resultados de alcaldía/jefatura");
   }
 
   writeFileSync(outFile, JSON.stringify(dataset, null, 2));
@@ -372,6 +488,11 @@ async function main() {
   if (!dataset["2021"]) {
     console.warn(
       "2021 no importado. Descarga bd2021alccas.xlsx desde el IECM y vuelve a ejecutar el script.",
+    );
+  }
+  if (!dataset["2015"]) {
+    console.warn(
+      "2015 no importado. Descarga bd2015jefcas.xlsx desde el IECM (Jefaturas delegacionales → BASE DE DATOS) y colócalo en data/electoral/raw/.",
     );
   }
   if (!dataset["2018"]) {

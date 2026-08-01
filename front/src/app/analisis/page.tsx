@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { AnalisisSeccionDashboard } from "@/components/AnalisisSeccionDashboard";
+import { ColoniasSeccionPanel, textoBusquedaColonias } from "@/components/ColoniasSeccionPanel";
 import { apiFetch } from "@/lib/api";
 import {
   formatElectores,
@@ -43,6 +44,16 @@ export default function AnalisisPage() {
   const [buscar, setBuscar] = useState("");
   const [orden, setOrden] = useState<OrdenListadoAnalisis>("default");
   const [expandido, setExpandido] = useState<string | null>(null);
+  const [filtroPendiente, iniciarFiltroTransition] = useTransition();
+
+  useEffect(() => {
+    if (!filtroPendiente) return;
+    const cursorAnterior = document.body.style.cursor;
+    document.body.style.cursor = "wait";
+    return () => {
+      document.body.style.cursor = cursorAnterior;
+    };
+  }, [filtroPendiente]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -98,7 +109,8 @@ export default function AnalisisPage() {
         fila.dirigentes.toLowerCase().includes(q) ||
         fila.casillas.toLowerCase().includes(q) ||
         fila.unidadesTerritoriales.toLowerCase().includes(q) ||
-        fila.colonias.toLowerCase().includes(q)
+        fila.colonias.toLowerCase().includes(q) ||
+        textoBusquedaColonias(fila.coloniasDetalle, fila.colonias).toLowerCase().includes(q)
       );
     });
     return [...filtered].sort((a, b) =>
@@ -112,13 +124,23 @@ export default function AnalisisPage() {
   );
 
   const toggleTendenciaFiltro = (valor: TendenciaSeccionFiltro) => {
-    setTendenciaFiltro((actual) => (actual === valor ? "" : valor));
+    iniciarFiltroTransition(() => {
+      setTendenciaFiltro((actual) => (actual === valor ? "" : valor));
+    });
+  };
+
+  const cambiarTendenciaFiltro = (valor: TendenciaSeccionFiltro) => {
+    iniciarFiltroTransition(() => {
+      setTendenciaFiltro(valor);
+    });
   };
 
   if (!isAdmin) return null;
 
   return (
-    <div className="min-w-0 max-w-full space-y-6 sm:space-y-8">
+    <div
+      className={`min-w-0 max-w-full space-y-6 sm:space-y-8${filtroPendiente ? " cursor-wait" : ""}`}
+    >
       <div className="page-header">
         <div className="min-w-0">
           <h1 className="page-title">Análisis</h1>
@@ -133,6 +155,35 @@ export default function AnalisisPage() {
       </div>
 
       {error ? <div className="alert-error">{error}</div> : null}
+
+      {!loading &&
+      data &&
+      !(data.resultadosAlcaldiaAnios?.includes(2015) || data.filas.some((f) => f.alcalde2015)) ? (
+        <div className="rounded-pin border border-amber-300/80 bg-amber-50 p-4 text-sm leading-relaxed text-amber-950">
+          <p className="font-semibold">Datos de 2015 no disponibles en el API</p>
+          <p className="mt-2">
+            El JSON local puede tener 2015 importado, pero el backend que atiende esta página aún no
+            lo está sirviendo. Reinicia el backend local o vuelve a desplegar si usas Railway.
+          </p>
+          <ol className="mt-3 list-decimal space-y-1 pl-5">
+            <li>
+              Verifica que{" "}
+              <code className="rounded bg-amber-100 px-1">
+                back/data/electoral/resultados-alcaldia-coyoacan.json
+              </code>{" "}
+              incluya la clave <strong>&quot;2015&quot;</strong>.
+            </li>
+            <li>
+              Reinicia el backend:{" "}
+              <code className="rounded bg-amber-100 px-1">npm run dev -w control-back</code>.
+            </li>
+            <li>
+              Si el front apunta a Railway (<code className="rounded bg-amber-100 px-1">API_PROXY_URL</code>
+              ), haz commit del JSON y redeploy del backend.
+            </li>
+          </ol>
+        </div>
+      ) : null}
 
       {!loading && tendencias ? (
         <div className="rounded-pin border border-line bg-surface-soft p-4 text-sm leading-relaxed text-ink-secondary">
@@ -181,6 +232,7 @@ export default function AnalisisPage() {
                 valorClass="text-[#9f2241]"
                 destacado
                 activo={tendenciaFiltro === "morena"}
+                filtrando={filtroPendiente}
                 onClick={() => toggleTendenciaFiltro("morena")}
               />
               <ResumenTendenciaCard
@@ -193,6 +245,7 @@ export default function AnalisisPage() {
                 valorClass="text-pin"
                 destacado
                 activo={tendenciaFiltro === "pan_gana_2024"}
+                filtrando={filtroPendiente}
                 onClick={() => toggleTendenciaFiltro("pan_gana_2024")}
               />
             </div>
@@ -211,6 +264,7 @@ export default function AnalisisPage() {
                 colorClass="border-pin/30 bg-surface-soft"
                 valorClass="text-pin"
                 activo={tendenciaFiltro === "pan"}
+                filtrando={filtroPendiente}
                 onClick={() => toggleTendenciaFiltro("pan")}
               />
               <ResumenTendenciaCard
@@ -221,6 +275,7 @@ export default function AnalisisPage() {
                 colorClass="border-line bg-surface-soft"
                 valorClass="text-ink"
                 activo={tendenciaFiltro === "empate"}
+                filtrando={filtroPendiente}
                 onClick={() => toggleTendenciaFiltro("empate")}
               />
               <ResumenTendenciaCard
@@ -231,6 +286,7 @@ export default function AnalisisPage() {
                 colorClass="border-[#e65100]/40 bg-[#fff3e0]"
                 valorClass="text-[#e65100]"
                 activo={tendenciaFiltro === "mc_supero_pri"}
+                filtrando={filtroPendiente}
                 onClick={() => toggleTendenciaFiltro("mc_supero_pri")}
               />
               <ResumenTendenciaCard
@@ -242,6 +298,7 @@ export default function AnalisisPage() {
                 valorClass="text-ink-secondary"
                 ocultarPct
                 activo={tendenciaFiltro === "sin_datos"}
+                filtrando={filtroPendiente}
                 onClick={() => toggleTendenciaFiltro("sin_datos")}
               />
             </div>
@@ -260,6 +317,7 @@ export default function AnalisisPage() {
                 colorClass="border-[#9f2241]/30 bg-[#9f2241]/5"
                 valorClass="text-[#9f2241]"
                 activo={tendenciaFiltro === "morena_gana_2024"}
+                filtrando={filtroPendiente}
                 onClick={() => toggleTendenciaFiltro("morena_gana_2024")}
               />
               <ResumenTendenciaCard
@@ -270,6 +328,7 @@ export default function AnalisisPage() {
                 colorClass="border-pin/30 bg-surface-soft"
                 valorClass="text-pin"
                 activo={tendenciaFiltro === "pan_gana_2024"}
+                filtrando={filtroPendiente}
                 onClick={() => toggleTendenciaFiltro("pan_gana_2024")}
               />
             </div>
@@ -298,7 +357,7 @@ export default function AnalisisPage() {
             id="analisis-tendencia"
             className="input"
             value={tendenciaFiltro}
-            onChange={(e) => setTendenciaFiltro(e.target.value as TendenciaSeccionFiltro)}
+            onChange={(e) => cambiarTendenciaFiltro(e.target.value as TendenciaSeccionFiltro)}
           >
             <option value="">Todas</option>
             <option value="morena">{ETIQUETAS_TENDENCIA.morena}</option>
@@ -348,10 +407,12 @@ export default function AnalisisPage() {
               type="button"
               className="btn-ghost btn-sm btn-responsive w-full sm:w-auto"
               onClick={() => {
-                setTendenciaFiltro("");
-                setDistritoLocal("");
-                setBuscar("");
-                setOrden("default");
+                iniciarFiltroTransition(() => {
+                  setTendenciaFiltro("");
+                  setDistritoLocal("");
+                  setBuscar("");
+                  setOrden("default");
+                });
               }}
             >
               Limpiar filtros
@@ -429,6 +490,7 @@ function AnalisisCard({
   const metricas = metricasOrdenListadoAnalisis(fila, promedios);
   const ventajaMorena2024 = ventajaMorenaSobrePan2024(fila, promedios);
   const comparacion = compararVotacionSeccion(
+    fila.alcalde2015,
     fila.alcalde2018,
     fila.alcalde2021,
     fila.alcalde2024,
@@ -520,10 +582,22 @@ function AnalisisCard({
           <span className="text-ink-secondary">UT: </span>
           {fila.unidadesTerritoriales}
         </p>
-        <p>
-          <span className="text-ink-secondary">Colonia: </span>
-          {fila.colonias}
-        </p>
+        <div className="text-sm">
+          <span className="text-ink-secondary">Colonia{fila.coloniasDetalle.compartida ? "s" : ""}: </span>
+          {fila.coloniasDetalle.compartida ? (
+            <div className="mt-2">
+              <ColoniasSeccionPanel
+                coloniasDetalle={fila.coloniasDetalle}
+                coloniasFallback={fila.colonias}
+              />
+            </div>
+          ) : (
+            <ColoniasSeccionPanel
+              coloniasDetalle={fila.coloniasDetalle}
+              coloniasFallback={fila.colonias}
+            />
+          )}
+        </div>
         <p>
           <span className="text-ink-secondary">Electores: </span>
           <span className="font-semibold">{formatElectores(fila.totalElectores)}</span>
@@ -534,7 +608,7 @@ function AnalisisCard({
         </p>
       </div>
       <button type="button" className="btn-ghost btn-sm btn-responsive" onClick={onToggle}>
-        {expandido ? "Ocultar análisis" : "Ver análisis 2018/2021/2024"}
+        {expandido ? "Ocultar análisis" : "Ver análisis 2015/2018/2021/2024"}
       </button>
       {expandido ? (
         <div className="min-w-0 max-w-full border-t border-line pt-3">
@@ -556,6 +630,7 @@ function ResumenTendenciaCard({
   ocultarPct = false,
   destacado = false,
   activo = false,
+  filtrando = false,
   onClick,
 }: {
   titulo: string;
@@ -568,17 +643,21 @@ function ResumenTendenciaCard({
   ocultarPct?: boolean;
   destacado?: boolean;
   activo?: boolean;
+  filtrando?: boolean;
   onClick?: () => void;
 }) {
   const pct = total > 0 ? Math.round((valor / total) * 1000) / 10 : 0;
+  const cursorClass = onClick ? (filtrando ? "cursor-wait" : "cursor-pointer") : "";
 
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={filtrando}
+      aria-busy={filtrando || undefined}
       className={`min-w-0 rounded-pin border p-4 text-left transition-shadow ${colorClass} ${
         activo ? "ring-2 ring-pin shadow-pin" : "hover:shadow-pin"
-      } ${destacado && !activo ? "ring-1 ring-line" : ""} ${onClick ? "cursor-pointer" : ""}`}
+      } ${destacado && !activo ? "ring-1 ring-line" : ""} ${cursorClass}`}
     >
       <p className="text-sm font-medium text-ink-secondary">{titulo}</p>
       <p className={`mt-1 text-3xl font-bold ${valorClass}`}>{valor}</p>

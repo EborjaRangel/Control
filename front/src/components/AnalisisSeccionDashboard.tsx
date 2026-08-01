@@ -30,6 +30,7 @@ export function AnalisisSeccionDashboard({
   promedios: PromediosAlcaldia | null;
 }) {
   const comparacion = compararVotacionSeccion(
+    fila.alcalde2015,
     fila.alcalde2018,
     fila.alcalde2021,
     fila.alcalde2024,
@@ -45,12 +46,17 @@ export function AnalisisSeccionDashboard({
   }
 
   const maxBloquePct = Math.max(
+    ...comparacion.bloques2015.map((b) => b.porcentaje),
     ...comparacion.bloques2018.map((b) => b.porcentaje),
     ...comparacion.bloques2021.map((b) => b.porcentaje),
     ...comparacion.bloques2024.map((b) => b.porcentaje),
     1,
   );
 
+  const indPart15 = indicadorVsPromedio(
+    comparacion.participacion2015,
+    promedios?.participacion2015 ?? null,
+  );
   const indPart18 = indicadorVsPromedio(
     comparacion.participacion2018,
     promedios?.participacion2018 ?? null,
@@ -64,6 +70,12 @@ export function AnalisisSeccionDashboard({
     promedios?.participacion2024 ?? null,
   );
 
+  const tieneCuatroAnios =
+    comparacion.bloques2015.length > 0 &&
+    comparacion.bloques2018.length > 0 &&
+    comparacion.bloques2021.length > 0 &&
+    comparacion.bloques2024.length > 0;
+
   const tieneTresAnios =
     comparacion.bloques2018.length > 0 &&
     comparacion.bloques2021.length > 0 &&
@@ -76,6 +88,13 @@ export function AnalisisSeccionDashboard({
           <span className="text-ink-secondary">Electores: </span>
           <span className="font-semibold text-ink">{formatElectores(fila.totalElectores)}</span>
         </p>
+        {comparacion.participacion2015 != null ? (
+          <p className="flex flex-wrap items-center gap-1.5">
+            <span className="text-ink-secondary">Participación 2015:</span>
+            <span className="font-medium">{formatPorcentaje(comparacion.participacion2015)}</span>
+            {indPart15 ? <VsPromedioBadge {...indPart15} /> : null}
+          </p>
+        ) : null}
         {comparacion.participacion2018 != null ? (
           <p className="flex flex-wrap items-center gap-1.5">
             <span className="text-ink-secondary">Participación 2018:</span>
@@ -106,7 +125,47 @@ export function AnalisisSeccionDashboard({
 
       <ConclusionCard comparacion={comparacion} />
 
-      {tieneTresAnios ? (
+      {tieneCuatroAnios ? (
+        <section className="panel-soft space-y-4 p-4">
+          <h3 className="font-semibold text-ink">Comparación de bloques 2015 · 2018 · 2021 · 2024</h3>
+          <p className="text-xs text-ink-secondary">
+            En 2015 (jefatura delegacional) PAN, PRI, MORENA y MC (Convergencia) van por
+            separado; PRD y PT en alianza PRD-PT. Desde 2018 aplican las reglas de coalición de
+            cada año.
+          </p>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            <BloquesChart
+              titulo="2015"
+              bloques={comparacion.bloques2015}
+              maxPct={maxBloquePct}
+              resultado={fila.alcalde2015}
+              anio={2015}
+            />
+            <BloquesChart
+              titulo="2018"
+              bloques={comparacion.bloques2018}
+              maxPct={maxBloquePct}
+              resultado={fila.alcalde2018}
+              anio={2018}
+            />
+            <BloquesChart
+              titulo="2021"
+              bloques={comparacion.bloques2021}
+              maxPct={maxBloquePct}
+              resultado={fila.alcalde2021}
+              anio={2021}
+            />
+            <BloquesChart
+              titulo="2024"
+              bloques={comparacion.bloques2024}
+              maxPct={maxBloquePct}
+              resultado={fila.alcalde2024}
+              anio={2024}
+            />
+          </div>
+          <DeltaBloques comparacion={comparacion} promedios={promedios} />
+        </section>
+      ) : tieneTresAnios ? (
         <section className="panel-soft space-y-4 p-4">
           <h3 className="font-semibold text-ink">Comparación de bloques 2018 · 2021 · 2024</h3>
           <p className="text-xs text-ink-secondary">
@@ -164,7 +223,15 @@ export function AnalisisSeccionDashboard({
         </section>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+        <AnioDashboard
+          titulo="Jefe delegacional 2015"
+          anio={2015}
+          resultado={fila.alcalde2015}
+          partidos={comparacion.topPartidos2015}
+          bloques={comparacion.bloques2015}
+          nota="PRD-PT en alianza. MC homologado desde Convergencia (IECM)."
+        />
         <AnioDashboard
           titulo="Alcalde 2018"
           anio={2018}
@@ -234,7 +301,7 @@ function ConclusionCard({
   return (
     <section className="rounded-pin border border-line bg-surface p-4 shadow-pin">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h3 className="font-semibold text-ink">Conclusión por sección (2018 → 2024)</h3>
+        <h3 className="font-semibold text-ink">Conclusión por sección (2015 → 2024)</h3>
         {tiene2124 && resumen ? (
           <span
             className={`max-w-full rounded-full px-2.5 py-0.5 text-left text-xs font-semibold leading-snug break-words ${badge.className}`}
@@ -314,7 +381,10 @@ function BloquesChart({
 }) {
   const bloquesVisibles = bloques.filter(
     (bloque) =>
-      (bloque.bloque !== "mc" && bloque.bloque !== "pri") || bloque.porcentaje > 0,
+      (bloque.bloque !== "mc" &&
+        bloque.bloque !== "pri" &&
+        bloque.bloque !== "prd_pt") ||
+      bloque.porcentaje > 0,
   );
 
   return (
@@ -343,15 +413,17 @@ function BloquesChart({
 function DesgloseBloqueLinea({
   items,
   total,
+  prefijo = "Suma: ",
 }: {
   items: VotoDesgloseBloque[];
   total: number;
+  prefijo?: string;
 }) {
   if (items.length < 2) return null;
 
   return (
     <p className="border-l-2 border-pin-muted pl-2 text-[0.6875rem] leading-relaxed text-ink-secondary">
-      <span className="font-medium text-ink-secondary">Suma: </span>
+      <span className="font-medium text-ink-secondary">{prefijo}</span>
       {items.map((item, index) => (
         <span key={item.clave}>
           {index > 0 ? " + " : ""}
@@ -370,10 +442,40 @@ function DeltaBloques({
   comparacion: NonNullable<ReturnType<typeof compararVotacionSeccion>>;
   promedios: PromediosAlcaldia | null;
 }) {
+  const tiene2015 = comparacion.bloques2015.length > 0 && comparacion.bloques2024.length > 0;
   const tiene2018 = comparacion.bloques2018.length > 0 && comparacion.bloques2024.length > 0;
 
   return (
     <div className="space-y-4">
+      {tiene2015 ? (
+        <div>
+          <p className="mb-2 text-xs font-semibold text-ink-secondary">Variación 2015 → 2024</p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <DeltaCard
+              titulo="MORENA"
+              delta={comparacion.deltaMorena2015_2024}
+              color={COLOR_MORENA}
+              referencia="2015"
+            />
+            <DeltaCard
+              titulo="PAN"
+              delta={comparacion.deltaPan2015_2024}
+              color={COLOR_PAN}
+              referencia="2015"
+            />
+            <DeltaCard
+              titulo="MC (Convergencia)"
+              delta={comparacion.deltaMc2015_2024}
+              color={COLOR_MC}
+              referencia="2015"
+              vsPromedio={indicadorVsPromedio(
+                comparacion.mc2024,
+                promedios?.mc2024 ?? null,
+              )}
+            />
+          </div>
+        </div>
+      ) : null}
       {tiene2018 ? (
         <div>
           <p className="mb-2 text-xs font-semibold text-ink-secondary">Variación 2018 → 2024</p>
@@ -473,11 +575,40 @@ function DeltaCard({
   );
 }
 
+function RecuadroCuadreVotos2015({
+  resultado,
+  bloques,
+}: {
+  resultado: ResultadoAlcaldiaSeccion;
+  bloques: ResumenBloque[];
+}) {
+  const bloquePrdPt = bloques.find((bloque) => bloque.bloque === "prd_pt" && bloque.votos > 0);
+  const desglosePrdPt = desgloseVotosBloque(resultado, "prd_pt", 2015);
+
+  if (!bloquePrdPt || desglosePrdPt.length < 2) return null;
+
+  return (
+    <div className="rounded-pin border border-line bg-surface p-2.5 text-[0.6875rem] leading-relaxed text-ink-secondary">
+      <p className="font-semibold text-ink">PRD-PT (alianza) en bloques = filas de esta tabla</p>
+      <DesgloseBloqueLinea items={desglosePrdPt} total={bloquePrdPt.votos} />
+    </div>
+  );
+}
+
+function NotaDashboard({ children }: { children: string }) {
+  return (
+    <div className="rounded-pin border border-line bg-surface p-2.5 text-[0.6875rem] leading-relaxed text-ink-secondary">
+      {children}
+    </div>
+  );
+}
+
 function AnioDashboard({
   titulo,
   anio,
   resultado,
   partidos,
+  bloques,
   nota,
   desglosePan,
   totalPan,
@@ -486,6 +617,7 @@ function AnioDashboard({
   anio: AnioAlcaldia;
   resultado: ResultadoAlcaldiaSeccion | null;
   partidos: PartidoVotosSeccion[];
+  bloques?: ResumenBloque[];
   nota?: string;
   desglosePan?: VotoDesgloseBloque[];
   totalPan?: number;
@@ -510,7 +642,16 @@ function AnioDashboard({
           {formatPorcentaje(resultado.votosNulosPct)}
         </p>
       </div>
-      {nota ? <p className="text-xs text-ink-secondary">{nota}</p> : null}
+      {nota ? (
+        anio === 2015 ? (
+          <NotaDashboard>{nota}</NotaDashboard>
+        ) : (
+          <p className="text-xs text-ink-secondary">{nota}</p>
+        )
+      ) : null}
+      {anio === 2015 && bloques?.length ? (
+        <RecuadroCuadreVotos2015 resultado={resultado} bloques={bloques} />
+      ) : null}
       {desglosePan && desglosePan.length >= 2 && totalPan != null ? (
         <div className="rounded-pin border border-line bg-surface p-2.5 text-[0.6875rem] leading-relaxed text-ink-secondary">
           <p className="font-semibold text-ink">PAN y aliados en bloques = filas de esta tabla</p>

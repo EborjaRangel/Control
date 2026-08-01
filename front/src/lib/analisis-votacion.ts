@@ -5,9 +5,15 @@ import {
   type ResultadoAlcaldiaSeccion,
 } from "@/lib/analisis";
 
-export type AnioAlcaldia = 2018 | 2021 | 2024;
+export type AnioAlcaldia = 2015 | 2018 | 2021 | 2024;
 
-export type BloqueVotacion = "morena" | "pan" | "mc" | "pri" | "otros";
+export const ANIOS_ELECCION_ALCALDIA: AnioAlcaldia[] = [2015, 2018, 2021, 2024];
+
+export function etiquetaCargoEleccion(anio: AnioAlcaldia): string {
+  return anio === 2015 ? "Jefe delegacional 2015" : `Alcalde ${anio}`;
+}
+
+export type BloqueVotacion = "morena" | "pan" | "mc" | "pri" | "prd_pt" | "otros";
 
 export type ResumenBloque = {
   bloque: BloqueVotacion;
@@ -18,40 +24,52 @@ export type ResumenBloque = {
 };
 
 export type PromediosAlcaldia = {
+  participacion2015: number | null;
   participacion2018: number | null;
   participacion2021: number | null;
   participacion2024: number | null;
+  morena2015: number | null;
   morena2018: number | null;
   morena2021: number | null;
   morena2024: number | null;
+  pan2015: number | null;
   pan2018: number | null;
   pan2021: number | null;
   pan2024: number | null;
+  mc2015: number | null;
   mc2021: number | null;
   mc2024: number | null;
+  secciones2015: number;
   secciones2018: number;
   secciones2021: number;
   secciones2024: number;
 };
 
 export type ComparacionBloquesSeccion = {
+  bloques2015: ResumenBloque[];
   bloques2018: ResumenBloque[];
   bloques2021: ResumenBloque[];
   bloques2024: ResumenBloque[];
   deltaMorenaPct: number;
   deltaPanPct: number;
   deltaMcPct: number;
+  deltaMorena2015_2024: number;
+  deltaPan2015_2024: number;
+  deltaMc2015_2024: number;
   deltaMorena2018_2024: number;
   deltaPan2018_2024: number;
+  mc2015: number;
   mc2021: number;
   mc2024: number;
   analisisMcVsPri: AnalisisMcVsPri | null;
   tendencia: "morena" | "pan" | "empate";
   tendenciaParticipacion: "sube" | "baja" | "estable";
   conclusion: string;
+  topPartidos2015: PartidoVotosSeccion[];
   topPartidos2018: PartidoVotosSeccion[];
   topPartidos2021: PartidoVotosSeccion[];
   topPartidos2024: PartidoVotosSeccion[];
+  participacion2015: number | null;
   participacion2018: number | null;
   participacion2021: number | null;
   participacion2024: number | null;
@@ -97,6 +115,7 @@ export const COLOR_MORENA = "#9f2241";
 export const COLOR_PAN = "#0055a4";
 export const COLOR_MC = "#e65100";
 export const COLOR_PRI = "#007934";
+export const COLOR_PRD_PT = "#f5c400";
 export const COLOR_OTROS = "#767676";
 
 const ETIQUETAS_BLOQUE: Record<BloqueVotacion, string> = {
@@ -104,10 +123,16 @@ const ETIQUETAS_BLOQUE: Record<BloqueVotacion, string> = {
   pan: "PAN y aliados",
   mc: "MC",
   pri: "PRI (independiente)",
+  prd_pt: "PRD-PT",
   otros: "Otros",
 };
 
 const ORDEN_BLOQUES: BloqueVotacion[] = ["morena", "pan", "mc", "pri", "otros"];
+const ORDEN_BLOQUES_2015: BloqueVotacion[] = ["morena", "pan", "prd_pt", "mc", "pri", "otros"];
+
+function ordenBloques(anio?: AnioAlcaldia): BloqueVotacion[] {
+  return anio === 2015 ? ORDEN_BLOQUES_2015 : ORDEN_BLOQUES;
+}
 
 export function esPartidoValido(clave: string): boolean {
   return !CLAVES_META.has(clave.toUpperCase());
@@ -132,6 +157,14 @@ function esAliadoPan(clave: string): boolean {
 
 export function clasificarBloque(clave: string, anio?: AnioAlcaldia): BloqueVotacion {
   const k = clave.toUpperCase();
+  if (anio === 2015) {
+    if (k === "MORENA" || k.includes("MORENA")) return "morena";
+    if (k === "PAN") return "pan";
+    if (k === "PRI" || k.startsWith("PRI_")) return "pri";
+    if (k === "MC" || k === "CONVERGENCIA" || k.includes("CONVERGENCIA")) return "mc";
+    if (k === "PRD" || k === "PT" || k === "PRD_PT" || k === "PT_PRD") return "prd_pt";
+    return "otros";
+  }
   if (k === "MORENA" || k.includes("MORENA")) return "morena";
   if (anio === 2018 && (k === "PRI" || k.startsWith("PRI_"))) return "pri";
   if (esAliadoPan(clave)) return "pan";
@@ -141,6 +174,14 @@ export function clasificarBloque(clave: string, anio?: AnioAlcaldia): BloqueVota
 }
 
 function etiquetaBloque(bloque: BloqueVotacion, anio?: AnioAlcaldia): string {
+  if (anio === 2015) {
+    if (bloque === "pan") return "PAN";
+    if (bloque === "mc") return "MC (Convergencia)";
+    if (bloque === "pri") return "PRI";
+    if (bloque === "morena") return "MORENA";
+    if (bloque === "prd_pt") return "PRD-PT (alianza)";
+    return ETIQUETAS_BLOQUE[bloque];
+  }
   if (anio === 2018 && bloque === "pan") {
     return "PAN y aliados (incl. MC, PRD)";
   }
@@ -166,6 +207,7 @@ function resumirBloques(resultado: ResultadoAlcaldiaSeccion, anio?: AnioAlcaldia
     pan: 0,
     mc: 0,
     pri: 0,
+    prd_pt: 0,
     otros: 0,
   };
 
@@ -179,10 +221,11 @@ function resumirBloques(resultado: ResultadoAlcaldiaSeccion, anio?: AnioAlcaldia
     pan: COLOR_PAN,
     mc: COLOR_MC,
     pri: COLOR_PRI,
+    prd_pt: COLOR_PRD_PT,
     otros: COLOR_OTROS,
   };
 
-  return ORDEN_BLOQUES.map((bloque) => ({
+  return ordenBloques(anio).map((bloque) => ({
     bloque,
     etiqueta: etiquetaBloque(bloque, anio),
     votos: acum[bloque],
@@ -262,19 +305,29 @@ function pushPromediosAnio(
 }
 
 export function calcularPromediosAlcaldia(filas: AnalisisSeccionRow[]): PromediosAlcaldia {
+  const p15: number[] = [];
   const p18: number[] = [];
   const p21: number[] = [];
   const p24: number[] = [];
+  const m15: number[] = [];
   const m18: number[] = [];
   const m21: number[] = [];
   const m24: number[] = [];
+  const pan15: number[] = [];
   const pan18: number[] = [];
   const pan21: number[] = [];
   const pan24: number[] = [];
+  const mc15: number[] = [];
   const mc21: number[] = [];
   const mc24: number[] = [];
 
   for (const fila of filas) {
+    pushPromediosAnio(fila, 2015, fila.alcalde2015, {
+      participacion: p15,
+      morena: m15,
+      pan: pan15,
+      mc: mc15,
+    });
     pushPromediosAnio(fila, 2018, fila.alcalde2018, {
       participacion: p18,
       morena: m18,
@@ -295,17 +348,22 @@ export function calcularPromediosAlcaldia(filas: AnalisisSeccionRow[]): Promedio
   }
 
   return {
+    participacion2015: promedio(p15),
     participacion2018: promedio(p18),
     participacion2021: promedio(p21),
     participacion2024: promedio(p24),
+    morena2015: promedio(m15),
     morena2018: promedio(m18),
     morena2021: promedio(m21),
     morena2024: promedio(m24),
+    pan2015: promedio(pan15),
     pan2018: promedio(pan18),
     pan2021: promedio(pan21),
     pan2024: promedio(pan24),
+    mc2015: promedio(mc15),
     mc2021: promedio(mc21),
     mc2024: promedio(mc24),
+    secciones2015: p15.length,
     secciones2018: p18.length,
     secciones2021: p21.length,
     secciones2024: p24.length,
@@ -452,32 +510,41 @@ function textoDueloMcVsPri(analisis: AnalisisMcVsPri): string {
 }
 
 function generarConclusion(
+  bloques2015: ResumenBloque[],
   bloques2018: ResumenBloque[],
   bloques2021: ResumenBloque[],
   bloques2024: ResumenBloque[],
   deltaMorenaPct: number,
   deltaPanPct: number,
   deltaMcPct: number,
+  deltaMorena2015_2024: number,
+  deltaPan2015_2024: number,
   deltaMorena2018_2024: number,
   deltaPan2018_2024: number,
+  mc2015: number,
   mc2021: number,
   mc2024: number,
   analisisMcVsPri: AnalisisMcVsPri | null,
+  participacion2015: number | null,
   participacion2018: number | null,
   participacion2021: number | null,
   participacion2024: number | null,
   promedios: PromediosAlcaldia | null,
 ): string {
+  const tiene2015 = bloques2015.length > 0;
   const tiene2018 = bloques2018.length > 0;
   const tiene2124 = bloques2021.length > 0 && bloques2024.length > 0;
 
-  if (!tiene2018 && !tiene2124) {
+  if (!tiene2015 && !tiene2018 && !tiene2124) {
     return "No hay datos IECM suficientes para comparar esta sección.";
   }
 
+  const m15 = pctBloque(bloques2015, "morena");
   const m18 = pctBloque(bloques2018, "morena");
   const m21 = pctBloque(bloques2021, "morena");
   const m24 = pctBloque(bloques2024, "morena");
+  const p15 = pctBloque(bloques2015, "pan");
+  const prdPt15 = pctBloque(bloques2015, "prd_pt");
   const p18 = pctBloque(bloques2018, "pan");
   const p21 = pctBloque(bloques2021, "pan");
   const p24 = pctBloque(bloques2024, "pan");
@@ -485,13 +552,29 @@ function generarConclusion(
 
   const partes: string[] = [];
 
+  if (tiene2015) {
+    partes.push(
+      "En 2015 (jefatura delegacional) PAN, PRI, MORENA y MC (Convergencia) compitieron sin coalición; PRD y PT lo hicieron en alianza PRD-PT.",
+    );
+  }
+
   if (tiene2018) {
     partes.push(
       "En 2018, MC y PRD se contabilizan en PAN y aliados (coalición PAN-PRD-MC). El PRI va en bloque independiente.",
     );
   }
 
-  if (participacion2018 != null && participacion2021 != null && participacion2024 != null) {
+  if (
+    participacion2015 != null &&
+    participacion2018 != null &&
+    participacion2021 != null &&
+    participacion2024 != null
+  ) {
+    const delta1524 = deltaPct(participacion2024, participacion2015);
+    partes.push(
+      `Participación: ${formatPorcentaje(participacion2015)} (2015) → ${formatPorcentaje(participacion2018)} (2018) → ${formatPorcentaje(participacion2021)} (2021) → ${formatPorcentaje(participacion2024)} (2024), ${delta1524 >= 0 ? "+" : ""}${delta1524.toFixed(2)} pp entre 2015 y 2024.`,
+    );
+  } else if (participacion2018 != null && participacion2021 != null && participacion2024 != null) {
     const delta1824 = deltaPct(participacion2024, participacion2018);
     partes.push(
       `Participación: ${formatPorcentaje(participacion2018)} (2018) → ${formatPorcentaje(participacion2021)} (2021) → ${formatPorcentaje(participacion2024)} (2024), ${delta1824 >= 0 ? "+" : ""}${delta1824.toFixed(2)} pp entre 2018 y 2024.`,
@@ -521,7 +604,20 @@ function generarConclusion(
     if (vsP24) partes.push(vsP24);
   }
 
-  if (tiene2018 && bloques2024.length > 0) {
+  if (tiene2015 && bloques2024.length > 0) {
+    partes.push(
+      `MORENA: ${formatPorcentaje(m15)} (2015) → ${formatPorcentaje(m18)} (2018) → ${formatPorcentaje(m21)} (2021) → ${formatPorcentaje(m24)} (2024); ${deltaMorena2015_2024 >= 0 ? "+" : ""}${deltaMorena2015_2024.toFixed(2)} pp de 2015 a 2024.`,
+    );
+    partes.push(
+      `PAN: ${formatPorcentaje(p15)} (2015) → ${formatPorcentaje(p18)} (2018) → ${formatPorcentaje(p21)} (2021) → ${formatPorcentaje(p24)} (2024); ${deltaPan2015_2024 >= 0 ? "+" : ""}${deltaPan2015_2024.toFixed(2)} pp de 2015 a 2024.`,
+    );
+    partes.push(
+      `PRD-PT: ${formatPorcentaje(prdPt15)} (2015).`,
+    );
+    partes.push(
+      `MC (Convergencia en 2015): ${formatPorcentaje(mc2015)} (2015) → ${formatPorcentaje(mc2021)} (2021) → ${formatPorcentaje(mc2024)} (2024).`,
+    );
+  } else if (tiene2018 && bloques2024.length > 0) {
     partes.push(
       `MORENA y aliados: ${formatPorcentaje(m18)} (2018) → ${formatPorcentaje(m21)} (2021) → ${formatPorcentaje(m24)} (2024); ${deltaMorena2018_2024 >= 0 ? "+" : ""}${deltaMorena2018_2024.toFixed(2)} pp de 2018 a 2024.`,
     );
@@ -571,6 +667,7 @@ function generarConclusion(
   }
 
   if (!tiene2124) {
+    if (tiene2015 || tiene2018) return partes.join(" ");
     partes.push("No hay comparación 2021→2024 completa para esta sección.");
     return partes.join(" ");
   }
@@ -581,7 +678,15 @@ function generarConclusion(
     : "Conclusión 2021→2024: sin datos suficientes.";
   const diffBloques = deltaMorenaPct - deltaPanPct;
 
-  if (tiene2018 && bloques2024.length > 0) {
+  if (tiene2015 && bloques2024.length > 0) {
+    const diffLargo1524 = deltaMorena2015_2024 - deltaPan2015_2024;
+    if (Math.abs(diffLargo1524) > 0.5) {
+      cierre +=
+        diffLargo1524 > 0
+          ? " En el periodo 2015→2024 MORENA acumula mayor avance relativo que PAN."
+          : " En el periodo 2015→2024 PAN acumula mayor avance relativo que MORENA.";
+    }
+  } else if (tiene2018 && bloques2024.length > 0) {
     const diffLargo = deltaMorena2018_2024 - deltaPan2018_2024;
     if (Math.abs(diffLargo) > 0.5) {
       cierre +=
@@ -614,17 +719,20 @@ function topPartidos(resultado: ResultadoAlcaldiaSeccion | null): PartidoVotosSe
 }
 
 export function compararVotacionSeccion(
+  alcalde2015: ResultadoAlcaldiaSeccion | null,
   alcalde2018: ResultadoAlcaldiaSeccion | null,
   alcalde2021: ResultadoAlcaldiaSeccion | null,
   alcalde2024: ResultadoAlcaldiaSeccion | null,
   promedios: PromediosAlcaldia | null = null,
 ): ComparacionBloquesSeccion | null {
-  if (!alcalde2018 && !alcalde2021 && !alcalde2024) return null;
+  if (!alcalde2015 && !alcalde2018 && !alcalde2021 && !alcalde2024) return null;
 
+  const bloques2015 = alcalde2015 ? resumirBloques(alcalde2015, 2015) : [];
   const bloques2018 = alcalde2018 ? resumirBloques(alcalde2018, 2018) : [];
   const bloques2021 = alcalde2021 ? resumirBloques(alcalde2021, 2021) : [];
   const bloques2024 = alcalde2024 ? resumirBloques(alcalde2024, 2024) : [];
 
+  const mc2015 = alcalde2015 ? pctVotos(alcalde2015, "MC") : 0;
   const mc2021 = alcalde2021 ? pctVotos(alcalde2021, "MC") : 0;
   const mc2024 = alcalde2024 ? pctVotos(alcalde2024, "MC") : 0;
   const analisisMcVsPri = analizarMcVsPri(alcalde2021, alcalde2024);
@@ -638,6 +746,15 @@ export function compararVotacionSeccion(
       ? deltaPct(pctBloque(bloques2024, "pan"), pctBloque(bloques2021, "pan"))
       : 0;
   const deltaMcPct = alcalde2021 && alcalde2024 ? deltaPct(mc2024, mc2021) : 0;
+  const deltaMorena2015_2024 =
+    alcalde2015 && alcalde2024
+      ? deltaPct(pctBloque(bloques2024, "morena"), pctBloque(bloques2015, "morena"))
+      : 0;
+  const deltaPan2015_2024 =
+    alcalde2015 && alcalde2024
+      ? deltaPct(pctBloque(bloques2024, "pan"), pctBloque(bloques2015, "pan"))
+      : 0;
+  const deltaMc2015_2024 = alcalde2015 && alcalde2024 ? deltaPct(mc2024, mc2015) : 0;
   const deltaMorena2018_2024 =
     alcalde2018 && alcalde2024
       ? deltaPct(pctBloque(bloques2024, "morena"), pctBloque(bloques2018, "morena"))
@@ -647,6 +764,7 @@ export function compararVotacionSeccion(
       ? deltaPct(pctBloque(bloques2024, "pan"), pctBloque(bloques2018, "pan"))
       : 0;
 
+  const participacion2015 = alcalde2015?.participacionPct ?? null;
   const participacion2018 = alcalde2018?.participacionPct ?? null;
   const participacion2021 = alcalde2021?.participacionPct ?? null;
   const participacion2024 = alcalde2024?.participacionPct ?? null;
@@ -660,39 +778,51 @@ export function compararVotacionSeccion(
   }
 
   return {
+    bloques2015,
     bloques2018,
     bloques2021,
     bloques2024,
     deltaMorenaPct,
     deltaPanPct,
     deltaMcPct,
+    deltaMorena2015_2024,
+    deltaPan2015_2024,
+    deltaMc2015_2024,
     deltaMorena2018_2024,
     deltaPan2018_2024,
+    mc2015,
     mc2021,
     mc2024,
     analisisMcVsPri,
     tendencia,
     tendenciaParticipacion: tendenciaParticipacion(participacion2021, participacion2024),
     conclusion: generarConclusion(
+      bloques2015,
       bloques2018,
       bloques2021,
       bloques2024,
       deltaMorenaPct,
       deltaPanPct,
       deltaMcPct,
+      deltaMorena2015_2024,
+      deltaPan2015_2024,
       deltaMorena2018_2024,
       deltaPan2018_2024,
+      mc2015,
       mc2021,
       mc2024,
       analisisMcVsPri,
+      participacion2015,
       participacion2018,
       participacion2021,
       participacion2024,
       promedios,
     ),
+    topPartidos2015: topPartidos(alcalde2015),
     topPartidos2018: topPartidos(alcalde2018),
     topPartidos2021: topPartidos(alcalde2021),
     topPartidos2024: topPartidos(alcalde2024),
+    participacion2015,
     participacion2018,
     participacion2021,
     participacion2024,
@@ -705,6 +835,8 @@ export function compararVotacionSeccion(
 
 export function colorPartido(clave: string, anio?: AnioAlcaldia): string {
   const k = clave.toUpperCase();
+  if (anio === 2015 && (k === "CONVERGENCIA" || k.includes("CONVERGENCIA"))) return COLOR_MC;
+  if (k === "PRD_PT" || (anio === 2015 && (k === "PRD" || k === "PT"))) return COLOR_PRD_PT;
   if (anio === 2018 && esAliadoPan2018(clave)) return COLOR_PAN;
   if (k === "MC") return COLOR_MC;
   const bloque = clasificarBloque(clave, anio);
@@ -775,6 +907,7 @@ function pctBloqueAlcalde2024(
 ): number | null {
   if (!fila.alcalde2024) return null;
   const cmp = compararVotacionSeccion(
+    fila.alcalde2015,
     fila.alcalde2018,
     fila.alcalde2021,
     fila.alcalde2024,
@@ -818,6 +951,7 @@ export function seccionMcSuperoPriDesde2021(
   promedios: PromediosAlcaldia | null = null,
 ): boolean {
   const cmp = compararVotacionSeccion(
+    fila.alcalde2015,
     fila.alcalde2018,
     fila.alcalde2021,
     fila.alcalde2024,
@@ -831,6 +965,7 @@ export function tendenciaSeccion(
   promedios: PromediosAlcaldia | null = null,
 ): TendenciaSeccion {
   const cmp = compararVotacionSeccion(
+    fila.alcalde2015,
     fila.alcalde2018,
     fila.alcalde2021,
     fila.alcalde2024,
@@ -858,6 +993,7 @@ export function metricasOrdenListadoAnalisis(
   ventajaPan2024: number | null;
 } {
   const cmp = compararVotacionSeccion(
+    fila.alcalde2015,
     fila.alcalde2018,
     fila.alcalde2021,
     fila.alcalde2024,
@@ -890,6 +1026,7 @@ export function ventajaMcVsPri2024(
   promedios: PromediosAlcaldia | null = null,
 ): number | null {
   const cmp = compararVotacionSeccion(
+    fila.alcalde2015,
     fila.alcalde2018,
     fila.alcalde2021,
     fila.alcalde2024,
@@ -904,6 +1041,7 @@ export function ventajaRelativa2124(
   promedios: PromediosAlcaldia | null = null,
 ): number | null {
   const cmp = compararVotacionSeccion(
+    fila.alcalde2015,
     fila.alcalde2018,
     fila.alcalde2021,
     fila.alcalde2024,
@@ -1000,6 +1138,7 @@ export function resumirTendenciasAlcaldia(
     }
 
     const cmp = compararVotacionSeccion(
+      fila.alcalde2015,
       fila.alcalde2018,
       fila.alcalde2021,
       fila.alcalde2024,

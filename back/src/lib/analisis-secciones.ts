@@ -8,12 +8,20 @@ import {
 import {
   cargarResultadosAlcaldiaCoyoacan,
   resultadosAlcaldiaDisponibles,
+  type AnioAlcaldiaResultados,
   type ResultadoAlcaldiaSeccion,
 } from "./resultados-alcaldia-iecm.js";
 import {
   SECCIONES_ELECTORALES_COYOACAN,
   distritoLocalDeSeccion,
 } from "./secciones-electorales.js";
+import {
+  cargarDatosColoniasSeccion,
+  estimarColoniasSeccion,
+  type ColoniasSeccionInfo,
+} from "./colonias-seccion.js";
+
+export type ColoniaSeccionDetalle = ColoniasSeccionInfo["colonias"][number];
 
 export type AnalisisSeccionRow = {
   seccion: string;
@@ -24,9 +32,11 @@ export type AnalisisSeccionRow = {
   contiguas: number;
   unidadesTerritoriales: string;
   colonias: string;
+  coloniasDetalle: ColoniasSeccionInfo;
   totalElectores: number;
   distritoLocal: number | null;
   distritoFederal: number | null;
+  alcalde2015: ResultadoAlcaldiaSeccion | null;
   alcalde2018: ResultadoAlcaldiaSeccion | null;
   alcalde2021: ResultadoAlcaldiaSeccion | null;
   alcalde2024: ResultadoAlcaldiaSeccion | null;
@@ -36,6 +46,7 @@ export type AnalisisSeccionesResponse = {
   vigencia: string | null;
   fuente: string | null;
   totalSecciones: number;
+  resultadosAlcaldiaAnios: AnioAlcaldiaResultados[];
   filas: AnalisisSeccionRow[];
 };
 
@@ -57,24 +68,6 @@ function distritoFederalSeccion(info: SeccionCasillasResumenDTO | null): number 
   if (distritos.length === 0) return null;
   if (distritos.length === 1) return distritos[0] ?? null;
   return distritos[0] ?? null;
-}
-
-async function coloniasPorSeccion(): Promise<Map<string, Set<string>>> {
-  const enlaces = await prisma.coloniaUnidadTerritorial.findMany({
-    include: {
-      unidadTerritorial: { select: { seccionesElectorales: true } },
-    },
-  });
-
-  const mapa = new Map<string, Set<string>>();
-  for (const enlace of enlaces) {
-    for (const seccion of enlace.unidadTerritorial.seccionesElectorales) {
-      const lista = mapa.get(seccion) ?? new Set<string>();
-      lista.add(enlace.coloniaNombre);
-      mapa.set(seccion, lista);
-    }
-  }
-  return mapa;
 }
 
 async function dirigentesPorSeccion(): Promise<Map<string, string[]>> {
@@ -144,17 +137,32 @@ function etiquetaDirigentes(nombres: string[] | undefined): string {
 }
 
 export async function analisisSeccionesElectorales(): Promise<AnalisisSeccionesResponse> {
-  const [coloniasMap, utsMap, dirigentesMap] = await Promise.all([
-    coloniasPorSeccion(),
+  const [datosColonias, utsMap, dirigentesMap] = await Promise.all([
+    cargarDatosColoniasSeccion(),
     utsPorSeccion(),
     dirigentesPorSeccion(),
   ]);
+  const coloniasMap = datosColonias.mapa;
 
   const dataset = casillasDatasetDisponible() ? cargarCasillasCoyoacan() : null;
   const resultados = resultadosAlcaldiaDisponibles() ? cargarResultadosAlcaldiaCoyoacan() : null;
 
   const filas: AnalisisSeccionRow[] = SECCIONES_ELECTORALES_COYOACAN.map((seccion) => {
     const info = dataset?.porSeccion[seccion] ?? null;
+    const totalElectores = totalElectoresSeccion(info);
+    const nombresColonias = [...(coloniasMap.get(seccion) ?? [])];
+    const coloniasDetalle = estimarColoniasSeccion(
+      seccion,
+      nombresColonias,
+      totalElectores,
+      datosColonias.dirigentesPorSeccionColonia.get(seccion) ?? new Map(),
+      {
+        utsPorColonia: datosColonias.utsPorColonia,
+        uts: datosColonias.uts,
+        enlacesColoniaUt: datosColonias.enlacesColoniaUt,
+      },
+    );
+
     return {
       seccion,
       dirigentes: etiquetaDirigentes(dirigentesMap.get(seccion)),
@@ -163,10 +171,12 @@ export async function analisisSeccionesElectorales(): Promise<AnalisisSeccionesR
       basicas: info?.basicas ?? 0,
       contiguas: info?.contiguas ?? 0,
       unidadesTerritoriales: etiquetaLista(utsMap.get(seccion)),
-      colonias: etiquetaLista(coloniasMap.get(seccion)),
-      totalElectores: totalElectoresSeccion(info),
+      colonias: coloniasDetalle.etiquetaLista,
+      coloniasDetalle,
+      totalElectores,
       distritoLocal: distritoLocalDeSeccion(seccion),
       distritoFederal: distritoFederalSeccion(info),
+      alcalde2015: resultados?.["2015"]?.porSeccion[seccion] ?? null,
       alcalde2018: resultados?.["2018"]?.porSeccion[seccion] ?? null,
       alcalde2021: resultados?.["2021"]?.porSeccion[seccion] ?? null,
       alcalde2024: resultados?.["2024"]?.porSeccion[seccion] ?? null,
@@ -178,10 +188,17 @@ export async function analisisSeccionesElectorales(): Promise<AnalisisSeccionesR
       Number(a.seccion) - Number(b.seccion),
   );
 
+  const resultadosAlcaldiaAnios = resultados
+    ? ([2015, 2018, 2021, 2024] as const).filter(
+        (anio) => Object.keys(resultados[String(anio)]?.porSeccion ?? {}).length > 0,
+      )
+    : [];
+
   return {
     vigencia: dataset?.vigencia ?? null,
     fuente: dataset?.fuente ?? null,
     totalSecciones: SECCIONES_ELECTORALES_COYOACAN.length,
+    resultadosAlcaldiaAnios,
     filas,
   };
 }

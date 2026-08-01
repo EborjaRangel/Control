@@ -1,6 +1,16 @@
 import { prisma } from "./prisma.js";
 import { SECCIONES_ELECTORALES_COYOACAN } from "./secciones-electorales.js";
 import { filtroEstatusListado } from "./filtro-dirigentes.js";
+import {
+  cargarCasillasCoyoacan,
+  casillasDatasetDisponible,
+  type SeccionCasillasResumenDTO,
+} from "./casillas-electorales.js";
+import {
+  cargarDatosColoniasSeccion,
+  estimarColoniasSeccion,
+  type ColoniasSeccionInfo,
+} from "./colonias-seccion.js";
 
 export type DirigenteSeccionResumen = {
   id: string;
@@ -14,6 +24,7 @@ export type SeccionCobertura = {
   cantidad: number;
   nombres: string;
   colonias: string;
+  coloniasDetalle: ColoniasSeccionInfo;
   dirigentes: DirigenteSeccionResumen[];
 };
 
@@ -37,33 +48,21 @@ function nombreCompletoDirigente(d: {
 }
 
 async function coloniasCatalogoPorSeccion(): Promise<Map<string, Set<string>>> {
-  const enlaces = await prisma.coloniaUnidadTerritorial.findMany({
-    include: {
-      unidadTerritorial: { select: { seccionesElectorales: true } },
-    },
-  });
-
-  const mapa = new Map<string, Set<string>>();
-  for (const enlace of enlaces) {
-    for (const seccion of enlace.unidadTerritorial.seccionesElectorales) {
-      const lista = mapa.get(seccion) ?? new Set<string>();
-      lista.add(enlace.coloniaNombre);
-      mapa.set(seccion, lista);
-    }
-  }
+  const { mapa } = await cargarDatosColoniasSeccion();
   return mapa;
 }
 
-function etiquetaColonias(colonias: Set<string>): string {
-  const ordenadas = [...colonias]
-    .map((c) => c.trim())
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b, "es"));
-  return ordenadas.join(", ");
+function totalElectoresSeccion(info: SeccionCasillasResumenDTO | null): number {
+  if (!info?.casillas?.length) return 0;
+  return info.casillas.reduce((sum, casilla) => sum + casilla.listaNominal, 0);
 }
 
 export async function coberturaSeccionesCoyoacan(): Promise<CoberturaSeccionesResponse> {
-  const coloniasCatalogo = await coloniasCatalogoPorSeccion();
+  const [datosColonias, coloniasCatalogo] = await Promise.all([
+    cargarDatosColoniasSeccion(),
+    coloniasCatalogoPorSeccion(),
+  ]);
+  const dataset = casillasDatasetDisponible() ? cargarCasillasCoyoacan() : null;
 
   const dirigentes = await prisma.dirigente.findMany({
     where: {
@@ -119,12 +118,25 @@ export async function coberturaSeccionesCoyoacan(): Promise<CoberturaSeccionesRe
       ...(coloniasDirigentes.get(seccion) ?? []),
       ...(coloniasCatalogo.get(seccion) ?? []),
     ]);
+    const totalElectores = totalElectoresSeccion(dataset?.porSeccion[seccion] ?? null);
+    const coloniasDetalle = estimarColoniasSeccion(
+      seccion,
+      [...colonias],
+      totalElectores,
+      datosColonias.dirigentesPorSeccionColonia.get(seccion) ?? new Map(),
+      {
+        utsPorColonia: datosColonias.utsPorColonia,
+        uts: datosColonias.uts,
+        enlacesColoniaUt: datosColonias.enlacesColoniaUt,
+      },
+    );
 
     porSeccion[seccion] = {
       asignada,
       cantidad: lista.length,
       nombres: lista.map((x) => x.nombreCompleto).join(", "),
-      colonias: etiquetaColonias(colonias),
+      colonias: coloniasDetalle.etiquetaLista,
+      coloniasDetalle,
       dirigentes: lista,
     };
   }
