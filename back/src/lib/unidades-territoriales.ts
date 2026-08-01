@@ -33,8 +33,8 @@ export async function coloniasPorDistritoLocal(distritoLocal: number): Promise<s
     select: { coloniaNombre: true },
     orderBy: { coloniaNombre: "asc" },
   });
-  const unicas = [...new Set(enlaces.map((e) => e.coloniaNombre))];
-  return unicas.sort((a, b) => a.localeCompare(b, "es"));
+  const unicas = new Set(enlaces.map((e) => nombreColoniaCatalogo(e.coloniaNombre)));
+  return [...unicas].sort((a, b) => a.localeCompare(b, "es"));
 }
 
 /** Distritos locales que incluyen la colonia (catálogo IECM / SEPOMEX). */
