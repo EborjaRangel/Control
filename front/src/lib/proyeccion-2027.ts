@@ -55,6 +55,12 @@ export type ProyeccionSeccion2027 = {
   confianza: "alta" | "media" | "baja";
 };
 
+/** Opciones para acotar qué elecciones entran a la regresión OLS por sección. */
+export type OpcionesProyeccionSeccion = {
+  /** Por defecto 2015, 2018, 2021 y 2024. */
+  aniosRegresion?: AnioAlcaldia[];
+};
+
 export type ProyeccionAlcaldia2027 = {
   escenarioId: EscenarioProyeccionId;
   escenario: string;
@@ -581,7 +587,9 @@ function etiquetaBloque(id: string, escenario: ConfigEscenarioProyeccion): strin
 export function proyectarSeccionEscenario(
   fila: AnalisisSeccionRow,
   escenario: ConfigEscenarioProyeccion,
+  opciones?: OpcionesProyeccionSeccion,
 ): ProyeccionSeccion2027 | null {
+  const aniosRegresion = opciones?.aniosRegresion ?? ANIOS_ELECCION_ALCALDIA;
   const defs = bloquesEscenario(escenario);
   const principales = defs.map((b) => b.id);
   const historico: Record<string, SerieHistoricaBloque[]> = Object.fromEntries(
@@ -592,7 +600,7 @@ export function proyectarSeccionEscenario(
   const aniosDisponibles: AnioAlcaldia[] = [];
   const erroresBloque: number[] = [];
 
-  for (const anio of ANIOS_ELECCION_ALCALDIA) {
+  for (const anio of aniosRegresion) {
     const resultado = resultadoPorAnio(fila, anio);
     if (!resultado) continue;
 
