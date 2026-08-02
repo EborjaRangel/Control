@@ -25,7 +25,7 @@ export type ColoniaSeccionDetalle = {
 export type ColoniasSeccionInfo = {
   compartida: boolean;
   colonias: ColoniaSeccionDetalle[];
-  metodoEstimacion: "dirigentes" | "unidad_territorial" | "partes_iguales";
+  metodoEstimacion: "dirigentes" | "unidad_territorial" | "ut_catalogo" | "partes_iguales";
   etiquetaMetodo: string;
   etiquetaLista: string;
 };

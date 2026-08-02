@@ -130,11 +130,17 @@ export function coloniasPorUtEnSeccion(
  * Reparto de la sección entre colonias según superposición geográfica IECM (UT ∩ sección).
  * Si no hay geometría, respaldo: 1 ÷ secciones de la UT.
  */
+export type PesosColoniasSeccionResult = {
+  pesos: Map<string, PesoColoniaUt>;
+  /** true cuando hay polígonos sección ∩ UT IECM (no reparto 1÷N secciones). */
+  usarGeo: boolean;
+};
+
 export function pesosColoniasPorUtEnSeccion(
   seccion: string,
   uts: UtColoniaEnlace[],
   enlacesColoniaUt: EnlaceColoniaUt[],
-): Map<string, PesoColoniaUt> {
+): PesosColoniasSeccionResult {
   const utsSec = uts.filter((ut) => ut.seccionesElectorales.includes(seccion));
   const clavesSec = utsSec.map((u) => u.clave);
   const pesosGeo = pesosUtSuperposicionGeo(seccion, clavesSec);
@@ -185,5 +191,5 @@ export function pesosColoniasPorUtEnSeccion(
   }
 
   colapsarColoniasMismaUt(pesos);
-  return pesos;
+  return { pesos, usarGeo };
 }

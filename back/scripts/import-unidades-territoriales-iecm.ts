@@ -8,19 +8,15 @@
  */
 
 import "dotenv/config";
-import { createWriteStream, existsSync, mkdirSync, readFileSync } from "fs";
+import { readFileSync } from "fs";
 import path from "path";
-import { pipeline } from "stream/promises";
 import { COLONIAS_COYOACAN } from "../src/lib/colonias.js";
 import { utsParaColonia } from "../src/lib/unidades-territoriales-match.js";
 import { parseSeccionesIecm } from "../src/lib/secciones-iecm.js";
 import { prisma } from "../src/lib/prisma.js";
+import { ensureIecmUtsGeoJson } from "../src/lib/iecm-uts-geojson.js";
 
 const rootDir = path.join(import.meta.dirname, "..");
-const rawDir = path.join(rootDir, "data/geo/raw");
-const jsonPath = path.join(rawDir, "iecm-uts.json");
-const IECM_URL =
-  "https://geoutcdmx.iecm.mx/api-proxy.php?endpoint=geometries%2Fparticipacion_uts&limit=1851&offset=0";
 const CVE_DEMARC_COYOACAN = 3;
 
 type Feature = {
@@ -40,19 +36,8 @@ type Feature = {
 type GeoJson = { features: Feature[] };
 
 async function ensureGeoJson(): Promise<GeoJson> {
-  mkdirSync(rawDir, { recursive: true });
-  if (!existsSync(jsonPath)) {
-    console.log("Descargando catálogo IECM (1,851 UT)…");
-    const res = await fetch(IECM_URL, { headers: { Accept: "application/json" } });
-    if (!res.ok) throw new Error(`Descarga IECM fallida: ${res.status}`);
-    if (!res.body) throw new Error("Respuesta vacía del IECM");
-    await pipeline(
-      res.body as unknown as NodeJS.ReadableStream,
-      createWriteStream(jsonPath),
-    );
-  }
-  const raw = JSON.parse(readFileSync(jsonPath, "utf8")) as GeoJson;
-  return raw;
+  const jsonPath = await ensureIecmUtsGeoJson(rootDir);
+  return JSON.parse(readFileSync(jsonPath, "utf8")) as GeoJson;
 }
 
 async function main() {

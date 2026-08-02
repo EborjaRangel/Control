@@ -6,6 +6,7 @@ import { point, polygon as turfPolygon } from "@turf/helpers";
 import type { Feature, MultiPolygon, Polygon } from "geojson";
 
 import { COLONIA_PUNTOS_REFERENCIA, puntoReferenciaColonia } from "./colonias-puntos-referencia.js";
+import { leerIecmUtsGeoJson } from "./iecm-uts-geojson.js";
 
 const CVE_DEMARC_COYOACAN = 3;
 /** Resolución de muestreo dentro del polígono de la sección (n×n). */
@@ -18,10 +19,6 @@ const seccionGeoCache = new Map<string, GeoFeature | null>();
 const pesosUtCache = new Map<string, Map<string, number>>();
 const pesosColoniaUtCache = new Map<string, Map<string, number>>();
 
-function iecmPath(): string {
-  return path.join(process.cwd(), "data/geo/raw/iecm-uts.json");
-}
-
 function seccionPath(seccion: string): string {
   return path.join(process.cwd(), "data/geo/secciones", `${seccion}.geojson`);
 }
@@ -30,12 +27,13 @@ function cargarIndiceUts(): Map<string, GeoFeature> {
   if (utsGeoIndex) return utsGeoIndex;
 
   const mapa = new Map<string, GeoFeature>();
-  if (!existsSync(iecmPath())) {
+  const parsed = leerIecmUtsGeoJson();
+  if (!parsed) {
     utsGeoIndex = mapa;
     return mapa;
   }
 
-  const raw = JSON.parse(readFileSync(iecmPath(), "utf8")) as {
+  const raw = parsed as {
     features: {
       properties: { cve_ut: string; cve_demarc: number };
       geometry: Polygon | MultiPolygon | null;

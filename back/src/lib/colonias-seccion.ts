@@ -10,7 +10,7 @@ import {
   type UtColoniaEnlace,
 } from "./colonias-seccion-filtro.js";
 
-export type MetodoEstimacionColonia = "dirigentes" | "unidad_territorial" | "partes_iguales";
+export type MetodoEstimacionColonia = "dirigentes" | "unidad_territorial" | "ut_catalogo" | "partes_iguales";
 
 export type ColoniaSeccionDetalle = {
   nombre: string;
@@ -51,6 +51,9 @@ function etiquetaMetodo(metodo: MetodoEstimacionColonia): string {
   }
   if (metodo === "unidad_territorial") {
     return "Proporción estimada según muestreo geográfico (sección ∩ UT IECM); barrios con la misma UT se reparten por punto de referencia del barrio.";
+  }
+  if (metodo === "ut_catalogo") {
+    return "Proporción estimada según catálogo IECM (1 ÷ secciones de la UT); sin polígonos de intersección disponibles.";
   }
   return "Proporción estimada a partes iguales entre colonias del catálogo.";
 }
@@ -153,7 +156,7 @@ export function estimarColoniasSeccion(
     };
   }
 
-  const pesosUtBase = pesosColoniasPorUtEnSeccion(
+  const { pesos: pesosUtBase, usarGeo } = pesosColoniasPorUtEnSeccion(
     seccion,
     contexto.uts,
     contexto.enlacesColoniaUt,
@@ -173,35 +176,47 @@ export function estimarColoniasSeccion(
           utNombre: ut?.utNombre ?? null,
         },
       ],
-      metodoEstimacion: ut ? "unidad_territorial" : "partes_iguales",
+      metodoEstimacion: ut ? (usarGeo ? "unidad_territorial" : "ut_catalogo") : "partes_iguales",
       etiquetaMetodo: ut
-        ? etiquetaMetodo("unidad_territorial")
+        ? etiquetaMetodo(usarGeo ? "unidad_territorial" : "ut_catalogo")
         : "Una sola colonia en el catálogo de la sección.",
       etiquetaLista: nombre,
     };
   }
 
-  let metodo: MetodoEstimacionColonia = "partes_iguales";
-  let pesos = pesosPorDirigentes(coloniasOrdenadas, conteoDirigentesPorColonia, pesosUtBase);
+  const pesosFiltrados = new Map<string, PesoColoniaUt>();
+  for (const colonia of coloniasOrdenadas) {
+    const p = pesosUtBase.get(colonia);
+    if (p) pesosFiltrados.set(colonia, p);
+  }
 
-  if (pesos.size >= 2) {
+  const pesosDirigentes = pesosPorDirigentes(
+    coloniasOrdenadas,
+    conteoDirigentesPorColonia,
+    pesosUtBase,
+  );
+
+  let metodo: MetodoEstimacionColonia = "partes_iguales";
+  let pesos: Map<string, PesoColoniaUt>;
+
+  if (usarGeo && pesosFiltrados.size >= 2) {
+    pesos = pesosFiltrados;
+    metodo = "unidad_territorial";
+  } else if (usarGeo && pesosFiltrados.size === 1) {
+    pesos = pesosFiltrados;
+    metodo = "unidad_territorial";
+  } else if (pesosFiltrados.size >= 2) {
+    pesos = pesosFiltrados;
+    metodo = "ut_catalogo";
+  } else if (pesosFiltrados.size === 1) {
+    pesos = pesosFiltrados;
+    metodo = "ut_catalogo";
+  } else if (pesosDirigentes.size >= 2) {
+    pesos = pesosDirigentes;
     metodo = "dirigentes";
   } else {
-    const pesosFiltrados = new Map<string, PesoColoniaUt>();
-    for (const colonia of coloniasOrdenadas) {
-      const p = pesosUtBase.get(colonia);
-      if (p) pesosFiltrados.set(colonia, p);
-    }
-    if (pesosFiltrados.size >= 2) {
-      pesos = pesosFiltrados;
-      metodo = "unidad_territorial";
-    } else if (pesosFiltrados.size === 1) {
-      pesos = pesosFiltrados;
-      metodo = "unidad_territorial";
-    } else {
-      pesos = pesosPartesIguales(coloniasOrdenadas, pesosUtBase);
-      metodo = "partes_iguales";
-    }
+    pesos = pesosPartesIguales(coloniasOrdenadas, pesosUtBase);
+    metodo = "partes_iguales";
   }
 
   const colonias = normalizarPorcentajes(pesos, totalElectores);
@@ -276,7 +291,7 @@ export async function cargarDatosColoniasSeccion(): Promise<
   const mapa = new Map<string, Set<string>>();
   for (const seccion of SECCIONES_ELECTORALES_COYOACAN) {
     let colonias = coloniasPorUtEnSeccion(seccion, uts, enlacesColoniaUt);
-    const pesos = pesosColoniasPorUtEnSeccion(seccion, uts, enlacesColoniaUt);
+    const { pesos } = pesosColoniasPorUtEnSeccion(seccion, uts, enlacesColoniaUt);
     if (pesos.size) {
       colonias = colonias.filter((c) => (pesos.get(c)?.peso ?? 0) > 0);
     }

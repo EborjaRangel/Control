@@ -16,6 +16,7 @@
     "geo:import-secciones": "tsx scripts/import-secciones-ine.ts",
     "geo:import-colonias": "tsx scripts/import-colonias-sepomex.ts",
     "geo:import-uts": "tsx scripts/import-unidades-territoriales-iecm.ts",
+    "geo:ensure-iecm-uts": "tsx scripts/ensure-iecm-uts-json.ts",
     "geo:generate-colonia-ut-claves": "tsx scripts/generate-colonia-ut-claves.ts",
     "geo:verify-claves-secciones": "tsx scripts/verify-claves-todas-secciones.ts",
     "geo:verify-ut-unica-secciones": "tsx scripts/verify-ut-unica-secciones.ts",

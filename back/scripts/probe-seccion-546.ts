@@ -51,7 +51,7 @@ async function main() {
     utClave: e.unidadTerritorial.clave,
   }));
 
-  const pesos = pesosColoniasPorUtEnSeccion(SECCION, uts, enlacesColoniaUt);
+  const { pesos } = pesosColoniasPorUtEnSeccion(SECCION, uts, enlacesColoniaUt);
   console.log("\nPesos finales colonias:");
   for (const [colonia, meta] of [...pesos.entries()].sort()) {
     console.log(

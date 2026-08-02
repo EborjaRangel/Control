@@ -19,7 +19,7 @@ async function main() {
   }));
 
   const colonias = coloniasPorUtEnSeccion(seccion, uts, enlaces);
-  const pesos = pesosColoniasPorUtEnSeccion(seccion, uts, enlaces);
+  const { pesos } = pesosColoniasPorUtEnSeccion(seccion, uts, enlaces);
 
   console.log(`Sección ${seccion}:`);
   console.log("Colonias:", colonias);
