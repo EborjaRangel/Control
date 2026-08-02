@@ -1,6 +1,7 @@
 "use client";
 
 import { UploadImage } from "@/components/UploadImage";
+import { DirigenteEstatusAltaIcon } from "@/components/DirigenteEstatusAltaIcon";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -227,14 +228,11 @@ export default function DirigentesPage() {
                   {d.distritoLocal != null ? (
                     <span className="badge-pin shrink-0">Distrito {d.distritoLocal}</span>
                   ) : null}
-                  <span
-                    className={cn(
-                      "shrink-0",
-                      incluirBajas ? "dirigente-estatus-baja" : "badge-compact badge-pin",
-                    )}
-                  >
-                    {incluirBajas ? "Baja" : "Alta"}
-                  </span>
+                  {incluirBajas ? (
+                    <span className="dirigente-estatus-baja shrink-0">Baja</span>
+                  ) : (
+                    <DirigenteEstatusAltaIcon />
+                  )}
                   {d.status !== "ACTIVO" && d.status !== "BAJA" ? (
                     <span className="badge-muted shrink-0">
                       {STATUS_DIRIGENTE_LABEL[d.status] ?? d.status}
