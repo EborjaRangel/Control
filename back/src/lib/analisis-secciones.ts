@@ -3,6 +3,8 @@ import { compararNumeroDirigente, nombreCompleto } from "./dirigentes.js";
 import {
   cargarCasillasCoyoacan,
   casillasDatasetDisponible,
+  casillasDeSeccion,
+  distritoFederalDeSeccion,
   type SeccionCasillasResumenDTO,
 } from "./casillas-electorales.js";
 import {
@@ -60,14 +62,6 @@ function etiquetaCasillas(info: SeccionCasillasResumenDTO | null): string {
 function totalElectoresSeccion(info: SeccionCasillasResumenDTO | null): number {
   if (!info?.casillas?.length) return 0;
   return info.casillas.reduce((sum, casilla) => sum + casilla.listaNominal, 0);
-}
-
-function distritoFederalSeccion(info: SeccionCasillasResumenDTO | null): number | null {
-  if (!info?.casillas?.length) return null;
-  const distritos = [...new Set(info.casillas.map((c) => c.distritoFederal))].sort((a, b) => a - b);
-  if (distritos.length === 0) return null;
-  if (distritos.length === 1) return distritos[0] ?? null;
-  return distritos[0] ?? null;
 }
 
 async function dirigentesPorSeccion(): Promise<Map<string, string[]>> {
@@ -175,7 +169,7 @@ export async function analisisSeccionesElectorales(): Promise<AnalisisSeccionesR
       coloniasDetalle,
       totalElectores,
       distritoLocal: distritoLocalDeSeccion(seccion),
-      distritoFederal: distritoFederalSeccion(info),
+      distritoFederal: distritoFederalDeSeccion(seccion),
       alcalde2015: resultados?.["2015"]?.porSeccion[seccion] ?? null,
       alcalde2018: resultados?.["2018"]?.porSeccion[seccion] ?? null,
       alcalde2021: resultados?.["2021"]?.porSeccion[seccion] ?? null,

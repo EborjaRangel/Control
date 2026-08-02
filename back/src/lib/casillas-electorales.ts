@@ -81,3 +81,14 @@ export function casillasDeSeccion(seccion: string): SeccionCasillasResumenDTO | 
   const data = cargarCasillasCoyoacan();
   return data.porSeccion[seccion] ?? null;
 }
+
+/** Distrito federal INE de una sección (catálogo de casillas 2024). */
+export function distritoFederalDeSeccion(seccion: string): number | null {
+  const info = casillasDeSeccion(seccion);
+  if (!info?.casillas?.length) return null;
+  const distritos = [...new Set(info.casillas.map((c) => c.distritoFederal))]
+    .filter((d) => d > 0)
+    .sort((a, b) => a - b);
+  if (!distritos.length) return null;
+  return distritos[0] ?? null;
+}
