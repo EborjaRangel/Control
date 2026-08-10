@@ -79,9 +79,22 @@ export function ConvocatoriaEventoPanel({ eventoId, totalElegibles }: Props) {
         <div className="alert-error text-sm">
           <p className="font-medium">Envíos reales no disponibles</p>
           <p className="mt-1">
-            Configura en <code className="text-xs">back/.env</code> las credenciales SMTP y Twilio.
-            Faltan: {config.faltantes.join(", ")}
+            {config.faltantesWhatsApp.length > 0 ? (
+              <>
+                <strong>WhatsApp (prioritario):</strong> {config.faltantesWhatsApp.join(", ")}.
+                {" "}
+              </>
+            ) : null}
+            {config.faltantes.length > 0
+              ? `Otros canales: ${config.faltantes.join(", ")}`
+              : null}
           </p>
+        </div>
+      ) : null}
+
+      {config && config.listo && !config.whatsapp ? (
+        <div className="rounded-pin border border-warning-text/30 bg-warning-bg px-3 py-2 text-sm text-warning-text">
+          WhatsApp aún no está configurado. Los envíos irán solo por los canales disponibles.
         </div>
       ) : null}
 
@@ -90,8 +103,8 @@ export function ConvocatoriaEventoPanel({ eventoId, totalElegibles }: Props) {
           Correo: {config?.email ? "configurado" : "falta SMTP"}
         </li>
         <li className="panel-soft">SMS: {config?.sms ? "configurado" : "falta Twilio SMS"}</li>
-        <li className="panel-soft">
-          WhatsApp: {config?.whatsapp ? "configurado" : "falta Twilio WhatsApp"}
+        <li className="panel-soft font-medium">
+          WhatsApp: {config?.whatsapp ? "configurado" : "falta Twilio WhatsApp (prioritario)"}
         </li>
       </ul>
 

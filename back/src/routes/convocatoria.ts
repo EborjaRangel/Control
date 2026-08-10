@@ -4,8 +4,10 @@ import { requireAuth, requireConvocatoriaOrStaff } from "../lib/auth.js";
 import {
   convocatoriaListaParaEnvio,
   faltantesConfigConvocatoria,
+  faltantesWhatsApp,
   mensajeConfigConvocatoriaIncompleta,
   obtenerConfigConvocatoria,
+  whatsAppListo,
 } from "../lib/comunicacion/config.js";
 import {
   enviarConvocatoriaEvento,
@@ -27,7 +29,9 @@ router.get("/estado", requireConvocatoriaOrStaff, (_req, res) => {
   const config = obtenerConfigConvocatoria();
   res.json({
     listo: convocatoriaListaParaEnvio(),
+    whatsappListo: whatsAppListo(),
     faltantes: faltantesConfigConvocatoria(),
+    faltantesWhatsApp: faltantesWhatsApp(),
     email: config.email.habilitado,
     sms: config.sms.habilitado,
     whatsapp: config.whatsapp.habilitado,

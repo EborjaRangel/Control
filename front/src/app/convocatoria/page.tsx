@@ -92,18 +92,29 @@ export default function ConvocatoriaPage() {
             <li className="panel-soft">
               <span className="font-medium">WhatsApp: </span>
               {config.whatsapp ? (
-                <span className="text-success-text">Configurado</span>
+                <span className="text-success-text font-semibold">Configurado</span>
               ) : (
-                <span className="text-ink-secondary">Sin configurar</span>
+                <span className="text-warning-text">Sin configurar (prioritario)</span>
               )}
             </li>
           </ul>
           {config.listo ? (
-            <p className="text-sm text-success-text">Servidor listo para envíos reales.</p>
+            <p className="text-sm text-success-text">
+              Servidor listo para envíos reales
+              {config.whatsappListo ? " (incluye WhatsApp)" : ""}.
+            </p>
           ) : (
             <p className="text-sm text-ink-secondary">
-              Completa las variables en <code className="text-xs">back/.env</code> para habilitar
-              correo, SMS y WhatsApp: {config.faltantes.join(", ")}
+              Configura variables en Railway.{" "}
+              {config.faltantesWhatsApp.length > 0 ? (
+                <>
+                  <strong className="text-ink">WhatsApp (prioritario):</strong>{" "}
+                  {config.faltantesWhatsApp.join(", ")}.
+                </>
+              ) : null}
+              {config.faltantes.length > 0 ? (
+                <> Otros canales: {config.faltantes.join(", ")}.</>
+              ) : null}
             </p>
           )}
         </div>

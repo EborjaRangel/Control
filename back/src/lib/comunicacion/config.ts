@@ -85,7 +85,16 @@ export function smtpModoDesarrolloActivo(): boolean {
   return process.env.SMTP_DEV_LOG === "true";
 }
 
-/** Lista qué falta configurar para envíos reales. */
+/** Variables mínimas para WhatsApp vía Twilio. */
+export function faltantesWhatsApp(): string[] {
+  const faltantes: string[] = [];
+  if (!process.env.TWILIO_ACCOUNT_SID?.trim()) faltantes.push("TWILIO_ACCOUNT_SID");
+  if (!process.env.TWILIO_AUTH_TOKEN?.trim()) faltantes.push("TWILIO_AUTH_TOKEN");
+  if (!process.env.TWILIO_WHATSAPP_FROM?.trim()) faltantes.push("TWILIO_WHATSAPP_FROM");
+  return faltantes;
+}
+
+/** Lista qué falta configurar para envíos reales (todos los canales). */
 export function faltantesConfigConvocatoria(): string[] {
   const faltantes: string[] = [];
   if (!process.env.SMTP_HOST?.trim()) faltantes.push("SMTP_HOST");
@@ -99,19 +108,33 @@ export function faltantesConfigConvocatoria(): string[] {
   if (!process.env.TWILIO_ACCOUNT_SID?.trim()) faltantes.push("TWILIO_ACCOUNT_SID");
   if (!process.env.TWILIO_AUTH_TOKEN?.trim()) faltantes.push("TWILIO_AUTH_TOKEN");
   if (!process.env.TWILIO_SMS_FROM?.trim()) faltantes.push("TWILIO_SMS_FROM");
-  if (!process.env.TWILIO_WHATSAPP_FROM?.trim()) faltantes.push("TWILIO_WHATSAPP_FROM");
+  faltantes.push(...faltantesWhatsApp().filter((k) => !faltantes.includes(k)));
   return faltantes;
+}
+
+export function whatsAppListo(): boolean {
+  return faltantesWhatsApp().length === 0;
 }
 
 export function convocatoriaListaParaEnvio(): boolean {
   const c = obtenerConfigConvocatoria();
-  return c.email.habilitado && c.sms.habilitado && c.whatsapp.habilitado;
+  return c.email.habilitado || c.sms.habilitado || c.whatsapp.habilitado;
 }
 
 export function mensajeConfigConvocatoriaIncompleta(): string {
-  const faltantes = faltantesConfigConvocatoria();
-  if (faltantes.length === 0) return "";
-  return `Configura en el servidor las variables de entorno: ${faltantes.join(", ")}`;
+  const c = obtenerConfigConvocatoria();
+  if (convocatoriaListaParaEnvio()) return "";
+  const partes: string[] = [];
+  if (!c.whatsapp.habilitado) {
+    partes.push(`WhatsApp (prioritario): ${faltantesWhatsApp().join(", ")}`);
+  }
+  if (!c.email.habilitado) {
+    partes.push("Correo: SMTP_* o RESEND_*");
+  }
+  if (!c.sms.habilitado) {
+    partes.push("SMS: TWILIO_SMS_FROM");
+  }
+  return `Configura en el servidor las variables de entorno. ${partes.join(" · ")}`;
 }
 
 /** Normaliza celular MX (10 dígitos) a E.164 +52… */

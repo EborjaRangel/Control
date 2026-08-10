@@ -187,6 +187,54 @@ Railway y Vercel despliegan automáticamente si el repo está conectado.
 4. Recibe el correo, abre el enlace y cambia la contraseña
 5. Inicia sesión con la nueva contraseña
 
+## WhatsApp y SMS (Twilio) — convocatoria
+
+La convocatoria de eventos envía mensajes por **WhatsApp** (prioritario), SMS y correo. WhatsApp usa la API de Twilio (HTTPS, funciona en Railway Hobby y Pro).
+
+### 1. Cuenta Twilio
+
+1. Crea cuenta en [Twilio Console](https://console.twilio.com).
+2. Copia **Account SID** y **Auth Token**.
+
+### 2. WhatsApp sandbox (pruebas)
+
+1. En Twilio → **Messaging** → **Try it out** → **Send a WhatsApp message**.
+2. Anota el número sandbox (ej. `+1 415 523 8886`) y la palabra «join …».
+3. Desde tu celular, envía `join <palabra>` por WhatsApp a ese número.
+4. Variables en Railway:
+
+| Variable | Ejemplo |
+|----------|---------|
+| `TWILIO_ACCOUNT_SID` | `ACxxxxxxxx…` |
+| `TWILIO_AUTH_TOKEN` | token de la consola |
+| `TWILIO_WHATSAPP_FROM` | `whatsapp:+14155238886` |
+
+### 3. Producción (número propio)
+
+Para enviar a cualquier dirigente sin unirse al sandbox necesitas un **número WhatsApp Business** aprobado en Twilio y, para mensajes iniciados por el sistema, una **plantilla aprobada por Meta**. Opcional:
+
+- `TWILIO_WHATSAPP_CONTENT_SID` — ID de plantilla en Twilio
+- `TWILIO_WHATSAPP_CONTENT_VARIABLES` — JSON con variables de la plantilla
+
+### 4. Subir variables a Railway
+
+Completa `back/.env` (usa `back/.env.example`) y ejecuta:
+
+```bash
+npm run env:sync-to-railway -w control-back
+```
+
+### 5. Probar
+
+```bash
+npm run twilio:test -w control-back
+npm run whatsapp:test -w control-back -- 5512345678 "Mensaje de prueba"
+```
+
+En producción: `GET /health` debe incluir `"whatsapp": { "habilitado": true, … }`.
+
+Los celulares de dirigentes deben estar en formato **10 dígitos** (México); el sistema los convierte a `+52…`.
+
 ## Estructura
 
 ```

@@ -5,6 +5,7 @@ import { filtroDirigentesElegibles, obtenerEvento } from "../eventos-asistencia.
 import {
   convocatoriaListaParaEnvio,
   mensajeConfigConvocatoriaIncompleta,
+  obtenerConfigConvocatoria,
 } from "./config.js";
 import { enviarCorreo } from "./email.js";
 import {
@@ -119,6 +120,7 @@ export async function enviarConvocatoriaEvento(
     orderBy: [{ primerApellido: "asc" }, { nombre: "asc" }],
   });
 
+  const config = obtenerConfigConvocatoria();
   const resumen: ResumenConvocatoriaEvento = {
     eventoId,
     totalDirigentes: dirigentes.length,
@@ -131,7 +133,17 @@ export async function enviarConvocatoriaEvento(
     const contenido = contenidoParaDirigente(evento, d as DirigenteNotificacion);
     const dir = d as DirigenteNotificacion;
 
-    if (!d.correo?.trim()) {
+    if (!config.email.habilitado) {
+      resumen.email.omitidos++;
+      await registrarEnvio({
+        eventoId,
+        dirigenteId: d.id,
+        canal: "EMAIL",
+        destino: "",
+        estado: "OMITIDO",
+        error: "Correo no configurado en servidor",
+      });
+    } else if (!d.correo?.trim()) {
       resumen.email.omitidos++;
       await registrarEnvio({
         eventoId,
@@ -162,22 +174,24 @@ export async function enviarConvocatoriaEvento(
     }
 
     const bodyTelefono = cuerpoTelefonoConvocatoria(dir, contenido, mensaje);
+    const tieneTelefono = Boolean(d.telefonoCelular?.trim());
 
-    if (!d.telefonoCelular?.trim()) {
+    if (!config.sms.habilitado) {
       resumen.sms.omitidos++;
-      resumen.whatsapp.omitidos++;
       await registrarEnvio({
         eventoId,
         dirigenteId: d.id,
         canal: "SMS",
         destino: "",
         estado: "OMITIDO",
-        error: "Sin teléfono celular",
+        error: "SMS no configurado en servidor",
       });
+    } else if (!tieneTelefono) {
+      resumen.sms.omitidos++;
       await registrarEnvio({
         eventoId,
         dirigenteId: d.id,
-        canal: "WHATSAPP",
+        canal: "SMS",
         destino: "",
         estado: "OMITIDO",
         error: "Sin teléfono celular",
@@ -192,6 +206,29 @@ export async function enviarConvocatoriaEvento(
         resumen: resumen.sms,
         enviar: () => enviarSms({ telefono: d.telefonoCelular, body: bodyTelefono }),
       });
+    }
+
+    if (!config.whatsapp.habilitado) {
+      resumen.whatsapp.omitidos++;
+      await registrarEnvio({
+        eventoId,
+        dirigenteId: d.id,
+        canal: "WHATSAPP",
+        destino: "",
+        estado: "OMITIDO",
+        error: "WhatsApp no configurado en servidor",
+      });
+    } else if (!tieneTelefono) {
+      resumen.whatsapp.omitidos++;
+      await registrarEnvio({
+        eventoId,
+        dirigenteId: d.id,
+        canal: "WHATSAPP",
+        destino: "",
+        estado: "OMITIDO",
+        error: "Sin teléfono celular",
+      });
+    } else {
       await enviarCanalTelefono({
         eventoId,
         dirigenteId: d.id,

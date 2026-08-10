@@ -37,6 +37,8 @@
     "env:sync-from-railway": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-env-from-railway.ps1",
     "env:sync-to-railway": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-env-to-railway.ps1",
     "email:test-smtp": "tsx scripts/test-smtp.ts",
+    "twilio:test": "tsx scripts/test-twilio-whatsapp.ts",
+    "whatsapp:test": "tsx scripts/test-whatsapp.ts",
     "uploads:sync-to-production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-uploads-to-production.ps1",
     "postinstall": "prisma generate"
   },

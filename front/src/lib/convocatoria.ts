@@ -1,12 +1,13 @@
 export type ConvocatoriaEstado = {
   listo: boolean;
+  whatsappListo: boolean;
   faltantes: string[];
+  faltantesWhatsApp: string[];
   email: boolean;
   sms: boolean;
   whatsapp: boolean;
   notificaciones: boolean;
 };
-
 export type ResumenCanalConvocatoria = {
   enviados: number;
   fallidos: number;

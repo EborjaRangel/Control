@@ -6,8 +6,10 @@ import path from "path";
 import fs from "fs";
 import routes from "./routes/index.js";
 import {
+  faltantesWhatsApp,
   obtenerConfigConvocatoria,
   smtpUsaValoresEjemplo,
+  whatsAppListo,
 } from "./lib/comunicacion/config.js";
 import { resendConfigurado } from "./lib/comunicacion/email-resend.js";
 
@@ -52,6 +54,15 @@ app.get("/health", (_req, res) => {
     email: {
       habilitado: config.email.habilitado && !smtpUsaValoresEjemplo(),
       proveedor: resend ? "resend" : smtpConfigurado ? "smtp" : null,
+    },
+    whatsapp: {
+      habilitado: whatsAppListo(),
+      from: config.whatsapp.from,
+      faltantes: faltantesWhatsApp(),
+    },
+    sms: {
+      habilitado: config.sms.habilitado,
+      from: config.sms.from,
     },
   });
 });
