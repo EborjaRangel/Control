@@ -68,7 +68,7 @@ Monorepo: el backend va en **Railway** y el frontend en **Vercel**. Sube el proy
 
 Opcionales: `SMTP_*` (recuperación de contraseña y convocatorias por correo), `TWILIO_*` (SMS/WhatsApp).
 
-Para **recuperación de contraseña** en producción son obligatorias las variables SMTP en Railway (ver sección abajo).
+Para **recuperación de contraseña** en producción configura SMTP en Railway (requiere **Railway Pro** para conexión saliente a Gmail; ver sección abajo). Alternativa en cualquier plan: `RESEND_API_KEY` + `RESEND_FROM`.
 
 6. Tras el primer deploy, crea el admin:
 
@@ -152,7 +152,15 @@ PUBLIC_APP_URL=https://tu-app.vercel.app
 NODE_ENV=production
 ```
 
-Tras guardar variables → **Redeploy** del servicio en Railway.
+### Railway Pro y SMTP
+
+Railway **Hobby** bloquea SMTP saliente (puertos 25/465/587). Con **Railway Pro** puedes usar Gmail (`smtp.gmail.com:587`) con contraseña de aplicación.
+
+Si defines `RESEND_API_KEY`, el backend usa **Resend** y no SMTP. Para forzar Gmail en producción, deja solo las variables `SMTP_*` en Railway.
+
+Tras guardar variables → **Redeploy** del servicio en Railway (o `npm run env:sync-to-railway -w control-back` desde una máquina con `back/.env` configurado).
+
+Verifica: `GET https://tu-api.up.railway.app/health` debe responder `"email": { "habilitado": true, "proveedor": "smtp" }`.
 
 ### Variables en Vercel (frontend)
 

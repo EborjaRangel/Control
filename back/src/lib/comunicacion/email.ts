@@ -68,8 +68,9 @@ function mensajeErrorSmtp(err: unknown): string {
 
   if (/timeout|ENETUNREACH|ETIMEDOUT|ECONNREFUSED/i.test(raw)) {
     return (
-      "No se pudo conectar al servidor SMTP desde Railway. En plan Hobby SMTP está bloqueado; " +
-      "usa RESEND_API_KEY o sube a Railway Pro."
+      "No se pudo conectar al servidor SMTP. Verifica SMTP_HOST/SMTP_PORT en Railway " +
+      "(puerto 587 u 465). En Railway Hobby el SMTP saliente está bloqueado; con Railway Pro " +
+      "debe funcionar Gmail. Alternativa: RESEND_API_KEY + RESEND_FROM."
     );
   }
 

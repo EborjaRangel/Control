@@ -35,6 +35,8 @@
     "db:sync-to-production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-local-to-production.ps1",
     "db:sync-from-production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-production-to-local.ps1",
     "env:sync-from-railway": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-env-from-railway.ps1",
+    "env:sync-to-railway": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-env-to-railway.ps1",
+    "email:test-smtp": "tsx scripts/test-smtp.ts",
     "uploads:sync-to-production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-uploads-to-production.ps1",
     "postinstall": "prisma generate"
   },

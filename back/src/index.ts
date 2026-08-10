@@ -5,6 +5,11 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import fs from "fs";
 import routes from "./routes/index.js";
+import {
+  obtenerConfigConvocatoria,
+  smtpUsaValoresEjemplo,
+} from "./lib/comunicacion/config.js";
+import { resendConfigurado } from "./lib/comunicacion/email-resend.js";
 
 const app = express();
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -32,7 +37,23 @@ app.use(cookieParser());
 app.use("/uploads", express.static(uploadDir));
 app.use("/api", routes);
 app.get("/health", (_req, res) => {
-  res.json({ ok: true });
+  const resend = resendConfigurado();
+  const smtpConfigurado =
+    Boolean(
+      process.env.SMTP_HOST?.trim() &&
+        process.env.SMTP_FROM?.trim() &&
+        process.env.SMTP_USER?.trim() &&
+        process.env.SMTP_PASS?.trim(),
+    ) && !smtpUsaValoresEjemplo();
+  const config = obtenerConfigConvocatoria();
+
+  res.json({
+    ok: true,
+    email: {
+      habilitado: config.email.habilitado && !smtpUsaValoresEjemplo(),
+      proveedor: resend ? "resend" : smtpConfigurado ? "smtp" : null,
+    },
+  });
 });
 
 app.use((_req, res) => {
