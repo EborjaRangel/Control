@@ -48,8 +48,13 @@ function montoOpcional() {
   return Yup.number()
     .transform((_value, originalValue) => {
       if (originalValue === "" || originalValue == null) return undefined;
-      const n = Number(originalValue);
-      return Number.isNaN(n) ? originalValue : n;
+      const cleaned =
+        typeof originalValue === "string"
+          ? originalValue.replace(/[^\d.]/g, "")
+          : originalValue;
+      const n = Number(cleaned);
+      if (Number.isNaN(n)) return originalValue;
+      return Number(String(n));
     })
     .typeError("Monto inválido")
     .min(0, "No puede ser negativo");

@@ -25,6 +25,7 @@ import {
   TIPOS_DIRIGENTE,
   calcularSueldo,
 } from "@/lib/dirigentes";
+import { montoANumero } from "@/lib/monto";
 import { apiFetch } from "@/lib/api";
 import type { UnidadTerritorialResumen } from "@/lib/unidades-territoriales";
 import { etiquetaUnidadTerritorial } from "@/lib/unidades-territoriales";
@@ -475,7 +476,7 @@ function SueldoPreview() {
   const desglose = calcularSueldo(
     (values.conceptosComposicion ?? []).map((c) => ({
       concepto: c.concepto,
-      monto: Number(c.monto) || 0,
+      monto: montoANumero(c.monto),
       nombre: c.nombre,
       tipoDetalle: c.tipoDetalle,
     })),
@@ -547,7 +548,15 @@ export function DirigenteForm({
               <FormField label="Nombre(s)" name="nombre" nombrePersona autoComplete="given-name" />
               <FormField label="Primer apellido" name="primerApellido" nombrePersona autoComplete="family-name" />
               <FormField label="Segundo apellido" name="segundoApellido" nombrePersona autoComplete="family-name" />
-              <FormField label="Fecha de nacimiento" name="fechaNacimiento" type="date" />
+              <FormField
+                label="Fecha de nacimiento"
+                name="fechaNacimiento"
+                placeholder="DD/MM/AAAA"
+                inputMode="numeric"
+                maxLength={10}
+                fechaNacimiento
+                autoComplete="bday"
+              />
               <FormField label="Celular (10 dígitos)" name="telefonoCelular" inputMode="numeric" />
               <FormField label="Correo electrónico" name="correo" type="email" autoComplete="email" />
             </div>

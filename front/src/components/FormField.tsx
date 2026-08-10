@@ -4,9 +4,13 @@ import { useField, useFormikContext } from "formik";
 import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 import { normalizarNombrePersonaEnVivo } from "@/lib/normalizar-texto";
+import { formatearFechaNacimientoEnVivo } from "@/lib/fecha-nacimiento";
+import { formatearMontoEnVivo, quitarCerosDerechaMonto } from "@/lib/monto";
 
 function fieldTextValue(value: unknown): string {
-  return value == null ? "" : String(value);
+  if (value == null) return "";
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return String(value);
 }
 
 function useShowFieldError(meta: { touched: boolean; error?: string }) {
@@ -19,6 +23,10 @@ type FormFieldProps = {
   name: string;
   /** Convierte a mayúsculas sin acentos mientras se escribe (nombre y apellidos). */
   nombrePersona?: boolean;
+  /** Formato DD/MM/AAAA con barras automáticas. */
+  fechaNacimiento?: boolean;
+  /** Monto: sin ceros a la derecha en decimales (máx. 2). */
+  monto?: boolean;
 } & InputHTMLAttributes<HTMLInputElement>;
 
 export function FormField({
@@ -26,11 +34,22 @@ export function FormField({
   name,
   className,
   nombrePersona,
+  fechaNacimiento,
+  monto,
   onChange,
+  onBlur,
+  type,
+  inputMode,
   ...props
 }: FormFieldProps) {
   const [field, meta, helpers] = useField(name);
   const hasError = useShowFieldError(meta);
+  const resolvedType = monto || fechaNacimiento ? "text" : type;
+  const resolvedInputMode = monto
+    ? "decimal"
+    : fechaNacimiento
+      ? "numeric"
+      : inputMode;
 
   return (
     <label className="label">
@@ -39,11 +58,26 @@ export function FormField({
         {...field}
         {...props}
         id={name}
+        type={resolvedType}
+        inputMode={resolvedInputMode}
         value={fieldTextValue(field.value)}
         onChange={(e) => {
-          const value = nombrePersona ? normalizarNombrePersonaEnVivo(e.target.value) : e.target.value;
+          let value = e.target.value;
+          if (nombrePersona) value = normalizarNombrePersonaEnVivo(value);
+          else if (fechaNacimiento) value = formatearFechaNacimientoEnVivo(value);
+          else if (monto) value = formatearMontoEnVivo(value);
           void helpers.setValue(value);
           onChange?.({ ...e, target: { ...e.target, value } });
+        }}
+        onBlur={(e) => {
+          if (monto) {
+            const value = quitarCerosDerechaMonto(e.target.value);
+            void helpers.setValue(value === "" ? "" : value);
+            void helpers.setTouched(true);
+          } else {
+            field.onBlur(e);
+          }
+          onBlur?.(e);
         }}
         className={cn("input", hasError && "input-error", className)}
       />

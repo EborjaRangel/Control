@@ -7,6 +7,7 @@ import { NominaDetalle } from "@/components/NominaDetalle";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import { canViewOwnDirigente } from "@/lib/mi-panel";
+import { montoANumero } from "@/lib/monto";
 import type { NominaDTO } from "@/lib/nominas";
 import type { NominaFormValues } from "@/lib/validation";
 
@@ -60,7 +61,7 @@ export default function NominaDirigentePage() {
         body: JSON.stringify({
           conceptosComposicion: (values.conceptosComposicion ?? []).map((c) => ({
             concepto: c.concepto,
-            monto: Number(c.monto),
+            monto: montoANumero(c.monto),
             nombre: c.nombre?.trim() || null,
             tipoDetalle: c.tipoDetalle,
           })),

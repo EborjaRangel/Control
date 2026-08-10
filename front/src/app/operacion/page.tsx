@@ -67,6 +67,7 @@ export default function OperacionPage() {
       if (!q) return true;
       return (
         fila.seccion.includes(q) ||
+        fila.dirigentes.toLowerCase().includes(q) ||
         fila.colonias.toLowerCase().includes(q) ||
         fila.unidadesTerritoriales.toLowerCase().includes(q) ||
         textoBusquedaColonias(fila.coloniasDetalle, fila.colonias).toLowerCase().includes(q)
@@ -134,7 +135,7 @@ export default function OperacionPage() {
                 type="search"
                 value={buscar}
                 onChange={(e) => setBuscar(e.target.value)}
-                placeholder="Buscar sección, colonia o UT…"
+                placeholder="Buscar sección, dirigente, colonia o UT…"
                 className="input-search"
               />
             </label>
@@ -188,6 +189,11 @@ export default function OperacionPage() {
                               D. local {fila.distritoLocal}
                             </p>
                           ) : null}
+                          {fila.dirigentes ? (
+                            <p className="mt-1 text-xs font-medium text-ink">{fila.dirigentes}</p>
+                          ) : (
+                            <p className="mt-1 text-xs text-ink-secondary">Sin dirigente asignado</p>
+                          )}
                         </td>
                         <td className="max-w-md px-4 py-3 align-top">
                           <ColoniasSeccionPanel

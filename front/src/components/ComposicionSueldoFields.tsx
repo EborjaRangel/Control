@@ -44,7 +44,12 @@ export function ComposicionSueldoFields({ namePrefix }: Props) {
               className="btn-secondary btn-sm btn-responsive"
               disabled={conceptos.length >= MAX_CONCEPTOS_COMPOSICION}
               onClick={() =>
-                push({ concepto: "BASE", monto: 0, nombre: "", tipoDetalle: "TITULAR" })
+                push({
+                  concepto: "BASE",
+                  monto: "" as unknown as number,
+                  nombre: "",
+                  tipoDetalle: "TITULAR",
+                })
               }
             >
               + Agregar otro sueldo
@@ -73,9 +78,8 @@ export function ComposicionSueldoFields({ namePrefix }: Props) {
                 <FormField
                   label="Monto (MXN)"
                   name={`${arrayName}.${index}.monto`}
-                  type="number"
-                  min={0}
-                  step="0.01"
+                  monto
+                  placeholder="0"
                   className="w-full min-w-0"
                 />
                 <FormField

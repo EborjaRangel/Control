@@ -5,8 +5,14 @@ function montoSueldo(label = "Monto inválido") {
   return Yup.number()
     .transform((_value, originalValue) => {
       if (originalValue === "" || originalValue == null) return 0;
-      const n = Number(originalValue);
-      return Number.isNaN(n) ? originalValue : n;
+      const cleaned =
+        typeof originalValue === "string"
+          ? originalValue.replace(/[^\d.]/g, "")
+          : originalValue;
+      const n = Number(cleaned);
+      if (Number.isNaN(n)) return originalValue;
+      // Evita ceros a la derecha en el valor numérico (100.50 → 100.5).
+      return Number(String(n));
     })
     .typeError(label)
     .min(0, "No puede ser negativo")

@@ -13,6 +13,7 @@ import { valorCatalogoParaFormulario } from "@/lib/normalizar-texto";
 import {
   usuarioDesdeNombreApellido,
 } from "@/lib/credenciales-usuario";
+import { fechaNacimientoFromIso } from "@/lib/fecha-nacimiento";
 
 export type ConceptoComposicionDTO = {
   id: string;
@@ -149,7 +150,7 @@ export function dtoToFormValues(d: DirigenteDTO): DirigenteFormValues {
     nombre: d.nombre,
     primerApellido: d.primerApellido,
     segundoApellido: d.segundoApellido ?? "",
-    fechaNacimiento: d.fechaNacimiento,
+    fechaNacimiento: fechaNacimientoFromIso(d.fechaNacimiento),
     telefonoCelular: d.telefonoCelular,
     correo: d.correo,
     fotoUrl: d.fotoUrl,

@@ -1,13 +1,8 @@
 import { cpDeColonia, nombreColoniaCatalogo } from "./colonias";
+import { fechaNacimientoToIso } from "./fecha-nacimiento";
+import { montoANumero } from "./monto";
 import type { DirigenteFormValues } from "./validation";
 import { normalizarTextoGuardado } from "./normalizar-texto";
-
-function toNumber(value: unknown): number {
-  if (typeof value === "number") return value;
-  if (value === "" || value == null) return 0;
-  const n = Number(value);
-  return Number.isNaN(n) ? 0 : n;
-}
 
 function emptyToNull(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
@@ -27,6 +22,7 @@ export function prepareDirigentePayload(
     nombre: normalizarTextoGuardado(values.nombre),
     primerApellido: normalizarTextoGuardado(values.primerApellido),
     segundoApellido: normalizarTextoGuardado(values.segundoApellido) || "",
+    fechaNacimiento: fechaNacimientoToIso(values.fechaNacimiento.trim()),
     alias: values.alias?.trim() || "",
     curp: values.curp?.trim().toUpperCase() || "",
     telefonoCelular: values.telefonoCelular.trim(),
@@ -49,7 +45,7 @@ export function prepareDirigentePayload(
     status: values.status ?? "ACTIVO",
     conceptosComposicion: (values.conceptosComposicion ?? []).map((c) => ({
       concepto: c.concepto,
-      monto: toNumber(c.monto),
+      monto: montoANumero(c.monto),
       nombre: emptyToNull(c.nombre ?? ""),
       tipoDetalle: c.tipoDetalle,
     })),
@@ -80,7 +76,7 @@ export function prepareDirigentePayload(
       .filter((i) => i.tipoIngreso.trim())
       .map((i) => ({
         tipoIngreso: i.tipoIngreso.trim(),
-        monto: toNumber(i.monto),
+        monto: montoANumero(i.monto),
       })),
   };
 

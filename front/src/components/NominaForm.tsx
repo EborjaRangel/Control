@@ -2,6 +2,7 @@
 
 import { Form, Formik } from "formik";
 import { calcularSueldo } from "@/lib/dirigentes";
+import { montoANumero } from "@/lib/monto";
 import { nominaSchema, type NominaFormValues } from "@/lib/validation";
 import { ComposicionSueldoFields } from "@/components/ComposicionSueldoFields";
 import { SueldoDesglose } from "@/components/SueldoDesglose";
@@ -30,7 +31,7 @@ export function NominaForm({ initialValues, saving = false, onSubmit }: Props) {
         const desglose = calcularSueldo(
           (values.conceptosComposicion ?? []).map((c) => ({
             concepto: c.concepto,
-            monto: Number(c.monto) || 0,
+            monto: montoANumero(c.monto),
             nombre: c.nombre,
             tipoDetalle: c.tipoDetalle,
           })),

@@ -20,6 +20,7 @@ export const META_OPERACION_PCT = META_OPERACION_FRACCION * 100;
 
 export type OperacionSeccionRow = {
   seccion: string;
+  dirigentes: string;
   colonias: string;
   coloniasDetalle: ColoniasSeccionInfo;
   unidadesTerritoriales: string;
@@ -69,6 +70,7 @@ function filaDesdeProyeccion(proy: ProyeccionSeccion2027, fila: AnalisisSeccionR
 
   return {
     seccion: proy.seccion,
+    dirigentes: fila.dirigentes,
     colonias: proy.colonias,
     coloniasDetalle: proy.coloniasDetalle,
     unidadesTerritoriales: etiquetaUtsSeccion(fila),

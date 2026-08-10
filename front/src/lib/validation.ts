@@ -4,6 +4,7 @@ import { CONCEPTOS_SUELDO_CATALOGO, MAX_CONCEPTOS_COMPOSICION, TIPOS_DETALLE_SUE
 import { COLONIAS_COYOACAN, coloniaCoincideConCp, CODIGOS_POSTALES_COYOACAN, esColoniaValida } from "./colonias";
 import { SECCIONES_ELECTORALES_COYOACAN, esSeccionValida } from "./secciones-electorales";
 import { credencialesCreateSchema, credencialesUpdateSchema } from "./auth";
+import { fechaNacimientoSchema } from "./fecha-nacimiento";
 import { dirigenteExtraSchema } from "./validation-dirigente-extra";
 
 export {
@@ -24,8 +25,14 @@ function montoSueldo(label = "Monto inválido") {
   return Yup.number()
     .transform((_value, originalValue) => {
       if (originalValue === "" || originalValue == null) return 0;
-      const n = Number(originalValue);
-      return Number.isNaN(n) ? originalValue : n;
+      const cleaned =
+        typeof originalValue === "string"
+          ? originalValue.replace(/[^\d.]/g, "")
+          : originalValue;
+      const n = Number(cleaned);
+      if (Number.isNaN(n)) return originalValue;
+      // Evita ceros a la derecha en el valor numérico (100.50 → 100.5).
+      return Number(String(n));
     })
     .typeError(label)
     .min(0, "No puede ser negativo")
@@ -57,9 +64,7 @@ export const dirigenteSchema = Yup.object({
   nombre: Yup.string().trim().required("El nombre es obligatorio"),
   primerApellido: Yup.string().trim().required("El primer apellido es obligatorio"),
   segundoApellido: Yup.string().trim().nullable(),
-  fechaNacimiento: Yup.string()
-    .required("La fecha de nacimiento es obligatoria")
-    .matches(/^\d{4}-\d{2}-\d{2}$/, "Fecha inv?lida"),
+  fechaNacimiento: fechaNacimientoSchema,
   telefonoCelular: Yup.string()
     .trim()
     .matches(/^\d{10}$/, "El celular debe tener 10 d?gitos")

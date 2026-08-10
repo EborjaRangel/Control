@@ -3,6 +3,7 @@ import { TIPOS_DIRIGENTE } from "./dirigentes.js";
 import { COLONIAS_COYOACAN, coloniaCoincideConCp, CODIGOS_POSTALES_COYOACAN, esColoniaValida } from "./colonias.js";
 import { esSeccionValida } from "./secciones-electorales.js";
 import { credencialesCreateSchema, credencialesUpdateSchema } from "./auth-validation.js";
+import { fechaNacimientoApiSchema } from "./fecha-nacimiento.js";
 import { nominaSchema } from "./validation-nomina.js";
 import { dirigenteExtraSchema } from "./validation-dirigente-extra.js";
 
@@ -27,9 +28,7 @@ export const dirigenteSchema = Yup.object({
   nombre: Yup.string().trim().required("El nombre es obligatorio"),
   primerApellido: Yup.string().trim().required("El primer apellido es obligatorio"),
   segundoApellido: Yup.string().trim().nullable(),
-  fechaNacimiento: Yup.string()
-    .required("La fecha de nacimiento es obligatoria")
-    .matches(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+  fechaNacimiento: fechaNacimientoApiSchema,
   telefonoCelular: Yup.string()
     .trim()
     .matches(/^\d{10}$/, "El celular debe tener 10 dígitos")

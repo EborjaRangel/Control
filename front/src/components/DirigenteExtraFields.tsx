@@ -266,7 +266,7 @@ export function DirigenteExtraFields({ excludeReferenteId }: Props) {
                 onClick={() =>
                   push({
                     tipoIngreso: "",
-                    monto: 0,
+                    monto: "" as unknown as number,
                   })
                 }
               >
@@ -281,7 +281,7 @@ export function DirigenteExtraFields({ excludeReferenteId }: Props) {
                       className="sm:col-span-2"
                       placeholder="Ej. negocio familiar, consultoría, renta…"
                     />
-                    <FormField label="Monto (MXN)" name={`ingresos.${index}.monto`} type="number" min={0} />
+                    <FormField label="Monto (MXN)" name={`ingresos.${index}.monto`} monto placeholder="0" />
                     <button type="button" className="btn-danger btn-sm self-end" onClick={() => remove(index)}>
                       Quitar
                     </button>
