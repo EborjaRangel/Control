@@ -137,11 +137,11 @@ export function mensajeConfigConvocatoriaIncompleta(): string {
   return `Configura en el servidor las variables de entorno. ${partes.join(" · ")}`;
 }
 
-/** Normaliza celular MX (10 dígitos) a E.164 +52… */
+/** Normaliza celular MX (10 dígitos) a E.164 +521… (móvil México, Twilio/WhatsApp). */
 export function telefonoE164Mexico(telefono: string): string | null {
   const digits = telefono.replace(/\D/g, "");
-  if (digits.length === 10) return `+52${digits}`;
-  if (digits.length === 12 && digits.startsWith("52")) return `+${digits}`;
+  if (digits.length === 10) return `+521${digits}`;
+  if (digits.length === 12 && digits.startsWith("52")) return `+521${digits.slice(2)}`;
   if (digits.length === 13 && digits.startsWith("521")) return `+${digits}`;
   return null;
 }
