@@ -1,9 +1,11 @@
 import {
   obtenerConfigConvocatoria,
   telefonoE164Mexico,
+  whatsAppProveedor,
   whatsappDestino,
 } from "./config.js";
 import type { ResultadoEnvio } from "./email.js";
+import { enviarWhatsAppCloud, verificarWhatsAppCloud } from "./whatsapp-cloud.js";
 
 function mensajeErrorTwilio(raw: string, canal: "SMS" | "WHATSAPP"): string {
   if (/63015|63016|outside the allowed window|opted in|join/i.test(raw)) {
@@ -107,16 +109,32 @@ export async function enviarWhatsApp(input: {
   body: string;
 }): Promise<ResultadoEnvio> {
   const config = obtenerConfigConvocatoria();
+  if (!config.whatsapp.habilitado) {
+    const prov = whatsAppProveedor();
+    if (prov === "meta") {
+      return {
+        ok: false,
+        error:
+          "WhatsApp (Meta) no configurado. Define WHATSAPP_CLOUD_ACCESS_TOKEN y WHATSAPP_CLOUD_PHONE_NUMBER_ID.",
+      };
+    }
+    return {
+      ok: false,
+      error: "WhatsApp no configurado. Define TWILIO_* o WHATSAPP_CLOUD_* en el servidor.",
+    };
+  }
+
+  if (whatsAppProveedor() === "meta") {
+    return enviarWhatsAppCloud(input);
+  }
+
   const e164 = telefonoE164Mexico(input.telefono);
   if (!e164) {
     return { ok: false, error: "Número de celular inválido" };
   }
 
-  if (!config.whatsapp.habilitado || !config.whatsapp.from) {
-    return {
-      ok: false,
-      error: "WhatsApp no configurado. Define TWILIO_* y TWILIO_WHATSAPP_FROM en el servidor.",
-    };
+  if (!config.whatsapp.from) {
+    return { ok: false, error: "WhatsApp (Twilio) sin TWILIO_WHATSAPP_FROM." };
   }
 
   const from = config.whatsapp.from.startsWith("whatsapp:")
@@ -131,8 +149,16 @@ export async function enviarWhatsApp(input: {
   });
 }
 
+/** Verifica credenciales del proveedor WhatsApp activo. */
+export async function verificarWhatsApp(): Promise<ResultadoEnvio> {
+  if (whatsAppProveedor() === "meta") {
+    return verificarWhatsAppCloud();
+  }
+  return verificarTwilio();
+}
+
 /** Prueba de credenciales Twilio (no envía mensaje). */
-export async function verificarTwilio(): Promise<ResultadoEnvio> {
+async function verificarTwilio(): Promise<ResultadoEnvio> {
   const sid = process.env.TWILIO_ACCOUNT_SID?.trim();
   const token = process.env.TWILIO_AUTH_TOKEN?.trim();
   if (!sid || !token) {

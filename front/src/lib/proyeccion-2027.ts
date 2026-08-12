@@ -13,6 +13,7 @@ import {
   COLOR_PAN,
   COLOR_PRD_PT,
   COLOR_PRI,
+  clasificarBloque,
   esPartidoValido,
   type AnioAlcaldia,
 } from "@/lib/analisis-votacion";
@@ -135,6 +136,9 @@ const ANIO_PROYECCION = 2027;
 const UMBRAL_EMPATE_PP = 0.5;
 const COLOR_PT = "#c62828";
 const COLOR_PVEM = "#00843d";
+
+/** Meta de votación global de la alcaldía para el bloque PAN (o su alianza del escenario). */
+export const META_GLOBAL_PAN_PCT = 58;
 
 export const ESCENARIOS_PROYECCION: ConfigEscenarioProyeccion[] = [
   {
@@ -917,6 +921,195 @@ export function colorGanadorProyeccion(
 
   const solo = PARTIDOS_SOLOS_CANONICOS.find((p) => p.id === ganador);
   return solo?.color ?? COLOR_OTROS;
+}
+
+export function idBloquePanEscenario(escenarioId: EscenarioProyeccionId): string {
+  if (escenarioId === "partidos_solos") return "PAN";
+  if (escenarioId === "pan_pri_mc_vs_morena_pt_prd_verde") return "pan_pri_mc";
+  return "pan_aliados";
+}
+
+function panGanoEnAnio(resultado: ResultadoAlcaldiaSeccion, anio: AnioAlcaldia): boolean {
+  const votos: Record<string, number> = {};
+  for (const partido of filtrarPartidos(resultado.partidos)) {
+    const bloque = clasificarBloque(partido.clave, anio);
+    votos[bloque] = (votos[bloque] ?? 0) + partido.votos;
+  }
+  const pan = votos.pan ?? 0;
+  if (pan <= 0) return false;
+
+  let maxOtros = 0;
+  for (const [id, valor] of Object.entries(votos)) {
+    if (id === "pan") continue;
+    maxOtros = Math.max(maxOtros, valor);
+  }
+
+  const total = resultado.votacionTotal;
+  if (total <= 0) return pan > maxOtros;
+  return ((pan - maxOtros) / total) * 100 > UMBRAL_EMPATE_PP;
+}
+
+export function aniosPanGanoHistorico(fila: AnalisisSeccionRow): AnioAlcaldia[] {
+  const anios: AnioAlcaldia[] = [];
+  for (const anio of ANIOS_ELECCION_ALCALDIA) {
+    const resultado = resultadoPorAnio(fila, anio);
+    if (resultado && panGanoEnAnio(resultado, anio)) anios.push(anio);
+  }
+  return anios;
+}
+
+function asignarVotosProporcional(capacidades: number[], totalAsignar: number): number[] {
+  const capTotal = capacidades.reduce((a, b) => a + b, 0);
+  if (capTotal <= 0 || totalAsignar <= 0) return capacidades.map(() => 0);
+
+  const objetivo = Math.min(totalAsignar, capTotal);
+  const crudos = capacidades.map((c) => (c / capTotal) * objetivo);
+  const enteros = crudos.map((x) => Math.floor(x));
+  let restante = objetivo - enteros.reduce((a, b) => a + b, 0);
+
+  const orden = crudos
+    .map((x, i) => ({ i, frac: x - Math.floor(x), cap: capacidades[i] }))
+    .sort((a, b) => b.frac - a.frac || b.cap - a.cap || a.i - b.i);
+
+  for (const { i } of orden) {
+    if (restante <= 0) break;
+    const hueco = capacidades[i] - enteros[i];
+    if (hueco <= 0) continue;
+    const add = Math.min(hueco, restante);
+    enteros[i] += add;
+    restante -= add;
+  }
+
+  return enteros;
+}
+
+export type CrecimientoSeccionMeta58 = {
+  seccion: string;
+  colonias: string;
+  coloniasDetalle: ColoniasSeccionInfo;
+  distritoLocal: number | null;
+  aniosGanoPan: AnioAlcaldia[];
+  votacionEstimada2027: number;
+  votosPanProyectados: number;
+  porcentajePanProyectado: number;
+  techoCrecimientoVotos: number;
+  crecimientoAsignadoVotos: number;
+  votosMeta: number;
+  porcentajeMetaSeccion: number;
+};
+
+export type CrecimientoMetaGlobalPan = {
+  metaPct: number;
+  bloqueId: string;
+  bloqueEtiqueta: string;
+  votacionEstimadaTotal: number;
+  votosPanActuales: number;
+  porcentajePanActual: number;
+  votosMetaGlobal: number;
+  faltanteGlobal: number;
+  seccionesHistoricasPan: number;
+  votosPanEnHistoricas: number;
+  techoCrecimientoHistoricas: number;
+  crecimientoAsignadoTotal: number;
+  deficitFueraDeHistoricas: number;
+  alcanzableSoloEnHistoricas: boolean;
+  filas: CrecimientoSeccionMeta58[];
+};
+
+/**
+ * En secciones donde el PAN (solo o en alianza histórica) ganó al menos una elección
+ * 2015–2024, reparte el faltante para llegar a `metaPct` de la votación global 2027.
+ * El crecimiento de cada sección no puede superar los votos que aún no tiene proyectados.
+ */
+export function calcularCrecimientoMetaGlobalPan(
+  filas: AnalisisSeccionRow[],
+  proyecciones: ProyeccionSeccion2027[],
+  resumen: ProyeccionAlcaldia2027,
+  metaPct: number = META_GLOBAL_PAN_PCT,
+): CrecimientoMetaGlobalPan {
+  const bloqueId = idBloquePanEscenario(resumen.escenarioId);
+  const bloque = resumen.bloques.find((b) => b.id === bloqueId);
+  const bloqueEtiqueta = bloque?.etiqueta ?? "PAN";
+  const votosPanActuales = bloque?.votos ?? 0;
+  const votacionEstimadaTotal = resumen.votacionEstimadaTotal;
+  const votosMetaGlobal = Math.round((votacionEstimadaTotal * metaPct) / 100);
+  const faltanteGlobal = Math.max(0, votosMetaGlobal - votosPanActuales);
+  const porcentajePanActual =
+    votacionEstimadaTotal > 0 ? round2((votosPanActuales / votacionEstimadaTotal) * 100) : 0;
+
+  const porSeccion = new Map(proyecciones.map((p) => [p.seccion, p]));
+  const candidatas: Omit<CrecimientoSeccionMeta58, "crecimientoAsignadoVotos" | "votosMeta" | "porcentajeMetaSeccion">[] =
+    [];
+
+  for (const fila of filas) {
+    const aniosGanoPan = aniosPanGanoHistorico(fila);
+    if (!aniosGanoPan.length) continue;
+    const proy = porSeccion.get(fila.seccion);
+    if (!proy) continue;
+
+    const pan = proy.proyeccion2027.find((b) => b.id === bloqueId);
+    const votosPanProyectados = pan?.votos ?? 0;
+    const porcentajePanProyectado = pan?.porcentaje ?? 0;
+    const techoCrecimientoVotos = Math.max(0, proy.votacionEstimada2027 - votosPanProyectados);
+
+    candidatas.push({
+      seccion: proy.seccion,
+      colonias: proy.colonias,
+      coloniasDetalle: proy.coloniasDetalle,
+      distritoLocal: proy.distritoLocal,
+      aniosGanoPan,
+      votacionEstimada2027: proy.votacionEstimada2027,
+      votosPanProyectados,
+      porcentajePanProyectado,
+      techoCrecimientoVotos,
+    });
+  }
+
+  const techoCrecimientoHistoricas = candidatas.reduce((a, f) => a + f.techoCrecimientoVotos, 0);
+  const votosPanEnHistoricas = candidatas.reduce((a, f) => a + f.votosPanProyectados, 0);
+  const asignados = asignarVotosProporcional(
+    candidatas.map((f) => f.techoCrecimientoVotos),
+    faltanteGlobal,
+  );
+  const crecimientoAsignadoTotal = asignados.reduce((a, n) => a + n, 0);
+  const deficitFueraDeHistoricas = Math.max(0, faltanteGlobal - techoCrecimientoHistoricas);
+
+  const filasMeta: CrecimientoSeccionMeta58[] = candidatas
+    .map((fila, i) => {
+      const crecimientoAsignadoVotos = asignados[i] ?? 0;
+      const votosMeta = fila.votosPanProyectados + crecimientoAsignadoVotos;
+      return {
+        ...fila,
+        crecimientoAsignadoVotos,
+        votosMeta,
+        porcentajeMetaSeccion:
+          fila.votacionEstimada2027 > 0 ? round2((votosMeta / fila.votacionEstimada2027) * 100) : 0,
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.crecimientoAsignadoVotos - a.crecimientoAsignadoVotos ||
+        b.techoCrecimientoVotos - a.techoCrecimientoVotos ||
+        Number(a.seccion) - Number(b.seccion),
+    );
+
+  return {
+    metaPct,
+    bloqueId,
+    bloqueEtiqueta,
+    votacionEstimadaTotal,
+    votosPanActuales,
+    porcentajePanActual,
+    votosMetaGlobal,
+    faltanteGlobal,
+    seccionesHistoricasPan: filasMeta.length,
+    votosPanEnHistoricas,
+    techoCrecimientoHistoricas,
+    crecimientoAsignadoTotal,
+    deficitFueraDeHistoricas,
+    alcanzableSoloEnHistoricas: deficitFueraDeHistoricas === 0,
+    filas: filasMeta,
+  };
 }
 
 export function formatResumenGanador(resumen: ProyeccionAlcaldia2027): string {

@@ -93,6 +93,8 @@ export const COLONIAS_COYOACAN: Colonia[] = [
   { nombre: "Joyas del Pedregal", cp: "04660", lat: 19.3064286, lng: -99.1584418 },
   { nombre: "Pedregal de La Zorra", cp: "04660", lat: 19.3460000, lng: -99.1620000 },
   { nombre: "Pedregal de Carrasco", cp: "04700", lat: 19.3060161, lng: -99.1757027 },
+  // Unidad habitacional en Pedregal de Carrasco; no aparece en SEPOMEX pero sí en catálogos locales (alcaldía).
+  { nombre: "Villa Panamericana", cp: "04700", lat: 19.3058000, lng: -99.1768000 },
   { nombre: "Olímpica", cp: "04710", lat: 19.3044491, lng: -99.1701792 },
   { nombre: "Vistas del Maurel", cp: "04718", lat: 19.3051206, lng: -99.1729913 },
   { nombre: "Pedregal del Sur", cp: "04719", lat: 19.3094651, lng: -99.1870701 },

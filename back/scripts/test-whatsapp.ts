@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { enviarWhatsApp } from "../src/lib/comunicacion/telefono.js";
 
 async function main() {

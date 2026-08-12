@@ -1,6 +1,7 @@
 export type ConvocatoriaEstado = {
   listo: boolean;
   whatsappListo: boolean;
+  whatsappProveedor?: "meta" | "twilio" | null;
   faltantes: string[];
   faltantesWhatsApp: string[];
   email: boolean;

@@ -21,6 +21,33 @@ export type ComunicacionConfig = ConvocatoriaConfig;
 /** @deprecated usar CanalConvocatoria */
 export type CanalComunicacion = CanalConvocatoria;
 
+export type WhatsAppProveedor = "meta" | "twilio";
+
+function metaWhatsAppConfigurado(): boolean {
+  return Boolean(
+    process.env.WHATSAPP_CLOUD_ACCESS_TOKEN?.trim() &&
+      process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID?.trim(),
+  );
+}
+
+function twilioWhatsAppConfigurado(): boolean {
+  return Boolean(
+    process.env.TWILIO_ACCOUNT_SID?.trim() &&
+      process.env.TWILIO_AUTH_TOKEN?.trim() &&
+      process.env.TWILIO_WHATSAPP_FROM?.trim(),
+  );
+}
+
+/** Proveedor activo para WhatsApp. WHATSAPP_PROVIDER=meta|twilio; por defecto Meta si está configurado. */
+export function whatsAppProveedor(): WhatsAppProveedor | null {
+  const forced = process.env.WHATSAPP_PROVIDER?.trim().toLowerCase();
+  if (forced === "meta" || forced === "cloud") return "meta";
+  if (forced === "twilio") return "twilio";
+  if (metaWhatsAppConfigurado()) return "meta";
+  if (twilioWhatsAppConfigurado()) return "twilio";
+  return null;
+}
+
 export function obtenerConfigConvocatoria(): ConvocatoriaConfig {
   const resendOk = Boolean(
     process.env.RESEND_API_KEY?.trim() &&
@@ -47,8 +74,11 @@ export function obtenerConfigConvocatoria(): ConvocatoriaConfig {
       from: process.env.TWILIO_SMS_FROM?.trim() ?? null,
     },
     whatsapp: {
-      habilitado: twilioOk && Boolean(process.env.TWILIO_WHATSAPP_FROM?.trim()),
-      from: process.env.TWILIO_WHATSAPP_FROM?.trim() ?? null,
+      habilitado: whatsAppListo(),
+      from:
+        whatsAppProveedor() === "meta"
+          ? (process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID?.trim() ?? null)
+          : (process.env.TWILIO_WHATSAPP_FROM?.trim() ?? null),
     },
   };
 }
@@ -85,13 +115,27 @@ export function smtpModoDesarrolloActivo(): boolean {
   return process.env.SMTP_DEV_LOG === "true";
 }
 
-/** Variables mínimas para WhatsApp vía Twilio. */
+/** Variables mínimas para WhatsApp (Meta Cloud API o Twilio). */
 export function faltantesWhatsApp(): string[] {
-  const faltantes: string[] = [];
-  if (!process.env.TWILIO_ACCOUNT_SID?.trim()) faltantes.push("TWILIO_ACCOUNT_SID");
-  if (!process.env.TWILIO_AUTH_TOKEN?.trim()) faltantes.push("TWILIO_AUTH_TOKEN");
-  if (!process.env.TWILIO_WHATSAPP_FROM?.trim()) faltantes.push("TWILIO_WHATSAPP_FROM");
-  return faltantes;
+  const prov = whatsAppProveedor();
+  if (prov === "meta") {
+    const faltantes: string[] = [];
+    if (!process.env.WHATSAPP_CLOUD_ACCESS_TOKEN?.trim()) {
+      faltantes.push("WHATSAPP_CLOUD_ACCESS_TOKEN");
+    }
+    if (!process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID?.trim()) {
+      faltantes.push("WHATSAPP_CLOUD_PHONE_NUMBER_ID");
+    }
+    return faltantes;
+  }
+  if (prov === "twilio") {
+    const faltantes: string[] = [];
+    if (!process.env.TWILIO_ACCOUNT_SID?.trim()) faltantes.push("TWILIO_ACCOUNT_SID");
+    if (!process.env.TWILIO_AUTH_TOKEN?.trim()) faltantes.push("TWILIO_AUTH_TOKEN");
+    if (!process.env.TWILIO_WHATSAPP_FROM?.trim()) faltantes.push("TWILIO_WHATSAPP_FROM");
+    return faltantes;
+  }
+  return ["WHATSAPP_CLOUD_ACCESS_TOKEN", "WHATSAPP_CLOUD_PHONE_NUMBER_ID"];
 }
 
 /** Lista qué falta configurar para envíos reales (todos los canales). */
@@ -108,7 +152,9 @@ export function faltantesConfigConvocatoria(): string[] {
   if (!process.env.TWILIO_ACCOUNT_SID?.trim()) faltantes.push("TWILIO_ACCOUNT_SID");
   if (!process.env.TWILIO_AUTH_TOKEN?.trim()) faltantes.push("TWILIO_AUTH_TOKEN");
   if (!process.env.TWILIO_SMS_FROM?.trim()) faltantes.push("TWILIO_SMS_FROM");
-  faltantes.push(...faltantesWhatsApp().filter((k) => !faltantes.includes(k)));
+  if (!whatsAppListo()) {
+    faltantes.push(...faltantesWhatsApp().filter((k) => !faltantes.includes(k)));
+  }
   return faltantes;
 }
 

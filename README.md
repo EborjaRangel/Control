@@ -187,53 +187,34 @@ Railway y Vercel despliegan automáticamente si el repo está conectado.
 4. Recibe el correo, abre el enlace y cambia la contraseña
 5. Inicia sesión con la nueva contraseña
 
-## WhatsApp y SMS (Twilio) — convocatoria
+## WhatsApp — convocatoria
 
-La convocatoria de eventos envía mensajes por **WhatsApp** (prioritario), SMS y correo. WhatsApp usa la API de Twilio (HTTPS, funciona en Railway Hobby y Pro).
+La convocatoria envía **WhatsApp** (prioritario), correo y SMS opcional. **Recomendado:** Meta WhatsApp Cloud API directo (sin markup de Twilio ni sandbox).
 
-### 1. Cuenta Twilio
+### Meta Cloud API (recomendado)
 
-1. Crea cuenta en [Twilio Console](https://console.twilio.com).
-2. Copia **Account SID** y **Auth Token**.
-
-### 2. WhatsApp sandbox (pruebas)
-
-1. En Twilio → **Messaging** → **Try it out** → **Send a WhatsApp message**.
-2. Anota el número sandbox (ej. `+1 415 523 8886`) y la palabra «join …».
-3. Desde tu celular, envía `join <palabra>` por WhatsApp a ese número.
-4. Variables en Railway:
+1. [developers.facebook.com](https://developers.facebook.com) → **Crear app** → tipo **Business** → agrega producto **WhatsApp**.
+2. En **WhatsApp → API Setup** anota **Phone number ID** y **access token** (temporal; luego permanente).
+3. Variables en Railway / `back/.env`:
 
 | Variable | Ejemplo |
 |----------|---------|
-| `TWILIO_ACCOUNT_SID` | `ACxxxxxxxx…` |
-| `TWILIO_AUTH_TOKEN` | token de la consola |
-| `TWILIO_WHATSAPP_FROM` | `whatsapp:+14155238886` |
+| `WHATSAPP_PROVIDER` | `meta` |
+| `WHATSAPP_CLOUD_ACCESS_TOKEN` | token permanente |
+| `WHATSAPP_CLOUD_PHONE_NUMBER_ID` | `123456789012345` |
 
-### 3. Producción (número propio)
+4. Convocatorias masivas: plantilla aprobada en Meta → `WHATSAPP_CLOUD_TEMPLATE_NAME`, `WHATSAPP_CLOUD_TEMPLATE_LANGUAGE=es_MX`.
+5. `npm run env:sync-to-railway -w control-back`
+6. `npm run whatsapp:verify -w control-back`
+7. `npm run whatsapp:test -w control-back -- 5534845878 "Prueba Meta"`
 
-Para enviar a cualquier dirigente sin unirse al sandbox necesitas un **número WhatsApp Business** aprobado en Twilio y, para mensajes iniciados por el sistema, una **plantilla aprobada por Meta**. Opcional:
+`/health` → `"whatsapp": { "habilitado": true, "proveedor": "meta" }`.
 
-- `TWILIO_WHATSAPP_CONTENT_SID` — ID de plantilla en Twilio
-- `TWILIO_WHATSAPP_CONTENT_VARIABLES` — JSON con variables de la plantilla
+### Twilio (alternativa)
 
-### 4. Subir variables a Railway
+Sandbox Trial limitado (50 msgs/día). Variables `TWILIO_*` en `back/.env.example`. Si Meta y Twilio están configurados, gana **Meta** salvo `WHATSAPP_PROVIDER=twilio`.
 
-Completa `back/.env` (usa `back/.env.example`) y ejecuta:
-
-```bash
-npm run env:sync-to-railway -w control-back
-```
-
-### 5. Probar
-
-```bash
-npm run twilio:test -w control-back
-npm run whatsapp:test -w control-back -- 5512345678 "Mensaje de prueba"
-```
-
-En producción: `GET /health` debe incluir `"whatsapp": { "habilitado": true, … }`.
-
-Los celulares de dirigentes deben estar en formato **10 dígitos** (México); el sistema los convierte a `+52…`.
+Celulares en **10 dígitos** (México); formato interno `521…` para Meta.
 
 ## Estructura
 

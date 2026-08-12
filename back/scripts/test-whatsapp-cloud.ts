@@ -1,9 +1,10 @@
 import "dotenv/config";
-import { verificarWhatsApp } from "../src/lib/comunicacion/telefono.js";
 import { faltantesWhatsApp, whatsAppListo, whatsAppProveedor } from "../src/lib/comunicacion/config.js";
+import { verificarWhatsApp } from "../src/lib/comunicacion/telefono.js";
 
 async function main() {
-  console.log("WHATSAPP_PROVEEDOR", whatsAppProveedor() ?? "ninguno");
+  const prov = whatsAppProveedor();
+  console.log("WHATSAPP_PROVEEDOR", prov ?? "ninguno");
 
   const faltantes = faltantesWhatsApp();
   if (faltantes.length > 0) {

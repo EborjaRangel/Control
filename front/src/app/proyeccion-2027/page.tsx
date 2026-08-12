@@ -10,6 +10,7 @@ import {
   type AnalisisSeccionesResponse,
 } from "@/lib/analisis";
 import {
+  calcularCrecimientoMetaGlobalPan,
   calcularProyeccionAlcaldia2027,
   colorGanadorProyeccion,
   colorPartidoSolo,
@@ -17,13 +18,16 @@ import {
   etiquetaConfianza,
   formatResumenGanador,
   generarAnalisisNarrativoProyeccion,
+  META_GLOBAL_PAN_PCT,
   patronesResaltadoBloques,
   segmentosTituloEscenario,
+  type CrecimientoMetaGlobalPan,
   type EscenarioProyeccionId,
   type ProyeccionAlcaldia2027,
   type ProyeccionSeccion2027,
 } from "@/lib/proyeccion-2027";
 import { ColoniasSeccionPanel, textoBusquedaColonias } from "@/components/ColoniasSeccionPanel";
+import { COLOR_PAN } from "@/lib/analisis-votacion";
 
 export default function Proyeccion2027Page() {
   const pathname = usePathname();
@@ -35,6 +39,7 @@ export default function Proyeccion2027Page() {
   const [partidoSoloId, setPartidoSoloId] = useState("MORENA");
   const [buscar, setBuscar] = useState("");
   const [filtroGanador, setFiltroGanador] = useState("");
+  const [filtroHistoricasPan, setFiltroHistoricasPan] = useState(false);
   const [expandido, setExpandido] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -82,11 +87,25 @@ export default function Proyeccion2027Page() {
     [resumen],
   );
 
+  const crecimientoMeta58 = useMemo(
+    () =>
+      data && resumen
+        ? calcularCrecimientoMetaGlobalPan(data.filas, proyecciones, resumen)
+        : null,
+    [data, proyecciones, resumen],
+  );
+
+  const seccionesHistoricasPan = useMemo(
+    () => new Set(crecimientoMeta58?.filas.map((f) => f.seccion) ?? []),
+    [crecimientoMeta58],
+  );
+
   const filas = useMemo(() => {
     const q = buscar.trim().toLowerCase();
     return proyecciones
       .filter((p) => {
         if (filtroGanador && p.ganadorSeccion !== filtroGanador) return false;
+        if (filtroHistoricasPan && !seccionesHistoricasPan.has(p.seccion)) return false;
         if (!q) return true;
         return (
           p.seccion.includes(q) ||
@@ -103,7 +122,15 @@ export default function Proyeccion2027Page() {
         }
         return Number(a.seccion) - Number(b.seccion);
       });
-  }, [proyecciones, buscar, filtroGanador, escenarioId, partidoSoloId]);
+  }, [
+    proyecciones,
+    buscar,
+    filtroGanador,
+    filtroHistoricasPan,
+    seccionesHistoricasPan,
+    escenarioId,
+    partidoSoloId,
+  ]);
 
   const partidoSeleccionado = useMemo(() => {
     if (!resumen || escenarioId !== "partidos_solos") return null;
@@ -269,6 +296,14 @@ export default function Proyeccion2027Page() {
             </div>
           </section>
 
+          {crecimientoMeta58 ? (
+            <MetaGlobalPanPanel
+              meta={crecimientoMeta58}
+              filtroActivo={filtroHistoricasPan}
+              onToggleFiltro={() => setFiltroHistoricasPan((v) => !v)}
+            />
+          ) : null}
+
           {escenarioId === "partidos_solos" ? (
             <section className="rounded-pin border border-line bg-surface p-4 text-sm">
               <h2 className="font-semibold text-ink">Ranking partidos solos (proyección OLS)</h2>
@@ -325,11 +360,14 @@ export default function Proyeccion2027Page() {
                   placeholder="Sección, colonia, distrito…"
                 />
               </label>
-              {filtroGanador ? (
+              {filtroGanador || filtroHistoricasPan ? (
                 <button
                   type="button"
                   className="btn-secondary text-sm"
-                  onClick={() => setFiltroGanador("")}
+                  onClick={() => {
+                    setFiltroGanador("");
+                    setFiltroHistoricasPan(false);
+                  }}
                 >
                   Quitar filtro
                 </button>
@@ -337,7 +375,9 @@ export default function Proyeccion2027Page() {
             </div>
 
             <p className="text-sm text-ink-secondary">
-              {filas.length} secciones{filtroGanador ? " (filtradas)" : ""}
+              {filas.length} secciones
+              {filtroGanador || filtroHistoricasPan ? " (filtradas)" : ""}
+              {filtroHistoricasPan ? " · históricas PAN" : ""}
               {escenarioId === "partidos_solos"
                 ? ` · ordenadas por % de ${partidoSoloId}`
                 : ""}
@@ -683,5 +723,177 @@ function ProyeccionSeccionCard({
         </div>
       ) : null}
     </article>
+  );
+}
+
+function MetaGlobalPanPanel({
+  meta,
+  filtroActivo,
+  onToggleFiltro,
+}: {
+  meta: CrecimientoMetaGlobalPan;
+  filtroActivo: boolean;
+  onToggleFiltro: () => void;
+}) {
+  return (
+    <section className="panel-soft space-y-4 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-ink">
+            Meta {META_GLOBAL_PAN_PCT}% global · secciones históricas PAN
+          </h2>
+          <p className="mt-1 text-sm text-ink-secondary">
+            El {META_GLOBAL_PAN_PCT}% es de la votación estimada total de la alcaldía (
+            {formatElectores(meta.votacionEstimadaTotal)} votos), no el {META_GLOBAL_PAN_PCT}% de cada
+            sección. El faltante se reparte solo entre secciones donde el PAN —solo o en alianza
+            histórica (2015: PAN; 2018: PAN+MC+PRD; 2021 y 2024: PAN+PRI+PRD)— ganó al menos una
+            elección, en proporción al margen aún disponible. El bloque 2027 usado es{" "}
+            <strong className="text-ink">{meta.bloqueEtiqueta}</strong>.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="btn-secondary shrink-0 text-sm"
+          onClick={onToggleFiltro}
+        >
+          {filtroActivo ? "Quitar filtro de históricas" : "Ver solo históricas PAN"}
+        </button>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <MetaResumenCard
+          titulo={`${meta.bloqueEtiqueta} proyectado`}
+          valor={formatElectores(meta.votosPanActuales)}
+          detalle={formatPorcentaje(meta.porcentajePanActual)}
+          color={COLOR_PAN}
+        />
+        <MetaResumenCard
+          titulo={`Meta ${meta.metaPct}% alcaldía`}
+          valor={formatElectores(meta.votosMetaGlobal)}
+          detalle={`${formatElectores(meta.faltanteGlobal)} votos faltantes`}
+        />
+        <MetaResumenCard
+          titulo="Secciones históricas PAN"
+          valor={String(meta.seccionesHistoricasPan)}
+          detalle={`${formatElectores(meta.techoCrecimientoHistoricas)} votos de techo`}
+        />
+        <MetaResumenCard
+          titulo="Crecimiento asignado"
+          valor={formatElectores(meta.crecimientoAsignadoTotal)}
+          detalle={
+            meta.alcanzableSoloEnHistoricas
+              ? "Alcanzable solo en estas secciones"
+              : `Faltan ${formatElectores(meta.deficitFueraDeHistoricas)} fuera de históricas`
+          }
+          destacado={!meta.alcanzableSoloEnHistoricas}
+        />
+      </div>
+
+      {!meta.alcanzableSoloEnHistoricas ? (
+        <p className="rounded-pin border border-line bg-surface p-3 text-sm text-ink-secondary">
+          Aunque se lleve al 100% el voto de las {meta.seccionesHistoricasPan} secciones históricas,
+          no alcanza el {meta.metaPct}% global: harían falta{" "}
+          <strong className="text-ink">{formatElectores(meta.deficitFueraDeHistoricas)}</strong> votos
+          adicionales en secciones donde el PAN no ha ganado.
+        </p>
+      ) : meta.faltanteGlobal === 0 ? (
+        <p className="rounded-pin border border-line bg-surface p-3 text-sm text-ink-secondary">
+          La proyección ya alcanza o supera el {meta.metaPct}% global. No se asigna crecimiento
+          adicional.
+        </p>
+      ) : null}
+
+      <div className="table-wrap rounded-pin border border-line bg-surface">
+        <table className="w-full min-w-[64rem] text-left text-sm">
+          <thead>
+            <tr className="border-b border-line bg-surface-muted/80 text-xs uppercase tracking-wide text-ink-secondary">
+              <th className="px-4 py-3 font-semibold">Sección</th>
+              <th className="px-4 py-3 font-semibold">Años ganó PAN</th>
+              <th className="px-4 py-3 text-right font-semibold">Votación est.</th>
+              <th className="px-4 py-3 text-right font-semibold">Proyectado</th>
+              <th className="px-4 py-3 text-right font-semibold">Techo</th>
+              <th className="px-4 py-3 text-right font-semibold">Crecer para {meta.metaPct}%</th>
+              <th className="px-4 py-3 text-right font-semibold">Votos meta</th>
+            </tr>
+          </thead>
+          <tbody>
+            {meta.filas.map((fila) => (
+              <tr key={fila.seccion} className="border-b border-line/70 hover:bg-surface-muted/40">
+                <td className="px-4 py-3 align-top">
+                  <p className="font-semibold text-ink">Sección {fila.seccion}</p>
+                  {fila.distritoLocal != null ? (
+                    <p className="mt-0.5 text-xs text-ink-secondary">D. local {fila.distritoLocal}</p>
+                  ) : null}
+                  <div className="mt-1 text-xs text-ink-secondary">
+                    <ColoniasSeccionPanel
+                      coloniasDetalle={fila.coloniasDetalle}
+                      coloniasFallback={fila.colonias}
+                      compact
+                    />
+                  </div>
+                </td>
+                <td className="px-4 py-3 align-top text-ink-secondary">
+                  {fila.aniosGanoPan.join(", ")}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-right align-top tabular-nums">
+                  {formatElectores(fila.votacionEstimada2027)}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-right align-top tabular-nums">
+                  <span className="font-medium" style={{ color: COLOR_PAN }}>
+                    {formatElectores(fila.votosPanProyectados)}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-ink-secondary">
+                    {formatPorcentaje(fila.porcentajePanProyectado)}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-right align-top tabular-nums text-ink-secondary">
+                  {formatElectores(fila.techoCrecimientoVotos)}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-right align-top font-bold tabular-nums text-pin">
+                  {formatElectores(fila.crecimientoAsignadoVotos)}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-right align-top tabular-nums">
+                  <span className="font-semibold text-ink">{formatElectores(fila.votosMeta)}</span>
+                  <span className="mt-0.5 block text-xs text-ink-secondary">
+                    {formatPorcentaje(fila.porcentajeMetaSeccion)} en la sección
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {meta.filas.length === 0 ? (
+          <p className="px-4 py-10 text-center text-sm text-ink-secondary">
+            No hay secciones con victoria histórica del PAN o su alianza.
+          </p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function MetaResumenCard({
+  titulo,
+  valor,
+  detalle,
+  color,
+  destacado = false,
+}: {
+  titulo: string;
+  valor: string;
+  detalle: string;
+  color?: string;
+  destacado?: boolean;
+}) {
+  return (
+    <div className="rounded-pin border border-line bg-surface p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink-secondary">{titulo}</p>
+      <p className="mt-2 text-2xl font-bold tabular-nums" style={color ? { color } : undefined}>
+        {valor}
+      </p>
+      <p className={destacado ? "mt-1 text-xs font-medium text-pin" : "mt-1 text-xs text-ink-secondary"}>
+        {detalle}
+      </p>
+    </div>
   );
 }

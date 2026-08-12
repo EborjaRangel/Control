@@ -8,6 +8,7 @@ import {
   mensajeConfigConvocatoriaIncompleta,
   obtenerConfigConvocatoria,
   whatsAppListo,
+  whatsAppProveedor,
 } from "../lib/comunicacion/config.js";
 import {
   enviarConvocatoriaEvento,
@@ -35,6 +36,7 @@ router.get("/estado", requireConvocatoriaOrStaff, (_req, res) => {
     email: config.email.habilitado,
     sms: config.sms.habilitado,
     whatsapp: config.whatsapp.habilitado,
+    whatsappProveedor: whatsAppProveedor(),
     notificaciones: true,
   });
 });

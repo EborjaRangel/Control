@@ -15,6 +15,14 @@ param(
     "TWILIO_WHATSAPP_FROM",
     "TWILIO_WHATSAPP_CONTENT_SID",
     "TWILIO_WHATSAPP_CONTENT_VARIABLES",
+    "WHATSAPP_PROVIDER",
+    "WHATSAPP_CLOUD_ACCESS_TOKEN",
+    "WHATSAPP_CLOUD_PHONE_NUMBER_ID",
+    "WHATSAPP_CLOUD_API_VERSION",
+    "WHATSAPP_CLOUD_TEMPLATE_NAME",
+    "WHATSAPP_CLOUD_TEMPLATE_LANGUAGE",
+    "WHATSAPP_CLOUD_TEMPLATE_VARIABLES",
+    "WHATSAPP_CLOUD_SOLO_PLANTILLA",
     "FRONTEND_URL",
     "PUBLIC_APP_URL"
   ),
@@ -67,7 +75,7 @@ try {
     if ($LASTEXITCODE -ne 0) {
       throw "Error al definir $key en Railway"
     }
-    if ($key -match "PASS|KEY") {
+    if ($key -match "PASS|KEY|TOKEN|SECRET|SID") {
       Write-Host "OK: $key=***"
     } else {
       Write-Host "OK: $key=$($values[$key])"

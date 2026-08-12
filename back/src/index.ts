@@ -10,6 +10,7 @@ import {
   obtenerConfigConvocatoria,
   smtpUsaValoresEjemplo,
   whatsAppListo,
+  whatsAppProveedor,
 } from "./lib/comunicacion/config.js";
 import { resendConfigurado } from "./lib/comunicacion/email-resend.js";
 
@@ -57,6 +58,7 @@ app.get("/health", (_req, res) => {
     },
     whatsapp: {
       habilitado: whatsAppListo(),
+      proveedor: whatsAppProveedor(),
       from: config.whatsapp.from,
       faltantes: faltantesWhatsApp(),
     },
