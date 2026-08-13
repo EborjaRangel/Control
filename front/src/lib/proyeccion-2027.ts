@@ -13,7 +13,6 @@ import {
   COLOR_PAN,
   COLOR_PRD_PT,
   COLOR_PRI,
-  clasificarBloque,
   esPartidoValido,
   type AnioAlcaldia,
 } from "@/lib/analisis-votacion";
@@ -923,25 +922,20 @@ export function colorGanadorProyeccion(
   return solo?.color ?? COLOR_OTROS;
 }
 
-export function idBloquePanEscenario(escenarioId: EscenarioProyeccionId): string {
-  if (escenarioId === "partidos_solos") return "PAN";
-  if (escenarioId === "pan_pri_mc_vs_morena_pt_prd_verde") return "pan_pri_mc";
-  return "pan_aliados";
+function claveEsPanSolo(clave: string): boolean {
+  return clave.toUpperCase() === "PAN";
 }
 
-function panGanoEnAnio(resultado: ResultadoAlcaldiaSeccion, anio: AnioAlcaldia): boolean {
-  const votos: Record<string, number> = {};
-  for (const partido of filtrarPartidos(resultado.partidos)) {
-    const bloque = clasificarBloque(partido.clave, anio);
-    votos[bloque] = (votos[bloque] ?? 0) + partido.votos;
-  }
-  const pan = votos.pan ?? 0;
+/** Gana el PAN solo si el ticket PAN (sin coalición) supera a cualquier otro partido o alianza. */
+function panSoloGanoEnAnio(resultado: ResultadoAlcaldiaSeccion): boolean {
+  const partidos = filtrarPartidos(resultado.partidos);
+  const pan = partidos.find((p) => claveEsPanSolo(p.clave))?.votos ?? 0;
   if (pan <= 0) return false;
 
   let maxOtros = 0;
-  for (const [id, valor] of Object.entries(votos)) {
-    if (id === "pan") continue;
-    maxOtros = Math.max(maxOtros, valor);
+  for (const partido of partidos) {
+    if (claveEsPanSolo(partido.clave)) continue;
+    maxOtros = Math.max(maxOtros, partido.votos);
   }
 
   const total = resultado.votacionTotal;
@@ -949,11 +943,13 @@ function panGanoEnAnio(resultado: ResultadoAlcaldiaSeccion, anio: AnioAlcaldia):
   return ((pan - maxOtros) / total) * 100 > UMBRAL_EMPATE_PP;
 }
 
-export function aniosPanGanoHistorico(fila: AnalisisSeccionRow): AnioAlcaldia[] {
+/** Años 2015–2024 en los que el PAN ganó solo. Vacío si no ganó las cuatro elecciones en solitario. */
+export function aniosPanSoloGanoSiempre(fila: AnalisisSeccionRow): AnioAlcaldia[] {
   const anios: AnioAlcaldia[] = [];
   for (const anio of ANIOS_ELECCION_ALCALDIA) {
     const resultado = resultadoPorAnio(fila, anio);
-    if (resultado && panGanoEnAnio(resultado, anio)) anios.push(anio);
+    if (!resultado || !panSoloGanoEnAnio(resultado)) return [];
+    anios.push(anio);
   }
   return anios;
 }
@@ -1017,9 +1013,9 @@ export type CrecimientoMetaGlobalPan = {
 };
 
 /**
- * En secciones donde el PAN (solo o en alianza histórica) ganó al menos una elección
+ * En secciones donde el PAN ganó solo (voto PAN, sin coalición) las cuatro elecciones
  * 2015–2024, reparte el faltante para llegar a `metaPct` de la votación global 2027.
- * El crecimiento de cada sección no puede superar los votos que aún no tiene proyectados.
+ * Los votos 2027 son siempre del PAN en solitario, no de alianzas del escenario.
  */
 export function calcularCrecimientoMetaGlobalPan(
   filas: AnalisisSeccionRow[],
@@ -1027,22 +1023,33 @@ export function calcularCrecimientoMetaGlobalPan(
   resumen: ProyeccionAlcaldia2027,
   metaPct: number = META_GLOBAL_PAN_PCT,
 ): CrecimientoMetaGlobalPan {
-  const bloqueId = idBloquePanEscenario(resumen.escenarioId);
-  const bloque = resumen.bloques.find((b) => b.id === bloqueId);
-  const bloqueEtiqueta = bloque?.etiqueta ?? "PAN";
-  const votosPanActuales = bloque?.votos ?? 0;
+  const bloqueId = "PAN";
+  const bloqueEtiqueta = "PAN";
+  const escenarioPan = getEscenarioProyeccion("partidos_solos");
+  const proyeccionesPan =
+    resumen.escenarioId === "partidos_solos"
+      ? proyecciones
+      : filas
+          .map((fila) => proyectarSeccionEscenario(fila, escenarioPan))
+          .filter((p): p is ProyeccionSeccion2027 => p != null);
+
+  let votosPanActuales = 0;
+  for (const proy of proyeccionesPan) {
+    votosPanActuales += proy.proyeccion2027.find((b) => b.id === bloqueId)?.votos ?? 0;
+  }
+
   const votacionEstimadaTotal = resumen.votacionEstimadaTotal;
   const votosMetaGlobal = Math.round((votacionEstimadaTotal * metaPct) / 100);
   const faltanteGlobal = Math.max(0, votosMetaGlobal - votosPanActuales);
   const porcentajePanActual =
     votacionEstimadaTotal > 0 ? round2((votosPanActuales / votacionEstimadaTotal) * 100) : 0;
 
-  const porSeccion = new Map(proyecciones.map((p) => [p.seccion, p]));
+  const porSeccion = new Map(proyeccionesPan.map((p) => [p.seccion, p]));
   const candidatas: Omit<CrecimientoSeccionMeta58, "crecimientoAsignadoVotos" | "votosMeta" | "porcentajeMetaSeccion">[] =
     [];
 
   for (const fila of filas) {
-    const aniosGanoPan = aniosPanGanoHistorico(fila);
+    const aniosGanoPan = aniosPanSoloGanoSiempre(fila);
     if (!aniosGanoPan.length) continue;
     const proy = porSeccion.get(fila.seccion);
     if (!proy) continue;

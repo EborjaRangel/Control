@@ -377,7 +377,7 @@ export default function Proyeccion2027Page() {
             <p className="text-sm text-ink-secondary">
               {filas.length} secciones
               {filtroGanador || filtroHistoricasPan ? " (filtradas)" : ""}
-              {filtroHistoricasPan ? " · históricas PAN" : ""}
+              {filtroHistoricasPan ? " · PAN solo 2015–2024" : ""}
               {escenarioId === "partidos_solos"
                 ? ` · ordenadas por % de ${partidoSoloId}`
                 : ""}
@@ -740,15 +740,16 @@ function MetaGlobalPanPanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-ink">
-            Meta {META_GLOBAL_PAN_PCT}% global · secciones históricas PAN
+            Meta {META_GLOBAL_PAN_PCT}% global · secciones PAN solo
           </h2>
           <p className="mt-1 text-sm text-ink-secondary">
             El {META_GLOBAL_PAN_PCT}% es de la votación estimada total de la alcaldía (
             {formatElectores(meta.votacionEstimadaTotal)} votos), no el {META_GLOBAL_PAN_PCT}% de cada
-            sección. El faltante se reparte solo entre secciones donde el PAN —solo o en alianza
-            histórica (2015: PAN; 2018: PAN+MC+PRD; 2021 y 2024: PAN+PRI+PRD)— ganó al menos una
-            elección, en proporción al margen aún disponible. El bloque 2027 usado es{" "}
-            <strong className="text-ink">{meta.bloqueEtiqueta}</strong>.
+            sección. Solo entran secciones donde el <strong className="text-ink">PAN ganó solo</strong>{" "}
+            —con el voto del ticket PAN, sin coalición— en las cuatro elecciones 2015, 2018, 2021 y
+            2024. Se excluyen victorias en alianza (PAN+PRI, PAN+PRD, PAN+MC, etc.). El faltante se
+            reparte entre esas secciones en proporción al margen aún disponible. Los votos 2027 son
+            del <strong className="text-ink">PAN en solitario</strong>.
           </p>
         </div>
         <button
@@ -756,7 +757,7 @@ function MetaGlobalPanPanel({
           className="btn-secondary shrink-0 text-sm"
           onClick={onToggleFiltro}
         >
-          {filtroActivo ? "Quitar filtro de históricas" : "Ver solo históricas PAN"}
+          {filtroActivo ? "Quitar filtro PAN solo" : "Ver solo secciones PAN solo"}
         </button>
       </div>
 
@@ -773,7 +774,7 @@ function MetaGlobalPanPanel({
           detalle={`${formatElectores(meta.faltanteGlobal)} votos faltantes`}
         />
         <MetaResumenCard
-          titulo="Secciones históricas PAN"
+          titulo="Secciones PAN solo (4/4)"
           valor={String(meta.seccionesHistoricasPan)}
           detalle={`${formatElectores(meta.techoCrecimientoHistoricas)} votos de techo`}
         />
@@ -783,7 +784,7 @@ function MetaGlobalPanPanel({
           detalle={
             meta.alcanzableSoloEnHistoricas
               ? "Alcanzable solo en estas secciones"
-              : `Faltan ${formatElectores(meta.deficitFueraDeHistoricas)} fuera de históricas`
+              : `Faltan ${formatElectores(meta.deficitFueraDeHistoricas)} fuera de PAN solo`
           }
           destacado={!meta.alcanzableSoloEnHistoricas}
         />
@@ -791,10 +792,10 @@ function MetaGlobalPanPanel({
 
       {!meta.alcanzableSoloEnHistoricas ? (
         <p className="rounded-pin border border-line bg-surface p-3 text-sm text-ink-secondary">
-          Aunque se lleve al 100% el voto de las {meta.seccionesHistoricasPan} secciones históricas,
-          no alcanza el {meta.metaPct}% global: harían falta{" "}
+          Aunque se lleve al 100% el voto de las {meta.seccionesHistoricasPan} secciones donde el PAN
+          siempre ganó solo, no alcanza el {meta.metaPct}% global: harían falta{" "}
           <strong className="text-ink">{formatElectores(meta.deficitFueraDeHistoricas)}</strong> votos
-          adicionales en secciones donde el PAN no ha ganado.
+          adicionales en el resto de la alcaldía.
         </p>
       ) : meta.faltanteGlobal === 0 ? (
         <p className="rounded-pin border border-line bg-surface p-3 text-sm text-ink-secondary">
@@ -808,7 +809,7 @@ function MetaGlobalPanPanel({
           <thead>
             <tr className="border-b border-line bg-surface-muted/80 text-xs uppercase tracking-wide text-ink-secondary">
               <th className="px-4 py-3 font-semibold">Sección</th>
-              <th className="px-4 py-3 font-semibold">Años ganó PAN</th>
+              <th className="px-4 py-3 font-semibold">Años PAN solo</th>
               <th className="px-4 py-3 text-right font-semibold">Votación est.</th>
               <th className="px-4 py-3 text-right font-semibold">Proyectado</th>
               <th className="px-4 py-3 text-right font-semibold">Techo</th>
