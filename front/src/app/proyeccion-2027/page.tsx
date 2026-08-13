@@ -14,17 +14,21 @@ import {
   calcularProyeccionAlcaldia2027,
   colorGanadorProyeccion,
   colorPartidoSolo,
-  ESCENARIOS_PROYECCION,
+  escenarioDesdeVista,
+  etiquetaAniosRegresion,
+  esVistaMetaPanSolo58,
   etiquetaConfianza,
   formatResumenGanador,
   generarAnalisisNarrativoProyeccion,
   META_GLOBAL_PAN_PCT,
+  OPCIONES_VISTA_PROYECCION,
   patronesResaltadoBloques,
   segmentosTituloEscenario,
   type CrecimientoMetaGlobalPan,
   type EscenarioProyeccionId,
   type ProyeccionAlcaldia2027,
   type ProyeccionSeccion2027,
+  type VistaProyeccionId,
 } from "@/lib/proyeccion-2027";
 import { ColoniasSeccionPanel, textoBusquedaColonias } from "@/components/ColoniasSeccionPanel";
 import { COLOR_PAN } from "@/lib/analisis-votacion";
@@ -35,11 +39,10 @@ export default function Proyeccion2027Page() {
   const [data, setData] = useState<AnalisisSeccionesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [escenarioId, setEscenarioId] = useState<EscenarioProyeccionId>("morena_pt_prd_pan_pri_mc");
+  const [vistaId, setVistaId] = useState<VistaProyeccionId>("morena_pt_prd_pan_pri_mc");
   const [partidoSoloId, setPartidoSoloId] = useState("MORENA");
   const [buscar, setBuscar] = useState("");
   const [filtroGanador, setFiltroGanador] = useState("");
-  const [filtroHistoricasPan, setFiltroHistoricasPan] = useState(false);
   const [expandido, setExpandido] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -67,11 +70,14 @@ export default function Proyeccion2027Page() {
   useEffect(() => {
     setFiltroGanador("");
     setExpandido(null);
-  }, [escenarioId]);
+  }, [vistaId]);
 
-  const escenarioConfig = useMemo(
-    () => ESCENARIOS_PROYECCION.find((e) => e.id === escenarioId) ?? ESCENARIOS_PROYECCION[0],
-    [escenarioId],
+  const esMeta58 = esVistaMetaPanSolo58(vistaId);
+  const escenarioId = escenarioDesdeVista(vistaId);
+
+  const vistaConfig = useMemo(
+    () => OPCIONES_VISTA_PROYECCION.find((e) => e.id === vistaId) ?? OPCIONES_VISTA_PROYECCION[0],
+    [vistaId],
   );
 
   const { proyecciones, resumen } = useMemo(
@@ -89,15 +95,10 @@ export default function Proyeccion2027Page() {
 
   const crecimientoMeta58 = useMemo(
     () =>
-      data && resumen
+      data && resumen && esMeta58
         ? calcularCrecimientoMetaGlobalPan(data.filas, proyecciones, resumen)
         : null,
-    [data, proyecciones, resumen],
-  );
-
-  const seccionesHistoricasPan = useMemo(
-    () => new Set(crecimientoMeta58?.filas.map((f) => f.seccion) ?? []),
-    [crecimientoMeta58],
+    [data, proyecciones, resumen, esMeta58],
   );
 
   const filas = useMemo(() => {
@@ -105,7 +106,6 @@ export default function Proyeccion2027Page() {
     return proyecciones
       .filter((p) => {
         if (filtroGanador && p.ganadorSeccion !== filtroGanador) return false;
-        if (filtroHistoricasPan && !seccionesHistoricasPan.has(p.seccion)) return false;
         if (!q) return true;
         return (
           p.seccion.includes(q) ||
@@ -122,29 +122,21 @@ export default function Proyeccion2027Page() {
         }
         return Number(a.seccion) - Number(b.seccion);
       });
-  }, [
-    proyecciones,
-    buscar,
-    filtroGanador,
-    filtroHistoricasPan,
-    seccionesHistoricasPan,
-    escenarioId,
-    partidoSoloId,
-  ]);
+  }, [proyecciones, buscar, filtroGanador, escenarioId, partidoSoloId]);
 
   const partidoSeleccionado = useMemo(() => {
-    if (!resumen || escenarioId !== "partidos_solos") return null;
+    if (!resumen || escenarioId !== "partidos_solos" || esMeta58) return null;
     return resumen.bloques.find((b) => b.id === partidoSoloId) ?? null;
-  }, [resumen, escenarioId, partidoSoloId]);
+  }, [resumen, escenarioId, partidoSoloId, esMeta58]);
 
   const analisisNarrativo = useMemo(() => {
-    if (!resumen) return null;
+    if (!resumen || esMeta58) return null;
     return generarAnalisisNarrativoProyeccion(
       escenarioId,
       resumen,
       escenarioId === "partidos_solos" ? partidoSoloId : undefined,
     );
-  }, [resumen, escenarioId, partidoSoloId]);
+  }, [resumen, escenarioId, partidoSoloId, esMeta58]);
 
   if (!isAdmin) return null;
 
@@ -157,7 +149,7 @@ export default function Proyeccion2027Page() {
             {loading
               ? "Cargando…"
               : resumen
-                ? `${resumen.seccionesProyectadas} secciones · ${escenarioConfig.etiqueta} · regresión OLS 2015–2024`
+                ? `${resumen.seccionesProyectadas} secciones · ${vistaConfig.etiqueta} · OLS ${etiquetaAniosRegresion(resumen.aniosRegresion)}`
                 : "Estimación por sección con base en cuatro elecciones de alcaldía/jefatura"}
           </p>
         </div>
@@ -167,23 +159,23 @@ export default function Proyeccion2027Page() {
 
       {!loading ? (
         <section className="panel-soft space-y-4 p-4">
-          <h2 className="text-base font-semibold text-ink">Escenario de coaliciones</h2>
+          <h2 className="text-base font-semibold text-ink">Escenario</h2>
           <div className="grid gap-3 lg:grid-cols-2">
             <label className="text-sm">
               <span className="mb-1 block text-ink-secondary">Escenario</span>
               <select
                 className="input w-full"
-                value={escenarioId}
-                onChange={(e) => setEscenarioId(e.target.value as EscenarioProyeccionId)}
+                value={vistaId}
+                onChange={(e) => setVistaId(e.target.value as VistaProyeccionId)}
               >
-                {ESCENARIOS_PROYECCION.map((esc) => (
+                {OPCIONES_VISTA_PROYECCION.map((esc) => (
                   <option key={esc.id} value={esc.id}>
                     {esc.etiqueta}
                   </option>
                 ))}
               </select>
             </label>
-            {escenarioId === "partidos_solos" ? (
+            {escenarioId === "partidos_solos" && !esMeta58 ? (
               <label className="text-sm">
                 <span className="mb-1 block text-ink-secondary">Partido a analizar</span>
                 <select
@@ -200,14 +192,18 @@ export default function Proyeccion2027Page() {
               </label>
             ) : null}
           </div>
-          <p className="text-sm text-ink-secondary">{escenarioConfig.descripcion}</p>
-          {analisisNarrativo ? (
+          <p className="text-sm text-ink-secondary">{vistaConfig.descripcion}</p>
+          {analisisNarrativo && !esMeta58 ? (
             <CuadroAnalisisEscenario analisis={analisisNarrativo} escenarioId={escenarioId} />
           ) : null}
         </section>
       ) : null}
 
-      {!loading && resumen ? (
+      {!loading && resumen && esMeta58 && crecimientoMeta58 ? (
+        <MetaGlobalPanPanel meta={crecimientoMeta58} />
+      ) : null}
+
+      {!loading && resumen && !esMeta58 ? (
         <>
           <section className="rounded-pin border border-line bg-surface-soft p-4 text-sm leading-relaxed text-ink-secondary">
             <p className="font-semibold text-ink">{formatResumenGanador(resumen)}</p>
@@ -296,14 +292,6 @@ export default function Proyeccion2027Page() {
             </div>
           </section>
 
-          {crecimientoMeta58 ? (
-            <MetaGlobalPanPanel
-              meta={crecimientoMeta58}
-              filtroActivo={filtroHistoricasPan}
-              onToggleFiltro={() => setFiltroHistoricasPan((v) => !v)}
-            />
-          ) : null}
-
           {escenarioId === "partidos_solos" ? (
             <section className="rounded-pin border border-line bg-surface p-4 text-sm">
               <h2 className="font-semibold text-ink">Ranking partidos solos (proyección OLS)</h2>
@@ -360,14 +348,11 @@ export default function Proyeccion2027Page() {
                   placeholder="Sección, colonia, distrito…"
                 />
               </label>
-              {filtroGanador || filtroHistoricasPan ? (
+              {filtroGanador ? (
                 <button
                   type="button"
                   className="btn-secondary text-sm"
-                  onClick={() => {
-                    setFiltroGanador("");
-                    setFiltroHistoricasPan(false);
-                  }}
+                  onClick={() => setFiltroGanador("")}
                 >
                   Quitar filtro
                 </button>
@@ -375,9 +360,7 @@ export default function Proyeccion2027Page() {
             </div>
 
             <p className="text-sm text-ink-secondary">
-              {filas.length} secciones
-              {filtroGanador || filtroHistoricasPan ? " (filtradas)" : ""}
-              {filtroHistoricasPan ? " · PAN solo 2015–2024" : ""}
+              {filas.length} secciones{filtroGanador ? " (filtradas)" : ""}
               {escenarioId === "partidos_solos"
                 ? ` · ordenadas por % de ${partidoSoloId}`
                 : ""}
@@ -608,9 +591,11 @@ function ProyeccionSeccionCard({
       const short =
         escenarioId === "partidos_solos"
           ? b.id.slice(0, 3)
-          : id === "morena_aliados" || id === "morena_prd" || id === "morena_pt_prd_verde"
-            ? "M+"
-            : id === "pan_aliados"
+          : id === "morena_aliados" || id === "morena_prd" || id === "morena_pt_prd_verde" || id === "morena_pt"
+            ? id === "morena_pt"
+              ? "M+PT"
+              : "M+"
+            : id === "pan_aliados" || id === "pan_pri"
               ? "P+"
               : id === "pan_pri_mc"
                 ? "P+MC"
@@ -726,39 +711,22 @@ function ProyeccionSeccionCard({
   );
 }
 
-function MetaGlobalPanPanel({
-  meta,
-  filtroActivo,
-  onToggleFiltro,
-}: {
-  meta: CrecimientoMetaGlobalPan;
-  filtroActivo: boolean;
-  onToggleFiltro: () => void;
-}) {
+function MetaGlobalPanPanel({ meta }: { meta: CrecimientoMetaGlobalPan }) {
   return (
     <section className="panel-soft space-y-4 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-base font-semibold text-ink">
-            Meta {META_GLOBAL_PAN_PCT}% global · secciones PAN solo
-          </h2>
-          <p className="mt-1 text-sm text-ink-secondary">
-            El {META_GLOBAL_PAN_PCT}% es de la votación estimada total de la alcaldía (
-            {formatElectores(meta.votacionEstimadaTotal)} votos), no el {META_GLOBAL_PAN_PCT}% de cada
-            sección. Solo entran secciones donde el <strong className="text-ink">PAN ganó solo</strong>{" "}
-            —con el voto del ticket PAN, sin coalición— en las cuatro elecciones 2015, 2018, 2021 y
-            2024. Se excluyen victorias en alianza (PAN+PRI, PAN+PRD, PAN+MC, etc.). El faltante se
-            reparte entre esas secciones en proporción al margen aún disponible. Los votos 2027 son
-            del <strong className="text-ink">PAN en solitario</strong>.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="btn-secondary shrink-0 text-sm"
-          onClick={onToggleFiltro}
-        >
-          {filtroActivo ? "Quitar filtro PAN solo" : "Ver solo secciones PAN solo"}
-        </button>
+      <div className="min-w-0">
+        <h2 className="text-base font-semibold text-ink">
+          Meta {META_GLOBAL_PAN_PCT}% global · secciones PAN solo
+        </h2>
+        <p className="mt-1 text-sm text-ink-secondary">
+          El {META_GLOBAL_PAN_PCT}% es de la votación estimada total de la alcaldía (
+          {formatElectores(meta.votacionEstimadaTotal)} votos), no el {META_GLOBAL_PAN_PCT}% de cada
+          sección. Solo entran secciones donde el <strong className="text-ink">PAN ganó solo</strong>{" "}
+          —con el voto del ticket PAN, sin coalición— en las cuatro elecciones 2015, 2018, 2021 y
+          2024. Se excluyen victorias en alianza (PAN+PRI, PAN+PRD, PAN+MC, etc.). El faltante se
+          reparte entre esas secciones en proporción al margen aún disponible. Los votos 2027 son del{" "}
+          <strong className="text-ink">PAN en solitario</strong>.
+        </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -21,7 +21,8 @@ export type EscenarioProyeccionId =
   | "morena_pt_prd_pan_pri_mc"
   | "partidos_solos"
   | "morena_prd_pan_pri_mc"
-  | "pan_pri_mc_vs_morena_pt_prd_verde";
+  | "pan_pri_mc_vs_morena_pt_prd_verde"
+  | "intermedias_morena_pt_pan_pri";
 
 export type BloqueProyeccionResumen = {
   id: string;
@@ -77,6 +78,7 @@ export type ProyeccionAlcaldia2027 = {
   verificacion: VerificacionProyeccion2027;
   partidosDisponibles?: PartidoSoloOpcion[];
   contextoHistorico: ContextoHistoricoProyeccion;
+  aniosRegresion: AnioAlcaldia[];
 };
 
 export type MaximoHistoricoBloque = {
@@ -129,6 +131,8 @@ export type ConfigEscenarioProyeccion = {
   descripcion: string;
   bloques: { id: string; etiqueta: string; color: string }[];
   distribuir: (clave: string, votos: number) => Record<string, number>;
+  /** Por defecto 2015, 2018, 2021 y 2024. */
+  aniosRegresion?: AnioAlcaldia[];
 };
 
 const ANIO_PROYECCION = 2027;
@@ -136,7 +140,8 @@ const UMBRAL_EMPATE_PP = 0.5;
 const COLOR_PT = "#c62828";
 const COLOR_PVEM = "#00843d";
 
-/** Meta de votación global de la alcaldía para el bloque PAN (o su alianza del escenario). */
+/** Elecciones intermedias (sin presidente ni jefe de gobierno), comparables a 2027. */
+export const ANIOS_INTERMEDIAS: AnioAlcaldia[] = [2015, 2021];
 export const META_GLOBAL_PAN_PCT = 58;
 
 export const ESCENARIOS_PROYECCION: ConfigEscenarioProyeccion[] = [
@@ -174,6 +179,21 @@ export const ESCENARIOS_PROYECCION: ConfigEscenarioProyeccion[] = [
     distribuir: distribuirEscenarioPanPriMcVsMorena,
   },
   {
+    id: "intermedias_morena_pt_pan_pri",
+    etiqueta: "Intermedias MORENA+PT · PAN+PRI · demás solos",
+    descripcion:
+      "Regresión solo con elecciones intermedias 2015 y 2021 (comparables a 2027). MORENA con PT · PAN con PRI · MC, PRD y Verde por separado. Cubre las 403 secciones.",
+    bloques: [
+      { id: "morena_pt", etiqueta: "MORENA + PT", color: COLOR_MORENA },
+      { id: "pan_pri", etiqueta: "PAN + PRI", color: COLOR_PAN },
+      { id: "MC", etiqueta: "MC", color: COLOR_MC },
+      { id: "PRD", etiqueta: "PRD", color: COLOR_PRD_PT },
+      { id: "PVEM", etiqueta: "PVEM (Verde)", color: COLOR_PVEM },
+    ],
+    distribuir: distribuirEscenarioIntermedias,
+    aniosRegresion: ANIOS_INTERMEDIAS,
+  },
+  {
     id: "partidos_solos",
     etiqueta: "Partidos solos",
     descripcion: "Cada partido compite por separado · selecciona uno en el combo.",
@@ -181,6 +201,37 @@ export const ESCENARIOS_PROYECCION: ConfigEscenarioProyeccion[] = [
     distribuir: distribuirPartidoSolo,
   },
 ];
+
+export const VISTA_META_PAN_SOLO_58 = "meta_pan_solo_58" as const;
+
+export type VistaProyeccionId = EscenarioProyeccionId | typeof VISTA_META_PAN_SOLO_58;
+
+export const OPCIONES_VISTA_PROYECCION: {
+  id: VistaProyeccionId;
+  etiqueta: string;
+  descripcion: string;
+}[] = [
+  ...ESCENARIOS_PROYECCION.map((esc) => ({
+    id: esc.id,
+    etiqueta: esc.etiqueta,
+    descripcion: esc.descripcion,
+  })),
+  {
+    id: VISTA_META_PAN_SOLO_58,
+    etiqueta: `Meta ${META_GLOBAL_PAN_PCT}% PAN solo`,
+    descripcion:
+      "Solo secciones donde el PAN ganó solo (voto PAN, sin coalición) en 2015, 2018, 2021 y 2024. Muestra cuántos votos extra hacen falta en esas secciones para llegar al 58% de la votación total de la alcaldía.",
+  },
+];
+
+export function esVistaMetaPanSolo58(id: VistaProyeccionId): id is typeof VISTA_META_PAN_SOLO_58 {
+  return id === VISTA_META_PAN_SOLO_58;
+}
+
+export function escenarioDesdeVista(id: VistaProyeccionId): EscenarioProyeccionId {
+  if (esVistaMetaPanSolo58(id)) return "partidos_solos";
+  return id;
+}
 
 const PARTIDOS_SOLOS_CANONICOS: PartidoSoloOpcion[] = [
   { id: "MORENA", etiqueta: "MORENA", color: COLOR_MORENA },
@@ -262,6 +313,15 @@ function mapTokenDosBloques(token: string): string | null {
 function mapTokenPartidoSolo(token: string): string | null {
   if (token === "MOR") return "MORENA";
   if (["MORENA", "PAN", "PRI", "MC", "PRD", "PT", "PVEM", "PES"].includes(token)) return token;
+  return null;
+}
+
+function mapTokenIntermedias(token: string): string | null {
+  if (token === "MC" || token === "CONVERGENCIA") return "MC";
+  if (token === "PRD") return "PRD";
+  if (token === "PVEM") return "PVEM";
+  if (token === "PAN" || token === "PRI") return "pan_pri";
+  if (token === "MOR" || token === "MORENA" || token === "PT") return "morena_pt";
   return null;
 }
 
@@ -406,6 +466,57 @@ function distribuirPartidoSolo(clave: string, votos: number): Record<string, num
       return;
     }
     const split = repartoCoalicion(k, v, mapTokenPartidoSolo);
+    if (split) {
+      for (const [id, val] of Object.entries(split)) out[id] = (out[id] ?? 0) + val;
+      return;
+    }
+    out.otros = v;
+  });
+}
+
+const IDS_INTERMEDIAS = ["morena_pt", "pan_pri", "MC", "PRD", "PVEM"];
+
+function distribuirEscenarioIntermedias(clave: string, votos: number): Record<string, number> {
+  return aplicarDistribucion(clave, votos, IDS_INTERMEDIAS, (k, v, out) => {
+    if (k === "MC" || k.includes("CONVERGENCIA")) {
+      out.MC = v;
+      return;
+    }
+    if (k === "PRD") {
+      out.PRD = v;
+      return;
+    }
+    if (k === "PVEM") {
+      out.PVEM = v;
+      return;
+    }
+    if (k === "PVEM_PT_MORENA") {
+      out.morena_pt = v * (2 / 3);
+      out.PVEM = v / 3;
+      return;
+    }
+    if (k === "PRD_PT" || k === "PT_PRD") {
+      out.morena_pt = v * 0.5;
+      out.PRD = v * 0.5;
+      return;
+    }
+    if (
+      k === "MORENA" ||
+      k.includes("MORENA") ||
+      k === "PT" ||
+      k === "PT_MOR" ||
+      k === "PT_MORENA" ||
+      k === "MOR_PES" ||
+      k === "PT_MOR_PES"
+    ) {
+      out.morena_pt = v;
+      return;
+    }
+    if (k === "PAN" || k === "PRI" || k.startsWith("PRI_") || k === "PAN_PRI") {
+      out.pan_pri = v;
+      return;
+    }
+    const split = repartoCoalicion(k, v, mapTokenIntermedias);
     if (split) {
       for (const [id, val] of Object.entries(split)) out[id] = (out[id] ?? 0) + val;
       return;
@@ -826,9 +937,10 @@ export function calcularProyeccionAlcaldia2027(
 } {
   const escenario = getEscenarioProyeccion(escenarioId);
   const principales = bloquesEscenario(escenario).map((b) => b.id);
+  const aniosRegresion = escenario.aniosRegresion ?? ANIOS_ELECCION_ALCALDIA;
 
   const proyecciones = filas
-    .map((f) => proyectarSeccionEscenario(f, escenario))
+    .map((f) => proyectarSeccionEscenario(f, escenario, { aniosRegresion }))
     .filter((p): p is ProyeccionSeccion2027 => p != null);
 
   const acumVotos: Record<string, number> = Object.fromEntries(
@@ -882,7 +994,7 @@ export function calcularProyeccionAlcaldia2027(
     proyecciones,
     resumen: {
       escenarioId,
-      escenario: `${escenario.etiqueta} · proyección OLS 2015–2024 por sección`,
+      escenario: `${escenario.etiqueta} · proyección OLS ${etiquetaAniosRegresion(aniosRegresion)} por sección`,
       bloques,
       ganadorVotos,
       ganadorPorcentaje,
@@ -898,8 +1010,15 @@ export function calcularProyeccionAlcaldia2027(
       partidosDisponibles:
         escenarioId === "partidos_solos" ? PARTIDOS_SOLOS_CANONICOS : undefined,
       contextoHistorico,
+      aniosRegresion,
     },
   };
+}
+
+export function etiquetaAniosRegresion(anios: AnioAlcaldia[]): string {
+  if (anios.length <= 1) return String(anios[0] ?? "");
+  if (anios.length === 2) return `${anios[0]} y ${anios[1]}`;
+  return `${anios[0]}–${anios[anios.length - 1]}`;
 }
 
 export function etiquetaConfianza(confianza: ProyeccionSeccion2027["confianza"]): string {
@@ -1157,6 +1276,14 @@ export function segmentosTituloEscenario(escenarioId: EscenarioProyeccionId): { 
       ];
     case "partidos_solos":
       return [{ texto: "Partidos solos", color: COLOR_OTROS }];
+    case "intermedias_morena_pt_pan_pri":
+      return [
+        { texto: "MORENA+PT", color: COLOR_MORENA },
+        { texto: "PAN+PRI", color: COLOR_PAN },
+        { texto: "MC", color: COLOR_MC },
+        { texto: "PRD", color: COLOR_PRD_PT },
+        { texto: "Verde", color: COLOR_PVEM },
+      ];
   }
 }
 
@@ -1168,6 +1295,8 @@ export function patronesResaltadoBloques(
     { patron: "MORENA + PT + PRD", color: COLOR_MORENA },
     { patron: "MORENA+PT+PRD+Verde", color: COLOR_PVEM },
     { patron: "MORENA+PT+PRD", color: COLOR_MORENA },
+    { patron: "MORENA + PT", color: COLOR_MORENA },
+    { patron: "MORENA+PT", color: COLOR_MORENA },
     { patron: "MORENA + PRD", color: COLOR_MORENA },
     { patron: "MORENA+PRD", color: COLOR_MORENA },
     { patron: "PAN + PRI + MC", color: COLOR_PAN },
@@ -1223,10 +1352,12 @@ function bloquesPrincipalesOrdenados(resumen: ProyeccionAlcaldia2027): BloquePro
     .sort((a, b) => b.porcentaje - a.porcentaje);
 }
 
-function textoExplicacionOls(): string {
+function textoExplicacionOls(resumen: ProyeccionAlcaldia2027): string {
+  const anios = etiquetaAniosRegresion(resumen.aniosRegresion);
+  const cuantos = resumen.aniosRegresion.length;
   return (
-    "¿Qué hace el OLS? La regresión lineal por mínimos cuadrados (OLS) traza la recta que mejor " +
-    "ajusta los cuatro puntos históricos (2015, 2018, 2021 y 2024) de cada bloque en cada sección: " +
+    `¿Qué hace el OLS? La regresión lineal por mínimos cuadrados (OLS) traza la recta que mejor ` +
+    `ajusta los ${cuantos} puntos históricos (${anios}) de cada bloque en cada sección: ` +
     "minimiza la suma de los errores al cuadrado entre el valor real y el valor que la recta " +
     "predice. Esa recta captura la tendencia local (sube, baja o se mantiene) y se prolonga hasta 2027. " +
     "No es un promedio simple: una sección donde MORENA creció en las últimas elecciones proyectará " +
@@ -1277,7 +1408,7 @@ function textoMaximosHistoricos(resumen: ProyeccionAlcaldia2027): string {
 function textoMetodologiaBase(resumen: ProyeccionAlcaldia2027): string {
   return (
     `La estimación parte de ${resumen.seccionesProyectadas} secciones con histórico IECM ` +
-    `(jefatura delegacional 2015 y alcaldía 2018, 2021 y 2024). En cada sección se homologan los ` +
+    `(${etiquetaAniosRegresion(resumen.aniosRegresion)}). En cada sección se homologan los ` +
     `votos al escenario seleccionado y se calcula el porcentaje de cada bloque por elección. ` +
     `La participación también se extrapola con OLS para estimar votos. ` +
     `La validación cruzada leave-one-out arroja un error medio de ${resumen.errorValidacionMediaPp.toFixed(2)} ` +
@@ -1349,6 +1480,13 @@ function homologacionEscenario(escenarioId: EscenarioProyeccionId): string {
         "se reparten entre los partidos del ticket (p. ej. PAN_PRI_PRD aporta a PAN, PRI y PRD). " +
         "El ganador de la alcaldía sería quien más votos agregue en este escenario fragmentado."
       );
+    case "intermedias_morena_pt_pan_pri":
+      return (
+        "Este escenario usa solo las elecciones intermedias 2015 y 2021 (sin presidente ni jefe de gobierno), " +
+        "las más parecidas a 2027. MORENA va con PT; PAN va con PRI; MC, PRD y PVEM (Verde) compiten solos. " +
+        "La alianza PRD-PT de 2015 se parte a la mitad entre PRD y el bloque MORENA+PT. " +
+        "La recta OLS de cada sección se traza con esos dos puntos y se prolonga a 2027 en las 403 secciones."
+      );
   }
 }
 
@@ -1391,7 +1529,7 @@ export function generarAnalisisNarrativoProyeccion(
   const escenario = getEscenarioProyeccion(escenarioId);
   const parrafos: string[] = [
     homologacionEscenario(escenarioId),
-    textoExplicacionOls(),
+    textoExplicacionOls(resumen),
     textoMetodologiaBase(resumen),
     textoTendenciasPorSeccion(resumen),
     textoMaximosHistoricos(resumen),
@@ -1425,6 +1563,14 @@ export function generarAnalisisNarrativoProyeccion(
     parrafos.push(
       "Este duelo binario concentra el voto útil: quien gane secciones en el centro de Coyoacán probablemente arrastre " +
         "la alcaldía. La suma de los dos bloques concentra la mayor parte del electorado proyectado.",
+    );
+  }
+
+  if (escenarioId === "intermedias_morena_pt_pan_pri") {
+    parrafos.push(
+      "Al omitir 2018 y 2024 (años concurrentes con presidencia y jefatura de gobierno) se evita que el arrastre " +
+        "presidencial distorsione la tendencia de una elección intermedia como 2027. MC, PRD y Verde quedan como " +
+        "fuerzas propias y pueden restar margen a MORENA+PT o a PAN+PRI según la sección.",
     );
   }
 
