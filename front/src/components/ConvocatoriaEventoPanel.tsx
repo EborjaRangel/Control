@@ -17,6 +17,8 @@ import {
   type ConvocatoriaFormValues,
 } from "@/lib/validation-convocatoria";
 
+const TELEFONO_PRUEBA_DEFAULT = "5534845878";
+
 type Props = {
   eventoId: string;
   totalElegibles: number;
@@ -74,20 +76,10 @@ export function ConvocatoriaEventoPanel({ eventoId, totalElegibles }: Props) {
       <div>
         <h2 className="section-title">Convocatoria</h2>
         <p className="text-sm text-ink-secondary">
-          Captura el mensaje y envíalo a los {totalElegibles} dirigente(s) elegibles por{" "}
-          <strong>correo electrónico</strong>, <strong>SMS</strong> y <strong>WhatsApp</strong>.
+          Envío masivo por alcance del evento, o prueba a un solo celular registrado en un
+          dirigente.
         </p>
       </div>
-
-      {totalElegibles === 0 ? (
-        <div className="alert-error text-sm">
-          <p className="font-medium">No hay dirigentes elegibles</p>
-          <p className="mt-1">
-            Ningún dirigente activo coincide con el alcance de este evento. Edita el evento
-            (Asistencia → evento → editar) y elige un alcance con dirigentes registrados.
-          </p>
-        </div>
-      ) : null}
 
       {config && !config.listo ? (
         <div className="alert-error text-sm">
@@ -123,13 +115,15 @@ export function ConvocatoriaEventoPanel({ eventoId, totalElegibles }: Props) {
       </ul>
 
       <Formik
-        initialValues={{ mensaje: "", telefonoPrueba: "" }}
+        initialValues={{ mensaje: "", telefonoPrueba: TELEFONO_PRUEBA_DEFAULT }}
         validationSchema={convocatoriaEventoSchema}
         onSubmit={async (values, { setSubmitting, resetForm }) => {
           setError(null);
           try {
             await handleEnviar(values);
-            resetForm();
+            resetForm({
+              values: { mensaje: "", telefonoPrueba: TELEFONO_PRUEBA_DEFAULT },
+            });
           } catch (err) {
             setError(err instanceof Error ? err.message : "Error al enviar");
           } finally {
@@ -140,52 +134,82 @@ export function ConvocatoriaEventoPanel({ eventoId, totalElegibles }: Props) {
         {({ isSubmitting, values }) => {
           const telefonoPrueba = values.telefonoPrueba.trim();
           const modoPrueba = /^\d{10}$/.test(telefonoPrueba);
-          const puedeEnviar = Boolean(config?.listo) && (modoPrueba || totalElegibles > 0);
+          const mensajeOk = values.mensaje.trim().length >= 10;
+          const puedeEnviarMasivo =
+            Boolean(config?.listo) && totalElegibles > 0 && mensajeOk && !modoPrueba;
+          const puedeEnviarPrueba = Boolean(config?.listo) && modoPrueba && mensajeOk;
+          const puedeEnviar = puedeEnviarMasivo || puedeEnviarPrueba;
 
           return (
-          <Form className="space-y-4">
-            <div className="panel-soft space-y-3 border border-pin/20">
-              <div>
-                <p className="text-sm font-semibold text-ink">Prueba a celular específico</p>
-                <p className="mt-1 text-xs text-ink-secondary">
-                  Ignora el alcance del evento. Busca un dirigente activo con ese celular y envía
-                  solo a esa persona (correo + WhatsApp).
-                </p>
+            <Form className="space-y-4">
+              <div className="panel-pin space-y-3 border-2 border-pin/30">
+                <div>
+                  <p className="text-sm font-bold text-pin">Prueba a celular específico</p>
+                  <p className="mt-1 text-xs text-ink-secondary">
+                    Ignora el alcance del evento. El celular debe existir en la ficha de un
+                    dirigente activo. Envía correo y WhatsApp solo a esa persona.
+                  </p>
+                </div>
+                <FormField
+                  label="Celular de prueba (10 dígitos)"
+                  name="telefonoPrueba"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  placeholder="5534845878"
+                />
+                {modoPrueba ? (
+                  <p className="text-xs font-medium text-success-text">
+                    Modo prueba activo → enviará a {telefonoPrueba}
+                  </p>
+                ) : (
+                  <p className="text-xs text-ink-secondary">
+                    Escribe 10 dígitos para activar el envío de prueba.
+                  </p>
+                )}
               </div>
-              <FormField
-                label="Celular de prueba (10 dígitos)"
-                name="telefonoPrueba"
-                inputMode="numeric"
-                autoComplete="tel"
-                placeholder="5534845878"
+
+              {totalElegibles === 0 && !modoPrueba ? (
+                <div className="rounded-pin border border-warning-text/30 bg-warning-bg px-3 py-2 text-sm text-warning-text">
+                  <p className="font-medium">Alcance sin dirigentes ({totalElegibles})</p>
+                  <p className="mt-1">
+                    Este evento no coincide con ningún dirigente. Usa el celular de prueba arriba
+                    o edita el alcance en Asistencia.
+                  </p>
+                </div>
+              ) : null}
+
+              {totalElegibles > 0 && !modoPrueba ? (
+                <p className="text-sm text-ink-secondary">
+                  Convocatoria masiva: {totalElegibles} dirigente(s) elegibles por correo, SMS y
+                  WhatsApp. Deja vacío el celular de prueba o bórralo para enviar a todos.
+                </p>
+              ) : null}
+
+              <FormTextarea
+                label="Mensaje de convocatoria"
+                name="mensaje"
+                placeholder="Escribe la convocatoria al evento: fecha, hora, lugar, indicaciones de asistencia…"
+                maxLength={1000}
+                className="min-h-[120px] resize-y"
               />
-            </div>
+              <span className="-mt-2 block text-xs text-ink-secondary">
+                {values.mensaje.trim().length}/1000 caracteres (mínimo 10)
+              </span>
 
-            <FormTextarea
-              label="Mensaje de convocatoria"
-              name="mensaje"
-              placeholder="Escribe la convocatoria al evento: fecha, hora, lugar, indicaciones de asistencia…"
-              maxLength={1000}
-              className="min-h-[120px] resize-y"
-            />
-            <span className="-mt-2 block text-xs text-ink-secondary">
-              {values.mensaje.trim().length}/1000 caracteres
-            </span>
-
-            <button
-              type="submit"
-              className="btn-primary btn-responsive"
-              disabled={isSubmitting || !puedeEnviar}
-            >
-              {isSubmitting
-                ? "Enviando convocatoria…"
-                : modoPrueba
-                  ? `Enviar prueba a ${telefonoPrueba}`
-                  : totalElegibles === 0
-                    ? "Sin dirigentes elegibles"
-                    : "Enviar convocatoria (3 vías)"}
-            </button>
-          </Form>
+              <button
+                type="submit"
+                className="btn-primary btn-responsive"
+                disabled={isSubmitting || !puedeEnviar}
+              >
+                {isSubmitting
+                  ? "Enviando…"
+                  : modoPrueba
+                    ? `Enviar prueba a ${telefonoPrueba}`
+                    : totalElegibles === 0
+                      ? "Indica celular de prueba o alcance"
+                      : `Enviar convocatoria a ${totalElegibles} dirigente(s)`}
+              </button>
+            </Form>
           );
         }}
       </Formik>
@@ -255,37 +279,37 @@ export function ConvocatoriaEventoPanel({ eventoId, totalElegibles }: Props) {
           <div className="desktop-only-table">
             <TableWrap>
               <table className="w-full min-w-[480px] text-left text-xs">
-              <thead>
-                <tr className="border-b border-line text-ink-secondary">
-                  <th className="py-2 pr-2">Dirigente</th>
-                  <th className="py-2 pr-2">Vía</th>
-                  <th className="py-2 pr-2">Destino</th>
-                  <th className="py-2">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {envios.ultimos.slice(0, 15).map((e) => (
-                  <tr key={e.id} className="border-b border-line/60">
-                    <td className="py-2 pr-2">{e.dirigente.nombreCompleto}</td>
-                    <td className="py-2 pr-2">{CANAL_CONVOCATORIA_LABEL[e.canal] ?? e.canal}</td>
-                    <td className="py-2 pr-2 font-mono text-[11px]">{e.destino || "—"}</td>
-                    <td className="py-2">
-                      <span
-                        className={
-                          e.estado === "ENVIADO"
-                            ? "badge-pin"
-                            : e.estado === "FALLIDO"
-                              ? "badge-muted"
-                              : "badge-warning"
-                        }
-                      >
-                        {ESTADO_ENVIO_LABEL[e.estado] ?? e.estado}
-                      </span>
-                    </td>
+                <thead>
+                  <tr className="border-b border-line text-ink-secondary">
+                    <th className="py-2 pr-2">Dirigente</th>
+                    <th className="py-2 pr-2">Vía</th>
+                    <th className="py-2 pr-2">Destino</th>
+                    <th className="py-2">Estado</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {envios.ultimos.slice(0, 15).map((e) => (
+                    <tr key={e.id} className="border-b border-line/60">
+                      <td className="py-2 pr-2">{e.dirigente.nombreCompleto}</td>
+                      <td className="py-2 pr-2">{CANAL_CONVOCATORIA_LABEL[e.canal] ?? e.canal}</td>
+                      <td className="py-2 pr-2 font-mono text-[11px]">{e.destino || "—"}</td>
+                      <td className="py-2">
+                        <span
+                          className={
+                            e.estado === "ENVIADO"
+                              ? "badge-pin"
+                              : e.estado === "FALLIDO"
+                                ? "badge-muted"
+                                : "badge-warning"
+                          }
+                        >
+                          {ESTADO_ENVIO_LABEL[e.estado] ?? e.estado}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </TableWrap>
           </div>
         </div>
