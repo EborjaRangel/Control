@@ -21,6 +21,8 @@ export type ResumenConvocatoriaEvento = {
   email: ResumenCanalConvocatoria;
   sms: ResumenCanalConvocatoria;
   whatsapp: ResumenCanalConvocatoria;
+  modoPrueba?: boolean;
+  telefonoPrueba?: string;
 };
 
 export type EnvioConvocatoriaItem = {

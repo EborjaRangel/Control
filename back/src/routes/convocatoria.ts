@@ -49,7 +49,10 @@ router.post("/eventos/:id/enviar", requireConvocatoriaOrStaff, async (req, res) 
       stripUnknown: true,
     });
 
-    const resumen = await enviarConvocatoriaEvento(id, { mensaje: data.mensaje });
+    const resumen = await enviarConvocatoriaEvento(id, {
+      mensaje: data.mensaje,
+      telefonoPrueba: data.telefonoPrueba,
+    });
 
     const evento = await obtenerEvento(id);
 
@@ -63,7 +66,8 @@ router.post("/eventos/:id/enviar", requireConvocatoriaOrStaff, async (req, res) 
         totalDirigentes: resumen.totalDirigentes,
         email: resumen.email,
         sms: resumen.sms,
-        whatsapp: resumen.whatsapp,
+        telefonoPrueba: resumen.telefonoPrueba,
+        modoPrueba: resumen.modoPrueba,
       },
     });
 
@@ -75,6 +79,10 @@ router.post("/eventos/:id/enviar", requireConvocatoriaOrStaff, async (req, res) 
     }
     if (error instanceof Error && error.message === "Evento no encontrado") {
       res.status(404).json({ error: error.message });
+      return;
+    }
+    if (error instanceof Error && error.message.includes("No hay dirigentes elegibles")) {
+      res.status(400).json({ error: error.message });
       return;
     }
     if (error instanceof Error && error.message.includes("Configura en el servidor")) {

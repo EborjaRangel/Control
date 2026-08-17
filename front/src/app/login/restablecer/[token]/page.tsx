@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Form, Formik } from "formik";
 import { useParams } from "next/navigation";
-import { CoyoteLogo } from "@/components/CoyoteLogo";
+import { AxisLogo } from "@/components/AxisLogo";
 import { FormField } from "@/components/FormField";
 import { restablecerContrasenaSchema } from "@/lib/auth";
-import { APP_TITLE, APP_TITLE_SHORT } from "@/lib/site";
 
 type ValidarResponse = {
   ok?: boolean;
@@ -71,16 +70,8 @@ export default function RestablecerContrasenaPage() {
     <div className="mx-auto flex w-full max-w-md flex-col justify-center py-6 sm:py-12">
       <div className="card space-y-6 p-5 sm:p-8">
         <div className="space-y-3 text-center">
-          <CoyoteLogo
-            size={96}
-            badge
-            className="mx-auto"
-            title="Coyote de Coyoacán"
-          />
-          <h1 className="break-words text-xl font-bold text-pin sm:text-2xl">
-            <span className="sm:hidden">{APP_TITLE_SHORT}</span>
-            <span className="hidden sm:inline">{APP_TITLE}</span>
-          </h1>
+          <AxisLogo size={168} badge className="mx-auto" />
+          <h1 className="sr-only">AXIS</h1>
           <p className="text-sm text-ink-secondary">Nueva contraseña</p>
         </div>
 

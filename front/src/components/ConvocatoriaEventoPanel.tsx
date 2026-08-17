@@ -2,7 +2,7 @@
 
 import { Form, Formik } from "formik";
 import { useCallback, useEffect, useState } from "react";
-import { FormTextarea } from "@/components/FormField";
+import { FormField, FormTextarea } from "@/components/FormField";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import {
@@ -49,10 +49,14 @@ export function ConvocatoriaEventoPanel({ eventoId, totalElegibles }: Props) {
   async function handleEnviar(values: ConvocatoriaFormValues) {
     setError(null);
     setResultado(null);
+    const telefonoPrueba = values.telefonoPrueba?.trim() || undefined;
     const res = await apiFetch(`/api/convocatoria/eventos/${eventoId}/enviar`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mensaje: values.mensaje.trim() }),
+      body: JSON.stringify({
+        mensaje: values.mensaje.trim(),
+        ...(telefonoPrueba ? { telefonoPrueba } : {}),
+      }),
     });
     const data = (await res.json()) as ResumenConvocatoriaEvento & {
       error?: string;
@@ -74,6 +78,16 @@ export function ConvocatoriaEventoPanel({ eventoId, totalElegibles }: Props) {
           <strong>correo electrónico</strong>, <strong>SMS</strong> y <strong>WhatsApp</strong>.
         </p>
       </div>
+
+      {totalElegibles === 0 ? (
+        <div className="alert-error text-sm">
+          <p className="font-medium">No hay dirigentes elegibles</p>
+          <p className="mt-1">
+            Ningún dirigente activo coincide con el alcance de este evento. Edita el evento
+            (Asistencia → evento → editar) y elige un alcance con dirigentes registrados.
+          </p>
+        </div>
+      ) : null}
 
       {config && !config.listo ? (
         <div className="alert-error text-sm">
@@ -109,7 +123,7 @@ export function ConvocatoriaEventoPanel({ eventoId, totalElegibles }: Props) {
       </ul>
 
       <Formik
-        initialValues={{ mensaje: "" }}
+        initialValues={{ mensaje: "", telefonoPrueba: "" }}
         validationSchema={convocatoriaEventoSchema}
         onSubmit={async (values, { setSubmitting, resetForm }) => {
           setError(null);
@@ -123,8 +137,30 @@ export function ConvocatoriaEventoPanel({ eventoId, totalElegibles }: Props) {
           }
         }}
       >
-        {({ isSubmitting, values }) => (
+        {({ isSubmitting, values }) => {
+          const telefonoPrueba = values.telefonoPrueba.trim();
+          const modoPrueba = /^\d{10}$/.test(telefonoPrueba);
+          const puedeEnviar = Boolean(config?.listo) && (modoPrueba || totalElegibles > 0);
+
+          return (
           <Form className="space-y-4">
+            <div className="panel-soft space-y-3 border border-pin/20">
+              <div>
+                <p className="text-sm font-semibold text-ink">Prueba a celular específico</p>
+                <p className="mt-1 text-xs text-ink-secondary">
+                  Ignora el alcance del evento. Busca un dirigente activo con ese celular y envía
+                  solo a esa persona (correo + WhatsApp).
+                </p>
+              </div>
+              <FormField
+                label="Celular de prueba (10 dígitos)"
+                name="telefonoPrueba"
+                inputMode="numeric"
+                autoComplete="tel"
+                placeholder="5534845878"
+              />
+            </div>
+
             <FormTextarea
               label="Mensaje de convocatoria"
               name="mensaje"
@@ -139,19 +175,30 @@ export function ConvocatoriaEventoPanel({ eventoId, totalElegibles }: Props) {
             <button
               type="submit"
               className="btn-primary btn-responsive"
-              disabled={isSubmitting || !config?.listo}
+              disabled={isSubmitting || !puedeEnviar}
             >
-              {isSubmitting ? "Enviando convocatoria…" : "Enviar convocatoria (3 vías)"}
+              {isSubmitting
+                ? "Enviando convocatoria…"
+                : modoPrueba
+                  ? `Enviar prueba a ${telefonoPrueba}`
+                  : totalElegibles === 0
+                    ? "Sin dirigentes elegibles"
+                    : "Enviar convocatoria (3 vías)"}
             </button>
           </Form>
-        )}
+          );
+        }}
       </Formik>
 
       {error ? <div className="alert-error">{error}</div> : null}
 
       {resultado ? (
         <div className="panel-pin space-y-2 text-sm">
-          <p className="font-semibold text-pin-dark">Convocatoria enviada</p>
+          <p className="font-semibold text-pin-dark">
+            {resultado.modoPrueba
+              ? `Prueba enviada a ${resultado.telefonoPrueba ?? "celular"}`
+              : "Convocatoria enviada"}
+          </p>
           <p>
             Correo: {resultado.email.enviados} enviados, {resultado.email.fallidos} fallidos,{" "}
             {resultado.email.omitidos} omitidos

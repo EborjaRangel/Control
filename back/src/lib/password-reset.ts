@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "crypto";
+import { APP_BRAND } from "./brand.js";
 import { prisma } from "./prisma.js";
 import { enviarCorreo } from "./comunicacion/email.js";
 
@@ -178,7 +179,7 @@ export async function enviarCorreoRecuperacion(input: {
   token: string;
 }) {
   const enlace = urlRestablecerContrasena(input.token);
-  const subject = "Restablece tu contraseña — Control Coyoacán";
+  const subject = `Restablece tu contraseña — ${APP_BRAND}`;
   const text = [
     "Recibiste este correo electrónico para restablecer tu contraseña y asignar una nueva contraseña de acceso al sistema.",
     "",

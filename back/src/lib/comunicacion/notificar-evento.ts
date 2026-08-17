@@ -6,6 +6,7 @@ import {
   convocatoriaListaParaEnvio,
   mensajeConfigConvocatoriaIncompleta,
   obtenerConfigConvocatoria,
+  telefonoMexico10Digitos,
 } from "./config.js";
 import { enviarCorreo } from "./email.js";
 import {
@@ -30,6 +31,8 @@ export type ResumenConvocatoriaEvento = {
   email: ResumenCanal;
   sms: ResumenCanal;
   whatsapp: ResumenCanal;
+  modoPrueba?: boolean;
+  telefonoPrueba?: string;
 };
 
 /** @deprecated usar ResumenConvocatoriaEvento */
@@ -37,6 +40,8 @@ export type ResumenNotificacionEvento = ResumenConvocatoriaEvento;
 
 export type OpcionesConvocatoriaEvento = {
   mensaje: string;
+  /** Si se indica, envía solo a este celular (10 dígitos MX), sin importar alcance. */
+  telefonoPrueba?: string;
 };
 
 function resumenCanalVacio(): ResumenCanal {
@@ -106,19 +111,60 @@ export async function enviarConvocatoriaEvento(
     throw new Error("Evento no encontrado");
   }
 
-  const dirigentes = await prisma.dirigente.findMany({
-    where: filtroDirigentesElegibles(evento),
-    select: {
-      id: true,
-      nombre: true,
-      primerApellido: true,
-      segundoApellido: true,
-      correo: true,
-      telefonoCelular: true,
-      codigoQr: true,
-    },
-    orderBy: [{ primerApellido: "asc" }, { nombre: "asc" }],
-  });
+  const telefonoPrueba = opciones.telefonoPrueba?.trim();
+  let dirigentes: DirigenteNotificacion[];
+
+  if (telefonoPrueba) {
+    const digits = telefonoMexico10Digitos(telefonoPrueba);
+    if (!digits) {
+      throw new Error("El celular de prueba debe tener 10 dígitos (México).");
+    }
+
+    const candidatos = await prisma.dirigente.findMany({
+      where: { activo: true, telefonoCelular: { not: "" } },
+      select: {
+        id: true,
+        nombre: true,
+        primerApellido: true,
+        segundoApellido: true,
+        correo: true,
+        telefonoCelular: true,
+        codigoQr: true,
+      },
+    });
+
+    const dirigente = candidatos.find(
+      (d) => telefonoMexico10Digitos(d.telefonoCelular) === digits,
+    );
+
+    if (!dirigente) {
+      throw new Error(
+        `No hay un dirigente activo con el celular ${digits}. Verifica la ficha o usa otro número.`,
+      );
+    }
+
+    dirigentes = [dirigente as DirigenteNotificacion];
+  } else {
+    dirigentes = (await prisma.dirigente.findMany({
+      where: filtroDirigentesElegibles(evento),
+      select: {
+        id: true,
+        nombre: true,
+        primerApellido: true,
+        segundoApellido: true,
+        correo: true,
+        telefonoCelular: true,
+        codigoQr: true,
+      },
+      orderBy: [{ primerApellido: "asc" }, { nombre: "asc" }],
+    })) as DirigenteNotificacion[];
+
+    if (dirigentes.length === 0) {
+      throw new Error(
+        "No hay dirigentes elegibles para este evento. Revisa el alcance (colonia, sección, UT, etc.) o usa «Prueba a celular específico».",
+      );
+    }
+  }
 
   const config = obtenerConfigConvocatoria();
   const resumen: ResumenConvocatoriaEvento = {
@@ -127,6 +173,10 @@ export async function enviarConvocatoriaEvento(
     email: resumenCanalVacio(),
     sms: resumenCanalVacio(),
     whatsapp: resumenCanalVacio(),
+    modoPrueba: Boolean(telefonoPrueba),
+    telefonoPrueba: telefonoPrueba
+      ? (telefonoMexico10Digitos(telefonoPrueba) ?? telefonoPrueba)
+      : undefined,
   };
 
   for (const d of dirigentes) {

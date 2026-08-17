@@ -18,6 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: APP_TITLE,
   description: APP_DESCRIPTION,
+  applicationName: APP_TITLE,
 };
 
 export const viewport: Viewport = {

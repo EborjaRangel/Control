@@ -1,4 +1,5 @@
 import type { EventoAsistencia } from "../../generated/prisma/client.js";
+import { APP_BRAND } from "../brand.js";
 import { urlQrAsistencia } from "../codigo-qr.js";
 import { nombreCompleto } from "../dirigentes.js";
 import { etiquetaAlcanceEvento } from "../eventos-asistencia.js";
@@ -91,7 +92,7 @@ export function cuerpoTextoConvocatoria(
     "Presenta tu código QR al llegar para registrar tu asistencia:",
     c.urlQr,
     "",
-    "— Control de dirigentes · Coyoacán",
+    `— ${APP_BRAND}`,
   ].join("\n");
 }
 
@@ -123,7 +124,7 @@ export function cuerpoHtmlConvocatoria(
     <a href="${escapeHtml(c.urlQr)}" style="display:inline-block;background:#7c3aed;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;">Ver mi QR de asistencia</a>
   </p>
   <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
-  <p style="font-size:12px;color:#888;">Control de dirigentes · Coyoacán</p>
+  <p style="font-size:12px;color:#888;">${APP_BRAND}</p>
 </body>
 </html>`;
 }
@@ -168,7 +169,7 @@ export function cuerpoTextoEvento(
   if (mensajeAdicional?.trim()) {
     lineas.push("", mensajeAdicional.trim());
   }
-  lineas.push("", "— Control de dirigentes · Coyoacán");
+  lineas.push("", `— ${APP_BRAND}`);
   return lineas.join("\n");
 }
 
@@ -201,7 +202,7 @@ export function cuerpoHtmlEvento(
     <a href="${escapeHtml(c.urlEvento)}">Detalle del evento</a>
   </p>
   <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
-  <p style="font-size:12px;color:#888;">Control de dirigentes · Coyoacán</p>
+  <p style="font-size:12px;color:#888;">${APP_BRAND}</p>
 </body>
 </html>`;
 }

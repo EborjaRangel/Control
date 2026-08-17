@@ -17,7 +17,7 @@ export const theme = {
   inkMuted: "#555555",
   line: "#e1e1e1",
   lineStrong: "#cdcdcd",
-  coyoteBlue: "#1565C0",
+  brandAccent: "#1565C0",
   map: {
     alcaldiaFill: "#efefef",
     alcaldiaLine: "#767676",
@@ -29,4 +29,4 @@ export const theme = {
   },
 } as const;
 
-export const COYOTE_BLUE = theme.coyoteBlue;
+export const BRAND_ACCENT = theme.brandAccent;

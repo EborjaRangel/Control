@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { BellIcon } from "@/components/BellIcon";
-import { CoyoteLogo } from "@/components/CoyoteLogo";
+import { AxisLogo } from "@/components/AxisLogo";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { APP_TITLE, NAVBAR_TITLE } from "@/lib/site";
@@ -301,8 +301,8 @@ export function SiteNavbar() {
           className="navbar-brand min-w-0"
           title={APP_TITLE}
         >
-          <CoyoteLogo size={40} badge className="shrink-0" title="Coyote de Coyoacán" />
-          <span className="truncate text-sm font-bold text-pin sm:text-base lg:text-lg">
+          <AxisLogo size={36} variant="icon" badge className="shrink-0" />
+          <span className="truncate text-sm font-bold tracking-wide text-pin sm:text-base lg:text-lg">
             {NAVBAR_TITLE}
           </span>
         </Link>
