@@ -25,6 +25,7 @@ export { formatMxn, nombreCompleto } from "./composicion-sueldo";
 /** IDs y nombre completo de referentes que van al inicio del selector. */
 export const REFERENTES_PRIORITARIOS = [
   { id: "1164", nombreCompleto: "JESUS SANCHEZ PITA" },
+  { id: "1195", nombreCompleto: "GIOVANI GUTIERREZ AGUILAR" },
 ] as const;
 
 function claveNombreDirigente(d: {
