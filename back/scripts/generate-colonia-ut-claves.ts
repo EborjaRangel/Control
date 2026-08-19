@@ -77,6 +77,7 @@ const MANUAL_OVERRIDES: Record<string, string[]> = {
   "Presidentes Ejidales 2a Sección": ["03-152"],
   "Pueblo de San Pablo Tepetlapa": ["03-105"],
   "Pueblo de Santa Úrsula Coapa": ["03-109"],
+  "Pueblo La Candelaria": ["03-006", "03-036"],
   "San Diego Churubusco": ["03-100"],
   "San Francisco Culhuacán Barrio de La Magdalena": ["03-066"],
   "San Francisco Culhuacán Barrio de San Francisco": ["03-101"],

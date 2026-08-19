@@ -97,7 +97,7 @@ export const COLONIA_UT_CLAVES: Record<string, string[]> = {
   "Pueblo de los Reyes": ["03-078"],
   "Pueblo de San Pablo Tepetlapa": ["03-105"],
   "Pueblo de Santa Úrsula Coapa": ["03-109"],
-  "Pueblo La Candelaria": ["03-036"],
+  "Pueblo La Candelaria": ["03-006", "03-036"],
   "Residencial la Cantera": ["03-064"],
   "Romero de Terreros": ["03-098", "03-099", "03-159"],
   "San Diego Churubusco": ["03-100"],
