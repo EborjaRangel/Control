@@ -7,6 +7,7 @@ export const COLONIA_UT_CLAVES: Record<string, string[]> = {
   "Adolfo Ruiz Cortínes": ["03-126", "03-127"],
   "Ajusco": ["03-128", "03-129", "03-130"],
   "Alianza Popular Revolucionaria": ["03-131", "03-132", "03-148"],
+  "Ampliación Candelaria": ["03-006"],
   "Atlántida": ["03-007"],
   "Avante": ["03-008"],
   "Barrio del Niño Jesús": ["03-038"],

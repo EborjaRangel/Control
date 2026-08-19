@@ -60,6 +60,7 @@ function coincideCtmSeccion(coloniaNombre: string, utNombre: string): boolean {
 
 const MANUAL_OVERRIDES: Record<string, string[]> = {
   "Alianza Popular Revolucionaria": ["03-131", "03-132", "03-148"],
+  "Ampliación Candelaria": ["03-006"],
   Cafetales: ["03-010", "03-011", "03-160"],
   Copilco: ["03-022", "03-023", "03-024", "03-161"],
   "Copilco Universidad ISSSTE": ["03-024", "03-161"],

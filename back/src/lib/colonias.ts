@@ -1,7 +1,7 @@
 // Catálogo de colonias de la alcaldía Coyoacán con su código postal.
 // Fuente: SEPOMEX (Correos de México) — CPdescarga.txt — generado 2026-06-14
 // Alcaldía: Coyoacán (c_mnpio 003, Ciudad de México)
-// Total: 116 asentamientos, 83 códigos postales
+// Total: 117 asentamientos, 83 códigos postales
 // Regenerar: npm run geo:import-colonias -w control-back
 
 import { normalizarTextoGuardado } from "./normalizar-texto.js";
@@ -60,6 +60,7 @@ export const COLONIAS_COYOACAN: Colonia[] = [
   { nombre: "Ciudad Jardín", cp: "04370", lat: 19.3360233, lng: -99.1446028 },
   { nombre: "El Rosario", cp: "04380", lat: 19.3420808, lng: -99.1585334 },
   { nombre: "Pueblo La Candelaria", cp: "04380", lat: 19.3420808, lng: -99.1585334 },
+  { nombre: "Ampliación Candelaria", cp: "04380", lat: 19.3420808, lng: -99.1585334 },
   { nombre: "Huayamilpas", cp: "04390", lat: 19.3277094, lng: -99.1517279 },
   { nombre: "Nueva Díaz Ordaz", cp: "04390", lat: 19.3257050, lng: -99.1490746 },
   { nombre: "Educación", cp: "04400", lat: 19.3354120, lng: -99.1321437 },

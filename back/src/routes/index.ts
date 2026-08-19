@@ -531,7 +531,14 @@ router.get("/unidades-territoriales/catalogo", requireStaff, async (_req, res) =
   try {
     const uts = await prisma.unidadTerritorial.findMany({
       orderBy: [{ nombre: "asc" }],
-      select: { id: true, clave: true, nombre: true, tipoUt: true, distritoLocal: true },
+      select: {
+        id: true,
+        clave: true,
+        nombre: true,
+        tipoUt: true,
+        distritoLocal: true,
+        seccionesElectorales: true,
+      },
     });
     res.json(uts);
   } catch (error) {
