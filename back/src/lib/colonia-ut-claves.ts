@@ -39,7 +39,7 @@ export const COLONIA_UT_CLAVES: Record<string, string[]> = {
   "Culhuacán CTM Sección V": ["03-029"],
   "Culhuacán CTM Sección VI": ["03-030"],
   "Culhuacán CTM Sección VII": ["03-031"],
-  "Culhuacán CTM Sección VIII": ["03-033"],
+  "Culhuacán CTM Sección VIII": ["03-033", "03-162"],
   "Culhuacán CTM Sección X": ["03-034"],
   "Culhuacán CTM Sección X-A": ["03-034"],
   "Del Carmen": ["03-037"],

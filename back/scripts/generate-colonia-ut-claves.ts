@@ -46,6 +46,9 @@ function coincideCtmSeccion(coloniaNombre: string, utNombre: string): boolean {
   if (coloniaPart === "ix a" && utNorm.includes("ctm ix a culhuacan")) return true;
   if (coloniaPart === "ix b" && utNorm.includes("ctm ix culhuacan")) return true;
   if (coloniaPart === "x a" && utNorm.includes("ctm x culhuacan")) return true;
+  if (coloniaPart === "viii") {
+    return utNorm.includes("ctm viii culhuacan") || utNorm.includes("ctm viii b culhuacan");
+  }
 
   const romanMatch = coloniaPart.match(/^(i{1,3}|iv|v|vi{0,3}|ix|x)$/);
   if (romanMatch) {
@@ -61,6 +64,7 @@ const MANUAL_OVERRIDES: Record<string, string[]> = {
   Copilco: ["03-022", "03-023", "03-024", "03-161"],
   "Copilco Universidad ISSSTE": ["03-024", "03-161"],
   "Culhuacán CTM Sección Piloto": ["03-093"],
+  "Culhuacán CTM Sección VIII": ["03-033", "03-162"],
   "Emiliano Zapata Fraccionamiento Popular": ["03-048", "03-049"],
   "Ermita Churubusco": ["03-094"],
   "Ex-Ejido de Santa Úrsula Coapa": ["03-113"],
