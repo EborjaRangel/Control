@@ -43,12 +43,6 @@ export function prepareDirigentePayload(
     ineReversoUrl: values.tieneIne ? values.ineReversoUrl?.trim() || "" : "",
     usuario: values.usuario.trim(),
     status: values.status ?? "ACTIVO",
-    conceptosComposicion: (values.conceptosComposicion ?? []).map((c) => ({
-      concepto: c.concepto,
-      monto: montoANumero(c.monto),
-      nombre: emptyToNull(c.nombre ?? ""),
-      tipoDetalle: c.tipoDetalle,
-    })),
     estudios: (values.estudios ?? [])
       .filter((e) => e.descripcion.trim())
       .map((e) => ({

@@ -5,8 +5,6 @@ import { Form, Formik, useFormikContext } from "formik";
 import { UploadImage } from "@/components/UploadImage";
 import { useEffect, useState } from "react";
 import { FormField, FormSelect } from "@/components/FormField";
-import { ComposicionSueldoFields } from "@/components/ComposicionSueldoFields";
-import { SueldoDesglose } from "@/components/SueldoDesglose";
 import {
   CODIGOS_POSTALES_COYOACAN,
   NOMBRES_COLONIAS_COYOACAN,
@@ -23,9 +21,7 @@ import {
 import {
   TIPO_DIRIGENTE_LABEL,
   TIPOS_DIRIGENTE,
-  calcularSueldo,
 } from "@/lib/dirigentes";
-import { montoANumero } from "@/lib/monto";
 import { apiFetch } from "@/lib/api";
 import type { UnidadTerritorialResumen } from "@/lib/unidades-territoriales";
 import { etiquetaUnidadTerritorial } from "@/lib/unidades-territoriales";
@@ -95,8 +91,6 @@ type Props = {
   modo?: "crear" | "editar";
   /** Excluir este ID del selector de referente (edición). */
   dirigenteId?: string;
-  /** Composición del sueldo (solo administrador). */
-  showComposicionSueldo?: boolean;
 };
 
 function SeccionSelect() {
@@ -471,19 +465,6 @@ function FotoUpload() {
   );
 }
 
-function SueldoPreview() {
-  const { values } = useFormikContext<DirigenteFormValues>();
-  const desglose = calcularSueldo(
-    (values.conceptosComposicion ?? []).map((c) => ({
-      concepto: c.concepto,
-      monto: montoANumero(c.monto),
-      nombre: c.nombre,
-      tipoDetalle: c.tipoDetalle,
-    })),
-  );
-  return <SueldoDesglose desglose={desglose} />;
-}
-
 function CredencialesAcceso({ modo }: { modo: "crear" | "editar" }) {
   const { values, setFieldValue } = useFormikContext<DirigenteFormValues>();
 
@@ -513,7 +494,6 @@ export function DirigenteForm({
   cancelHref,
   modo = "crear",
   dirigenteId,
-  showComposicionSueldo = false,
 }: Props) {
   const [apiError, setApiError] = useState<string | null>(null);
   const validationSchema =
@@ -626,14 +606,6 @@ export function DirigenteForm({
               colonia={values.colonia || undefined}
             />
           </section>
-
-          {showComposicionSueldo ? (
-            <section className="card-section space-y-4">
-              <h2 className="section-title">Composición del sueldo</h2>
-              <ComposicionSueldoFields />
-              <SueldoPreview />
-            </section>
-          ) : null}
 
           {(apiError || (submitCount > 0 && Object.keys(errors).length > 0)) ? (
             <div className="space-y-3">

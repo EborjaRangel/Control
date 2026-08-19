@@ -88,7 +88,7 @@ export function hasAdminPrivilegesRol(rol: SessionUser["rol"] | undefined) {
 }
 
 /** Rutas del navbar staff reservadas a admin/coordinador. */
-export const PRIVILEGED_STAFF_NAV_HREFS = ["/nominas", "/usuarios"] as const;
+export const PRIVILEGED_STAFF_NAV_HREFS = ["/usuarios"] as const;
 
 export function canAccessPrivilegedStaffNav(rol: SessionUser["rol"] | undefined) {
   return hasAdminPrivilegesRol(rol);

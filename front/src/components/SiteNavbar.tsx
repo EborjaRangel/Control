@@ -52,12 +52,6 @@ const ADMIN_NAV = [
     match: (p: string) => p.startsWith("/convocatoria"),
   },
   {
-    href: "/nominas",
-    label: "Nóminas",
-    shortLabel: "Nóminas",
-    match: (p: string) => p.startsWith("/nominas"),
-  },
-  {
     href: "/detectados",
     label: "Detectados",
     shortLabel: "Detectados",
@@ -113,7 +107,7 @@ const ADMIN_NAV = [
   },
 ] as const;
 
-const PRIVILEGED_NAV_HREFS = new Set<string>(["/nominas", "/usuarios", "/auditoria"]);
+const PRIVILEGED_NAV_HREFS = new Set<string>(["/usuarios", "/auditoria"]);
 const ADMIN_ONLY_NAV_HREFS = new Set<string>(["/analisis", "/proyeccion-2027", "/operacion"]);
 
 function staffMainNavForRol(rol: Parameters<typeof canAccessPrivilegedStaffNav>[0]) {

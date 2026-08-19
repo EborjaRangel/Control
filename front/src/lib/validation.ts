@@ -113,8 +113,7 @@ export const dirigenteSchema = Yup.object({
 
   unidadTerritorialId: Yup.string().transform(cadenaNula).nullable(),
 })
-  .concat(dirigenteExtraSchema)
-  .concat(nominaSchema);
+  .concat(dirigenteExtraSchema);
 
 export const dirigenteCreateSchema = dirigenteSchema.concat(credencialesCreateSchema);
 export const dirigenteUpdateSchema = dirigenteSchema.concat(credencialesUpdateSchema);

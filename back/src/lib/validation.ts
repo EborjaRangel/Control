@@ -4,7 +4,6 @@ import { COLONIAS_COYOACAN, coloniaCoincideConCp, CODIGOS_POSTALES_COYOACAN, esC
 import { esSeccionValida } from "./secciones-electorales.js";
 import { credencialesCreateSchema, credencialesUpdateSchema } from "./auth-validation.js";
 import { fechaNacimientoApiSchema } from "./fecha-nacimiento.js";
-import { nominaSchema } from "./validation-nomina.js";
 import { dirigenteExtraSchema } from "./validation-dirigente-extra.js";
 
 export {
@@ -75,8 +74,7 @@ export const dirigenteSchema = Yup.object({
 
   unidadTerritorialId: Yup.string().transform(cadenaNula).nullable(),
 })
-  .concat(dirigenteExtraSchema)
-  .concat(nominaSchema);
+  .concat(dirigenteExtraSchema);
 
 export const dirigenteCreateSchema = dirigenteSchema.concat(credencialesCreateSchema);
 export const dirigenteUpdateSchema = dirigenteSchema.concat(credencialesUpdateSchema);

@@ -76,7 +76,7 @@ import {
   modoEstatusListadoDirigentes,
 } from "../lib/filtro-dirigentes.js";
 import { generarCodigoQr } from "../lib/codigo-qr.js";
-import { nominaCreateData, nominaInclude, upsertNomina } from "../lib/nomina-db.js";
+import { nominaCreateData, nominaInclude } from "../lib/nomina-db.js";
 import { recalcularResumenGlobalNomina } from "../lib/nomina-resumen.js";
 import { normalizarDirigenteParaGuardado } from "../lib/normalizar-dirigente.js";
 import { normalizarTextoGuardado } from "../lib/normalizar-texto.js";
@@ -682,9 +682,7 @@ router.post("/dirigentes", requireStaff, async (req, res) => {
           codigoQr: generarCodigoQr(),
           unidadTerritorialId,
           nomina: {
-            create: nominaCreateData(
-              hasAdminPrivilegesRol(req.user!.rol) ? guardado : { conceptosComposicion: [] },
-            ),
+            create: nominaCreateData({ conceptosComposicion: [] }),
           },
         },
       });
@@ -840,9 +838,6 @@ router.put("/dirigentes/:id", requireStaff, async (req, res) => {
         throw new Error(`VALIDACION:${duplicado}`);
       }
 
-      if (hasAdminPrivilegesRol(req.user!.rol)) {
-        await upsertNomina(tx, id, guardado);
-      }
       await syncDirigenteRelaciones(tx, id, guardado);
       const updated = await tx.dirigente.update({
         where: { id },

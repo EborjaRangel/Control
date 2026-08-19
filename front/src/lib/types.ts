@@ -1,7 +1,6 @@
 import type { DirigenteFormValues } from "@/lib/validation";
 import type { StatusDirigente } from "@/lib/dirigente-spec";
 import type { ConceptoSueldo, DesgloseSueldo } from "@/lib/composicion-sueldo";
-import { tipoDetalleSueldoParaFormulario } from "@/lib/composicion-sueldo";
 import { NOMBRES_COLONIAS_COYOACAN } from "@/lib/colonias";
 import { SECCIONES_ELECTORALES_COYOACAN } from "@/lib/secciones-electorales";
 import {
@@ -58,7 +57,6 @@ export const EMPTY_DIRIGENTE: DirigenteFormValues = {
   redesSociales: [],
   contactosEmergencia: [],
   ingresos: [],
-  conceptosComposicion: [],
   status: "ACTIVO",
   usuario: "",
   password: "",
@@ -211,12 +209,6 @@ export function dtoToFormValues(d: DirigenteDTO): DirigenteFormValues {
     ingresos: d.ingresos.map((i) => ({
       tipoIngreso: i.tipoIngreso,
       monto: i.monto,
-    })),
-    conceptosComposicion: d.conceptosComposicion.map((c) => ({
-      concepto: c.concepto,
-      monto: c.monto,
-      nombre: c.nombre ?? "",
-      tipoDetalle: tipoDetalleSueldoParaFormulario(c.tipoDetalle),
     })),
     status: d.status,
     usuario: d.usuario ?? usuarioDesdeNombreApellido(d.nombre, d.primerApellido),

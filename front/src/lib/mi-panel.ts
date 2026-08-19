@@ -51,8 +51,8 @@ function operadorAllowed(pathname: string, base: string, id: string, manage: boo
 
 export function pathAllowedForUser(user: SessionUser, pathname: string) {
   if (isStaffRol(user.rol)) {
-    if (!canAccessPrivilegedStaffNav(user.rol) && pathname.startsWith("/nominas")) {
-      return false;
+    if (pathname.startsWith("/nominas")) {
+      return true;
     }
     if (!canAccessPrivilegedStaffNav(user.rol) && pathname.startsWith("/usuarios")) {
       return false;
@@ -92,7 +92,6 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
 
   if (dirigenteId) {
     if (pathname === `/dirigentes/${dirigenteId}/consultar`) return true;
-    if (pathname === `/nominas/${dirigenteId}`) return true;
     if (pathname === `/detectados/dirigentes/${dirigenteId}`) return true;
     if (pathname === `/detectados/dirigentes/${dirigenteId}/nuevo`) return true;
     if (pathname === `/servicios-urbanos/dirigentes/${dirigenteId}`) return true;

@@ -4,9 +4,7 @@ import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { UploadImage } from "@/components/UploadImage";
 import Link from "next/link";
-import { SueldoDesglose } from "@/components/SueldoDesglose";
 import {
-  etiquetaConceptoComposicion,
   formatMxn,
   nombreCompleto,
   TIPO_DIRIGENTE_LABEL,
@@ -33,9 +31,7 @@ const SeccionElectoralMap = dynamic(
 type Props = {
   dirigente: DirigenteDTO;
   editHref?: string;
-  nominaHref?: string;
   backHref?: string;
-  showComposicionSueldo?: boolean;
 };
 
 function formatFecha(iso: string) {
@@ -56,9 +52,7 @@ function Campo({ label, value }: { label: string; value: ReactNode }) {
 export function DirigenteDetalle({
   dirigente: d,
   editHref,
-  nominaHref,
   backHref = "/",
-  showComposicionSueldo = false,
 }: Props) {
   const direccion = [
     d.calle,
@@ -100,11 +94,6 @@ export function DirigenteDetalle({
           </div>
         </div>
         <div className="page-actions">
-          {nominaHref ? (
-            <Link href={nominaHref} className="btn-primary btn-responsive">
-              Ver nómina
-            </Link>
-          ) : null}
           {editHref ? (
             <Link href={editHref} className="btn-secondary btn-responsive">
               Editar
@@ -274,32 +263,6 @@ export function DirigenteDetalle({
             ))}
           </ul>
         </section>
-      ) : null}
-
-      {showComposicionSueldo ? (
-      <section className="card-section space-y-4">
-        <h2 className="section-title">Composición del sueldo</h2>
-
-        {(d.conceptosComposicion?.length ?? 0) > 0 ? (
-          <ul className="space-y-2">
-            {d.conceptosComposicion.map((c) => (
-              <li
-                key={c.id}
-                className="panel-soft flex flex-wrap items-center justify-between gap-2 text-sm"
-              >
-                <span className="font-medium text-ink">
-                  {etiquetaConceptoComposicion(c)}
-                </span>
-                <span className="text-ink-secondary">{formatMxn(c.monto)}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-ink-secondary">Sin conceptos registrados.</p>
-        )}
-
-        <SueldoDesglose desglose={d.desglose} />
-      </section>
       ) : null}
     </div>
   );
