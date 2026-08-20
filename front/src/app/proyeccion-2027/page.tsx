@@ -39,7 +39,7 @@ export default function Proyeccion2027Page() {
   const [data, setData] = useState<AnalisisSeccionesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [vistaId, setVistaId] = useState<VistaProyeccionId>("morena_pt_prd_pan_pri_mc");
+  const [vistaId, setVistaId] = useState<VistaProyeccionId>("morena_pt_prd_verde_pan_pri_mc");
   const [partidoSoloId, setPartidoSoloId] = useState("MORENA");
   const [buscar, setBuscar] = useState("");
   const [filtroGanador, setFiltroGanador] = useState("");

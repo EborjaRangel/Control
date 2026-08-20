@@ -18,6 +18,7 @@ import {
 } from "@/lib/analisis-votacion";
 
 export type EscenarioProyeccionId =
+  | "morena_pt_prd_verde_pan_pri_mc"
   | "morena_pt_prd_pan_pri_mc"
   | "partidos_solos"
   | "morena_prd_pan_pri_mc"
@@ -145,6 +146,17 @@ export const ANIOS_INTERMEDIAS: AnioAlcaldia[] = [2015, 2021];
 export const META_GLOBAL_PAN_PCT = 58;
 
 export const ESCENARIOS_PROYECCION: ConfigEscenarioProyeccion[] = [
+  {
+    id: "morena_pt_prd_verde_pan_pri_mc",
+    etiqueta: "MORENA+PT+PRD+Verde · PAN+PRI · MC",
+    descripcion: "MORENA, PT, PRD y PVEM (Verde) juntos · PAN con PRI · MC solo.",
+    bloques: [
+      { id: "morena_pt_prd_verde", etiqueta: "MORENA + PT + PRD + Verde", color: COLOR_MORENA },
+      { id: "pan_aliados", etiqueta: "PAN + PRI", color: COLOR_PAN },
+      { id: "mc", etiqueta: "MC", color: COLOR_MC },
+    ],
+    distribuir: distribuirEscenarioMorenaPtPrdVerde,
+  },
   {
     id: "morena_pt_prd_pan_pri_mc",
     etiqueta: "MORENA+PT+PRD · PAN+PRI · MC",
@@ -289,6 +301,13 @@ function repartoCoalicion(
   return out;
 }
 
+function mapTokenMorenaPtPrdVerde(token: string): string | null {
+  if (token === "MC") return "mc";
+  if (TOKENS_PAN.has(token)) return "pan_aliados";
+  if (TOKENS_BLOQUE_IZQ.has(token)) return "morena_pt_prd_verde";
+  return null;
+}
+
 function mapTokenMorenaPtPrd(token: string): string | null {
   if (token === "MC") return "mc";
   if (TOKENS_PAN.has(token)) return "pan_aliados";
@@ -334,6 +353,46 @@ function aplicarDistribucion(
   const out = vacio([...bloqueIds, "otros"]);
   reglas(clave.toUpperCase(), votos, out);
   return out;
+}
+
+function distribuirEscenarioMorenaPtPrdVerde(clave: string, votos: number): Record<string, number> {
+  return aplicarDistribucion(
+    clave,
+    votos,
+    ["morena_pt_prd_verde", "pan_aliados", "mc"],
+    (k, v, out) => {
+      if (k === "MC" || k.includes("CONVERGENCIA")) {
+        out.mc = v;
+        return;
+      }
+      if (
+        k === "MORENA" ||
+        k.includes("MORENA") ||
+        k === "PRD_PT" ||
+        k === "PT_PRD" ||
+        k === "PRD" ||
+        k === "PT" ||
+        k === "PVEM"
+      ) {
+        out.morena_pt_prd_verde = v;
+        return;
+      }
+      if (k === "PAN" || k === "PRI" || k.startsWith("PRI_") || k === "PAN_PRI") {
+        out.pan_aliados = v;
+        return;
+      }
+      if (["PT_MOR", "MOR_PES", "PT_MOR_PES", "PT_MORENA", "PVEM_PT_MORENA"].includes(k)) {
+        out.morena_pt_prd_verde = v;
+        return;
+      }
+      const split = repartoCoalicion(k, v, mapTokenMorenaPtPrdVerde);
+      if (split) {
+        for (const [id, val] of Object.entries(split)) out[id] = (out[id] ?? 0) + val;
+        return;
+      }
+      out.otros = v;
+    },
+  );
 }
 
 function distribuirEscenarioMorenaPtPrd(clave: string, votos: number): Record<string, number> {
@@ -1256,6 +1315,12 @@ export function proyectarSeccion2027(fila: AnalisisSeccionRow): ProyeccionSeccio
 
 export function segmentosTituloEscenario(escenarioId: EscenarioProyeccionId): { texto: string; color: string }[] {
   switch (escenarioId) {
+    case "morena_pt_prd_verde_pan_pri_mc":
+      return [
+        { texto: "MORENA+PT+PRD+Verde", color: COLOR_MORENA },
+        { texto: "PAN+PRI", color: COLOR_PAN },
+        { texto: "MC", color: COLOR_MC },
+      ];
     case "morena_pt_prd_pan_pri_mc":
       return [
         { texto: "MORENA+PT+PRD", color: COLOR_MORENA },
@@ -1292,7 +1357,7 @@ export function patronesResaltadoBloques(
   escenarioId: EscenarioProyeccionId,
 ): { patron: string; color: string }[] {
   const base = [
-    { patron: "MORENA + PT + PRD", color: COLOR_MORENA },
+    { patron: "MORENA + PT + PRD + Verde", color: COLOR_MORENA },
     { patron: "MORENA+PT+PRD+Verde", color: COLOR_PVEM },
     { patron: "MORENA+PT+PRD", color: COLOR_MORENA },
     { patron: "MORENA + PT", color: COLOR_MORENA },
@@ -1458,6 +1523,12 @@ function textoDesgloseBloques(resumen: ProyeccionAlcaldia2027): string {
 
 function homologacionEscenario(escenarioId: EscenarioProyeccionId): string {
   switch (escenarioId) {
+    case "morena_pt_prd_verde_pan_pri_mc":
+      return (
+        "En este escenario MORENA, PT, PRD y PVEM (Verde) suman un solo bloque (incluida la alianza PRD-PT de 2015 " +
+        "y tickets como PVEM_PT_MORENA); PAN y PRI forman otro; MC compite solo (Convergencia se homologa a MC en 2015). " +
+        "Las coaliciones mixtas del IECM se reparten por componentes del ticket para no duplicar votos."
+      );
     case "morena_pt_prd_pan_pri_mc":
       return (
         "En este escenario MORENA, PT y PRD (incluida la alianza PRD-PT de 2015 y tickets como PVEM_PT_MORENA) " +
@@ -1542,7 +1613,7 @@ export function generarAnalisisNarrativoProyeccion(
     if (foco) parrafos.push(foco);
   }
 
-  if (escenarioId === "morena_pt_prd_pan_pri_mc") {
+  if (escenarioId === "morena_pt_prd_verde_pan_pri_mc" || escenarioId === "morena_pt_prd_pan_pri_mc") {
     const mc = resumen.bloques.find((b) => b.id === "mc");
     const secMc = resumen.seccionesGanaPorBloque.mc ?? 0;
     parrafos.push(
