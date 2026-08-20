@@ -33,3 +33,21 @@ export function compararNumeroDirigente(a: { id: string }, b: { id: string }): n
   if (na != null && nb != null) return na - nb;
   return a.id.localeCompare(b.id, "es");
 }
+
+/** Orden alfabético: apellido paterno, apellido materno, nombre. */
+export function compararDirigentePorApellidosNombre(
+  a: { nombre: string; primerApellido: string; segundoApellido?: string | null },
+  b: { nombre: string; primerApellido: string; segundoApellido?: string | null },
+): number {
+  const cmpApellido = a.primerApellido.localeCompare(b.primerApellido, "es", {
+    sensitivity: "base",
+  });
+  if (cmpApellido !== 0) return cmpApellido;
+
+  const cmpMaterno = (a.segundoApellido ?? "").localeCompare(b.segundoApellido ?? "", "es", {
+    sensitivity: "base",
+  });
+  if (cmpMaterno !== 0) return cmpMaterno;
+
+  return a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" });
+}

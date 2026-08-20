@@ -68,7 +68,7 @@ import {
   snapshotRepresentante,
   snapshotUsuarioStaff,
 } from "../lib/audit.js";
-import { TIPOS_DIRIGENTE, compararNumeroDirigente, nombreCompleto } from "../lib/dirigentes.js";
+import { TIPOS_DIRIGENTE, compararDirigentePorApellidosNombre, compararNumeroDirigente, nombreCompleto } from "../lib/dirigentes.js";
 import {
   buildFiltroBuscarDirigentes,
   filtroColoniaDirigente,
@@ -577,6 +577,7 @@ router.get("/dirigentes", async (req, res) => {
       typeof req.query.unidadTerritorialId === "string" ? req.query.unidadTerritorialId.trim() : "";
     const disponibleParaRc = req.query.disponibleParaRc === "true";
     const disponibleParaRg = req.query.disponibleParaRg === "true";
+    const ordenApellidos = req.query.orden === "apellidos";
 
     if (user.rol === "DIRIGENTE") {
       if (!user.dirigenteId) {
@@ -619,9 +620,20 @@ router.get("/dirigentes", async (req, res) => {
         ...(filtroBuscar ?? {}),
       },
       include: dirigenteInclude(),
+      ...(ordenApellidos
+        ? {
+            orderBy: [
+              { primerApellido: "asc" as const },
+              { segundoApellido: "asc" as const },
+              { nombre: "asc" as const },
+            ],
+          }
+        : {}),
     });
 
-    dirigentes.sort(compararNumeroDirigente);
+    dirigentes.sort(
+      ordenApellidos ? compararDirigentePorApellidosNombre : compararNumeroDirigente,
+    );
 
     res.json(dirigentes.map((d) => serializeDirigenteForUser(d, user, { revealPassword })));
   } catch (error) {

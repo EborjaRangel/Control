@@ -189,6 +189,7 @@ model Dirigente {
   @@index([colonia])
   @@index([unidadTerritorialId])
   @@index([referenteId])
+  @@index([primerApellido, segundoApellido, nombre])
 }
 
 /// Otra actividad económica del dirigente (fuera de la nómina)

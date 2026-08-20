@@ -10,11 +10,7 @@ import {
   TIPOS_RED_SOCIAL,
 } from "@/lib/dirigente-spec";
 import { apiFetch } from "@/lib/api";
-import {
-  nombreCompleto,
-  compararDirigentePorApellidosNombre,
-  indiceReferentePrioritario,
-} from "@/lib/dirigentes";
+import { etiquetaApellidosNombre, compararDirigentePorApellidosNombre } from "@/lib/dirigentes";
 import {
   DISTRITOS_FEDERALES_COYOACAN,
   DISTRITOS_LOCALES_COYOACAN,
@@ -30,7 +26,7 @@ function ReferenteSelect({ excludeReferenteId }: { excludeReferenteId?: string }
   const [dirigentes, setDirigentes] = useState<DirigenteDTO[]>([]);
 
   useEffect(() => {
-    void apiFetch("/api/dirigentes")
+    void apiFetch("/api/dirigentes?orden=apellidos")
       .then(async (res) => {
         if (!res.ok) throw new Error();
         return (await res.json()) as DirigenteDTO[];
@@ -39,16 +35,7 @@ function ReferenteSelect({ excludeReferenteId }: { excludeReferenteId?: string }
         setDirigentes(
           list
             .filter((d) => d.id !== excludeReferenteId && d.activo)
-            .sort((a, b) => {
-              const pa = indiceReferentePrioritario(a);
-              const pb = indiceReferentePrioritario(b);
-              const aPrioritario = pa >= 0;
-              const bPrioritario = pb >= 0;
-              if (aPrioritario && bPrioritario) return pa - pb;
-              if (aPrioritario) return -1;
-              if (bPrioritario) return 1;
-              return compararDirigentePorApellidosNombre(a, b);
-            }),
+            .sort(compararDirigentePorApellidosNombre),
         ),
       )
       .catch(() => setDirigentes([]));
@@ -59,7 +46,7 @@ function ReferenteSelect({ excludeReferenteId }: { excludeReferenteId?: string }
       <option value="">Sin referente</option>
       {dirigentes.map((d) => (
         <option key={d.id} value={d.id}>
-          {nombreCompleto(d)}
+          {etiquetaApellidosNombre(d)}
         </option>
       ))}
     </FormSelect>

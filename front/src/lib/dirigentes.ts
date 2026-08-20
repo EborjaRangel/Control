@@ -22,40 +22,19 @@ export {
 
 export { formatMxn, nombreCompleto } from "./composicion-sueldo";
 
-/** IDs y nombre completo de referentes que van al inicio del selector. */
-export const REFERENTES_PRIORITARIOS = [
-  { id: "1164", nombreCompleto: "JESUS SANCHEZ PITA" },
-  { id: "1195", nombreCompleto: "GIOVANI GUTIERREZ AGUILAR" },
-] as const;
-
-function claveNombreDirigente(d: {
+/** Apellido paterno, apellido materno, nombre (para listados ordenados). */
+export function etiquetaApellidosNombre(d: {
   nombre: string;
   primerApellido: string;
   segundoApellido?: string | null;
 }): string {
-  return [d.nombre, d.primerApellido, d.segundoApellido]
+  return [d.primerApellido, d.segundoApellido, d.nombre]
+    .map((v) => v?.trim())
     .filter(Boolean)
-    .join(" ")
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toUpperCase()
-    .replace(/\s+/g, " ")
-    .trim();
+    .join(" ");
 }
 
-export function indiceReferentePrioritario(d: {
-  id: string;
-  nombre: string;
-  primerApellido: string;
-  segundoApellido?: string | null;
-}): number {
-  const nombre = claveNombreDirigente(d);
-  return REFERENTES_PRIORITARIOS.findIndex(
-    (r) => r.id === d.id || r.nombreCompleto === nombre,
-  );
-}
-
-/** Orden alfabético: primer apellido, segundo apellido, nombre. */
+/** Orden alfabético: apellido paterno, apellido materno, nombre. */
 export function compararDirigentePorApellidosNombre(
   a: { nombre: string; primerApellido: string; segundoApellido?: string | null },
   b: { nombre: string; primerApellido: string; segundoApellido?: string | null },
