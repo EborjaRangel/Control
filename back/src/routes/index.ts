@@ -27,7 +27,7 @@ import {
   dirigenteCreateSchema,
   dirigenteUpdateSchema,
 } from "../lib/validation.js";
-import { serializeDirigente } from "../lib/serialize.js";
+import { dirigenteListArgs, serializeDirigente, serializeDirigenteListItem } from "../lib/serialize.js";
 import {
   resolverUnidadTerritorialId,
   coloniasPorDistritoLocal,
@@ -619,7 +619,7 @@ router.get("/dirigentes", async (req, res) => {
         ...(unidadTerritorialId ? { unidadTerritorialId } : {}),
         ...(filtroBuscar ?? {}),
       },
-      include: dirigenteInclude(),
+      ...dirigenteListArgs,
       ...(ordenApellidos
         ? {
             orderBy: [
@@ -635,7 +635,7 @@ router.get("/dirigentes", async (req, res) => {
       ordenApellidos ? compararDirigentePorApellidosNombre : compararNumeroDirigente,
     );
 
-    res.json(dirigentes.map((d) => serializeDirigenteForUser(d, user, { revealPassword })));
+    res.json(dirigentes.map((d) => serializeDirigenteListItem(d, { revealPassword })));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al listar dirigentes" });

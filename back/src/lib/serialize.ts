@@ -112,6 +112,80 @@ function num(value: unknown): number {
 
 export type DirigenteDTO = ReturnType<typeof serializeDirigente>;
 
+const dirigenteListSelect = {
+  id: true,
+  nombre: true,
+  primerApellido: true,
+  segundoApellido: true,
+  telefonoCelular: true,
+  fotoUrl: true,
+  tipo: true,
+  seccionElectoral: true,
+  distritoLocal: true,
+  colonia: true,
+  status: true,
+  activo: true,
+  usuario: { select: { username: true, passwordPlano: true } },
+  unidadTerritorial: {
+    select: { id: true, clave: true, nombre: true, tipoUt: true },
+  },
+} as const;
+
+export const dirigenteListArgs = {
+  select: dirigenteListSelect,
+} as const;
+
+type DirigenteListRow = {
+  id: string;
+  nombre: string;
+  primerApellido: string;
+  segundoApellido: string | null;
+  telefonoCelular: string;
+  fotoUrl: string | null;
+  tipo: string;
+  seccionElectoral: string;
+  distritoLocal: number | null;
+  colonia: string;
+  status: string;
+  activo: boolean;
+  usuario?: { username: string; passwordPlano: string | null } | null;
+  unidadTerritorial?: {
+    id: string;
+    clave: string;
+    nombre: string;
+    tipoUt: string | null;
+  } | null;
+};
+
+export function serializeDirigenteListItem(
+  d: DirigenteListRow,
+  options?: { revealPassword?: boolean },
+) {
+  const nombres = normalizarCamposNombrePersona(d);
+  return {
+    id: d.id,
+    ...nombres,
+    telefonoCelular: d.telefonoCelular,
+    fotoUrl: d.fotoUrl,
+    tipo: d.tipo,
+    seccionElectoral: d.seccionElectoral,
+    distritoLocal: d.distritoLocal,
+    colonia: d.colonia,
+    status: d.status,
+    activo: d.activo,
+    usuario: d.usuario?.username ?? null,
+    password: options?.revealPassword ? d.usuario?.passwordPlano ?? null : null,
+    unidadTerritorial: d.unidadTerritorial
+      ? {
+          id: d.unidadTerritorial.id,
+          clave: d.unidadTerritorial.clave,
+          nombre: d.unidadTerritorial.nombre,
+          tipoUt: d.unidadTerritorial.tipoUt,
+        }
+      : null,
+  };
+}
+
 export function serializeDirigente(
   d: DirigenteRow,
   options?: { revealPassword?: boolean; includeComposicionSueldo?: boolean },

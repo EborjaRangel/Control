@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -14,7 +15,13 @@ import type { SessionUser } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
 import { homeForUser, pathAllowedForUser } from "@/lib/mi-panel";
 import { canManageConvocatoria, canTakeAsistencia, hasAdminPrivilegesRol, isAdminRol, isAsistenciaRol, isConvocatoriaRol, isCoordinadorRol, isStaffRol } from "@/lib/auth";
-import { clearSessionToken, getSessionToken, setSessionToken } from "@/lib/session-token";
+import {
+  clearSessionToken,
+  getCachedSessionUser,
+  getSessionToken,
+  setCachedSessionUser,
+  setSessionToken,
+} from "@/lib/session-token";
 
 type AuthContextValue = {
   user: SessionUser | null;
@@ -55,7 +62,9 @@ async function fetchMe(): Promise<SessionUser | null> {
     if (res.status === 401) clearSessionToken();
     return null;
   }
-  return (await res.json()) as SessionUser;
+  const me = (await res.json()) as SessionUser;
+  setCachedSessionUser(me);
+  return me;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -66,6 +75,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     setUser(await fetchMe());
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!getSessionToken()) {
+      setLoading(false);
+      return;
+    }
+    const cached = getCachedSessionUser<SessionUser>();
+    if (cached) {
+      setUser(cached);
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -113,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const { token, error: _error, detalles: _detalles, ...session } = data;
       setSessionToken(token);
+      setCachedSessionUser(session);
       setUser(session);
       router.replace(homeForUser(session));
     },

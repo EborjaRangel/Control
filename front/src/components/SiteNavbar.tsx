@@ -239,7 +239,7 @@ export function SiteNavbar() {
       .then(async (res) => (res.ok ? ((await res.json()) as { noLeidas: number }) : { noLeidas: 0 }))
       .then((data) => setNoLeidas(data.noLeidas))
       .catch(() => setNoLeidas(0));
-  }, [user, pathname]);
+  }, [user]);
 
   const allNavItems = isStaff
     ? [NOTIFICACIONES_NAV, ...staffMainNavForRol(user?.rol)]
