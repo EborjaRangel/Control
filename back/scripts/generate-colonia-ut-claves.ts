@@ -87,6 +87,7 @@ const MANUAL_OVERRIDES: Record<string, string[]> = {
   "Santa Martha del Sur Quetzalcoatl": ["03-108"],
   "Tlalpan FOVISSSTE": ["03-164"],
   "Viejo Ejido de Santa Úrsula Coapa": ["03-113"],
+  "Villa Panamericana": ["03-118", "03-119"],
 };
 
 function clavesParaColonia(colonia: string, uts: UtRow[]): string[] {

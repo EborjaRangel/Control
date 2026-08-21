@@ -117,7 +117,7 @@ export const COLONIA_UT_CLAVES: Record<string, string[]> = {
   "Viejo Ejido de Santa Úrsula Coapa": ["03-113"],
   "Villa Coyoacán": ["03-114"],
   "Villa de San Francisco": ["03-089"],
-  "Villa Panamericana": ["03-124"],
+  "Villa Panamericana": ["03-118", "03-119"],
   "Villa Quietud": ["03-122"],
   "Villas Copilco": ["03-024", "03-161"],
   "Vistas del Maurel": ["03-124"],
