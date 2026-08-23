@@ -52,7 +52,11 @@ function coincideCtmSeccion(coloniaNombre: string, utNombre: string): boolean {
 
   const romanMatch = coloniaPart.match(/^(i{1,3}|iv|v|vi{0,3}|ix|x)$/);
   if (romanMatch) {
-    return utNorm.includes(`ctm ${romanMatch[1]} culhuacan`);
+    const roman = romanMatch[1];
+    return (
+      utNorm.includes(`ctm ${roman} culhuacan`) ||
+      utNorm.includes(`ctm ${roman} a culhuacan`)
+    );
   }
 
   return false;
@@ -75,9 +79,8 @@ const MANUAL_OVERRIDES: Record<string, string[]> = {
   "Nueva Díaz Ordaz": ["03-082"],
   "Prados de Coyoacán": ["03-095", "03-168", "03-171"],
   "Presidentes Ejidales 1a Sección": ["03-096"],
-  "Presidentes Ejidales 2a Sección": ["03-152"],
   "Pueblo de San Pablo Tepetlapa": ["03-105"],
-  "Pueblo de Santa Úrsula Coapa": ["03-109"],
+  "Pueblo de Santa Úrsula Coapa": ["03-109", "03-070"],
   "Pueblo La Candelaria": ["03-006", "03-036"],
   "San Diego Churubusco": ["03-100"],
   "San Francisco Culhuacán Barrio de La Magdalena": ["03-066"],
@@ -86,12 +89,40 @@ const MANUAL_OVERRIDES: Record<string, string[]> = {
   "San Francisco Culhuacán Barrio de Santa Ana": ["03-101"],
   "Santa Martha del Sur Quetzalcoatl": ["03-108"],
   "Tlalpan FOVISSSTE": ["03-164"],
-  "Viejo Ejido de Santa Úrsula Coapa": ["03-113"],
-  "Villa Panamericana": ["03-118", "03-119"],
+  "Viejo Ejido de Santa Úrsula Coapa": ["03-113", "03-047"],
+  "Villa Panamericana": [
+    "03-115",
+    "03-116",
+    "03-117",
+    "03-118",
+    "03-119",
+    "03-120",
+    "03-121",
+    "03-155",
+    "03-166",
+  ],
+  "Barrio Oxtopulco Universidad": ["03-084", "03-005", "03-154"],
+  "Barrio San Lucas": ["03-103", "03-079"],
+  "Bosques de Tetlameya": ["03-009", "03-081"],
+  "Campestre Churubusco": ["03-012", "03-150"],
+  "Culhuacán CTM Sección VII": ["03-031", "03-032"],
+  "El Caracol": ["03-041", "03-163"],
+  "El Centinela": ["03-042", "03-018"],
+  "Ex-Ejido de San Francisco Culhuacán": ["03-040", "03-157", "03-158", "03-102"],
+  "Jardines de Coyoacán": ["03-061", "03-068"],
+  "Los Cipreses": ["03-072", "03-170"],
+  "Olímpica": ["03-083", "03-110"],
+  "Paseos de Taxqueña": ["03-133", "03-134", "03-153", "03-172"],
+  "Pedregal de Carrasco": ["03-124"],
+  "Presidentes Ejidales 2a Sección": ["03-152", "03-165"],
+  "Romero de Terreros": ["03-098", "03-099", "03-159", "03-151", "03-167"],
+  "Vistas del Maurel": ["03-124", "03-091"],
 };
 
 function clavesParaColonia(colonia: string, uts: UtRow[]): string[] {
-  if (MANUAL_OVERRIDES[colonia]) return MANUAL_OVERRIDES[colonia];
+  if (MANUAL_OVERRIDES[colonia]) {
+    return [...new Set(MANUAL_OVERRIDES[colonia])].sort();
+  }
 
   const base = baseNombreTerritorial(colonia);
   const claves = new Set<string>();
