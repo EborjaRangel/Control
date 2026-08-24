@@ -25,6 +25,7 @@
     "geo:verify-peso-colonias": "tsx scripts/verify-peso-geo-colonias.ts",
     "electoral:import-casillas": "tsx scripts/import-casillas-ine.ts",
     "electoral:import-resultados-alcaldia": "tsx scripts/import-resultados-alcaldia-iecm.ts",
+    "electoral:seed-db": "tsx scripts/seed-catalogos-electorales.ts",
     "db:seed": "tsx scripts/seed-admin.ts",
     "db:reset-admin": "tsx scripts/reset-admin.ts",
     "db:prepare-dirigentes-carga": "tsx scripts/prepare-dirigentes-carga-sheet.ts",

@@ -17,6 +17,7 @@ import {
   type AuthUser,
 } from "../lib/auth.js";
 import { analisisSeccionesElectorales } from "../lib/analisis-secciones.js";
+import { mapaResultadosElectorales } from "../lib/mapa-resultados-electorales.js";
 import {
   normalizeUsername,
   PASSWORD_DEFECTO_USUARIO,
@@ -279,6 +280,15 @@ router.get("/secciones/coyoacan/cobertura", requireStaff, async (_req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al cargar cobertura de secciones" });
+  }
+});
+
+router.get("/secciones/coyoacan/resultados-mapa", requireStaff, (_req, res) => {
+  try {
+    res.json(mapaResultadosElectorales());
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al cargar resultados para el mapa" });
   }
 });
 

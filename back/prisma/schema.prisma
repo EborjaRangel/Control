@@ -670,3 +670,62 @@ model AuditLog {
   @@index([createdAt])
   @@index([dirigenteId])
 }
+
+/// Proceso de alcaldía / jefatura delegacional (IECM) por año
+model ResultadoAlcaldiaProceso {
+  anio       Int      @id
+  cargo      String
+  fuente     String
+  urlFuente  String
+  generadoEn DateTime
+  secciones  ResultadoAlcaldiaSeccion[]
+}
+
+/// Resultado oficial por sección: votos por partido (sin agrupar coaliciones)
+model ResultadoAlcaldiaSeccion {
+  id               String                   @id
+  anio             Int
+  proceso          ResultadoAlcaldiaProceso @relation(fields: [anio], references: [anio], onDelete: Cascade)
+  seccion          String
+  listaNominal     Int
+  votacionTotal    Int
+  participacionPct Float
+  votosNulos       Int
+  votosNulosPct    Float
+  partidos         Json
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @default(now()) @updatedAt
+
+  @@unique([anio, seccion])
+  @@index([seccion])
+  @@index([anio])
+}
+
+/// Metadatos del catálogo INE de casillas
+model CasillaElectoralCatalogo {
+  id             String             @id
+  vigencia       String
+  fuente         String
+  urlFuente      String
+  generadoEn     DateTime
+  totalCasillas  Int
+  totalSecciones Int
+  casillas       CasillaElectoral[]
+}
+
+/// Casilla básica o contigua del catálogo PREP
+model CasillaElectoral {
+  id              String                   @id
+  catalogoId      String
+  catalogo        CasillaElectoralCatalogo @relation(fields: [catalogoId], references: [id], onDelete: Cascade)
+  seccion         String
+  numero          Int
+  tipo            String
+  tipoLabel       String
+  extContigua     Int?
+  listaNominal    Int
+  distritoFederal Int
+
+  @@index([seccion])
+  @@index([catalogoId])
+}

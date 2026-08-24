@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import fs from "fs";
 import routes from "./routes/index.js";
+import { hidratarCatalogosElectorales } from "./lib/catalogos-electorales.js";
 import {
   faltantesWhatsApp,
   obtenerConfigConvocatoria,
@@ -88,6 +89,17 @@ app.use(
 
 const port = Number(process.env.PORT ?? 4000);
 
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Control API escuchando en http://0.0.0.0:${port}`);
+async function start() {
+  const catalogos = await hidratarCatalogosElectorales();
+  console.log(
+    `Catálogos electorales: resultados=${catalogos.resultados ? "db" : "archivo"} casillas=${catalogos.casillas ? "db" : "archivo"}`,
+  );
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`Control API escuchando en http://0.0.0.0:${port}`);
+  });
+}
+
+start().catch((error) => {
+  console.error(error);
+  process.exit(1);
 });
