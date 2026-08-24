@@ -9,6 +9,7 @@ import type {
   MapaResultadosResponse,
   SeccionMapaResultadosDTO,
 } from "@/lib/mapa-resultados";
+import type { CoberturaSeccionesResponse, SeccionCoberturaMapa } from "@/lib/mapa-secciones";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
 import { theme } from "@/lib/theme";
 import { cn } from "@/lib/cn";
@@ -29,7 +30,23 @@ type TooltipState = {
   votos: number;
   porcentaje: number;
   participacionPct: number;
+  colonias: string;
+  nombres: string;
+  asignada: boolean;
 };
+
+function coberturaDe(
+  cobertura: CoberturaSeccionesResponse | null,
+  seccion: string | null,
+): SeccionCoberturaMapa | null {
+  if (!cobertura || !seccion) return null;
+  return cobertura.porSeccion[seccion] ?? null;
+}
+
+function actualizarResaltado(map: import("mapbox-gl").Map, seccion: string | null) {
+  if (!map.getLayer("secciones-selected")) return;
+  map.setFilter("secciones-selected", ["==", ["get", "seccion"], seccion ?? ""]);
+}
 
 function ganadorDe(info: SeccionMapaResultadosDTO | undefined, modo: Modo) {
   if (!info) return null;
@@ -92,11 +109,22 @@ export function MapaResultadosSecciones({ modo }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("mapbox-gl").Map | null>(null);
   const geojsonRef = useRef<FeatureCollection | null>(null);
+  const coberturaRef = useRef<CoberturaSeccionesResponse | null>(null);
+  const seccionFijadaRef = useRef<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [resultados, setResultados] = useState<MapaResultadosResponse | null>(null);
+  const [cobertura, setCobertura] = useState<CoberturaSeccionesResponse | null>(null);
   const [anio, setAnio] = useState<number>(2024);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const [seccionHover, setSeccionHover] = useState<string | null>(null);
+  const [seccionFijada, setSeccionFijada] = useState<string | null>(null);
+
+  seccionFijadaRef.current = seccionFijada;
+  coberturaRef.current = cobertura;
+
+  const seccionActiva = seccionFijada ?? seccionHover;
+  const coberturaActiva = coberturaDe(cobertura, seccionActiva);
 
   const anioData = resultados?.porAnio[String(anio)];
   const leyenda = useMemo(
@@ -147,10 +175,16 @@ export function MapaResultadosSecciones({ modo }: Props) {
         if (!res.ok) return null;
         return (await res.json()) as FeatureCollection;
       }),
+      apiFetch("/api/secciones/coyoacan/cobertura", { signal: controller.signal }).then(async (res) => {
+        if (!res.ok) return null;
+        return (await res.json()) as CoberturaSeccionesResponse;
+      }),
     ])
-      .then(([geojson, data, alcaldia]) => {
+      .then(([geojson, data, alcaldia, cov]) => {
         if (controller.signal.aborted || cancelled) return;
         geojsonRef.current = geojson;
+        coberturaRef.current = cov;
+        setCobertura(cov);
         setResultados(data);
         const inicial = data.anios.includes(2024) ? 2024 : (data.anios[data.anios.length - 1] ?? 2024);
         setAnio(inicial);
@@ -194,7 +228,13 @@ export function MapaResultadosSecciones({ modo }: Props) {
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
 
       const paint = () => {
-        for (const id of ["secciones-line", "secciones-fill", "alcaldia-line", "alcaldia-fill"]) {
+        for (const id of [
+          "secciones-line",
+          "secciones-fill",
+          "secciones-selected",
+          "alcaldia-line",
+          "alcaldia-fill",
+        ]) {
           if (map.getLayer(id)) map.removeLayer(id);
         }
         for (const id of ["secciones", "alcaldia"]) {
@@ -241,26 +281,58 @@ export function MapaResultadosSecciones({ modo }: Props) {
             "line-opacity": 0.85,
           },
         });
+        map.addLayer({
+          id: "secciones-selected",
+          type: "line",
+          source: "secciones",
+          paint: {
+            "line-color": theme.pinDark,
+            "line-width": 3,
+          },
+          filter: ["==", ["get", "seccion"], seccionFijadaRef.current ?? ""],
+        });
 
         map.on("mousemove", "secciones-fill", (event) => {
           const feature = event.features?.[0];
           if (!feature) return;
+          const seccion = String(feature.properties?.seccion ?? "");
+          if (!seccion) return;
           map.getCanvas().style.cursor = "pointer";
+          const info = coberturaDe(coberturaRef.current, seccion);
+          actualizarResaltado(map, seccionFijadaRef.current ?? seccion);
+          setSeccionHover(seccion);
           setTooltip({
             x: event.point.x,
             y: event.point.y,
-            seccion: String(feature.properties?.seccion ?? ""),
+            seccion,
             etiqueta: String(feature.properties?.ganadorEtiqueta ?? "Sin datos"),
             color: String(feature.properties?.fillColor ?? "#E8E8E8"),
             votos: Number(feature.properties?.ganadorVotos ?? 0),
             porcentaje: Number(feature.properties?.ganadorPct ?? 0),
             participacionPct: Number(feature.properties?.participacionPct ?? 0),
+            colonias: info?.colonias ?? "",
+            nombres: info?.nombres ?? "",
+            asignada: Boolean(info?.asignada),
           });
         });
 
         map.on("mouseleave", "secciones-fill", () => {
           map.getCanvas().style.cursor = "";
+          setSeccionHover(null);
           setTooltip(null);
+          actualizarResaltado(map, seccionFijadaRef.current);
+        });
+
+        map.on("click", "secciones-fill", (event) => {
+          const feature = event.features?.[0];
+          const seccion = String(feature?.properties?.seccion ?? "");
+          if (!seccion) return;
+          setSeccionFijada((actual) => {
+            const siguiente = actual === seccion ? null : seccion;
+            seccionFijadaRef.current = siguiente;
+            actualizarResaltado(map, siguiente);
+            return siguiente;
+          });
         });
 
         const bounds = boundsFromCollection(geojson);
@@ -282,6 +354,12 @@ export function MapaResultadosSecciones({ modo }: Props) {
     // El mapa se crea una vez; año/modo se actualizan con setData.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modo]);
+
+  useEffect(() => {
+    if (mapRef.current) {
+      actualizarResaltado(mapRef.current, seccionFijada ?? seccionHover);
+    }
+  }, [seccionFijada, seccionHover]);
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -355,6 +433,57 @@ export function MapaResultadosSecciones({ modo }: Props) {
         </div>
       ) : null}
 
+      <section className="card-section space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="section-title">
+            {seccionActiva ? etiquetaSeccion(seccionActiva) : "Colonia y dirigentes"}
+          </h2>
+          {seccionFijada ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="badge-pin">Sección fijada</span>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={() => {
+                  setSeccionFijada(null);
+                  seccionFijadaRef.current = null;
+                  if (mapRef.current) actualizarResaltado(mapRef.current, seccionHover);
+                }}
+              >
+                Quitar selección
+              </button>
+            </div>
+          ) : null}
+        </div>
+        {!seccionActiva ? (
+          <p className="text-sm text-ink-secondary">
+            Pasa el cursor o haz clic en una sección para ver su colonia y los dirigentes asignados.
+          </p>
+        ) : (
+          <div className="space-y-1 text-sm">
+            <p className="text-ink-secondary">
+              <span className="font-medium text-ink">
+                {(coberturaActiva?.colonias ?? "").includes("(") ? "Colonias:" : "Colonia:"}
+              </span>{" "}
+              {coberturaActiva?.colonias || "Sin colonia registrada"}
+            </p>
+            {coberturaActiva?.dirigentes?.length ? (
+              <ul className="text-ink-secondary">
+                {coberturaActiva.dirigentes.map((d) => (
+                  <li key={d.id}>
+                    <span className="font-medium text-ink">{d.nombreCompleto}</span>
+                    {d.tipo ? ` · ${d.tipo}` : ""}
+                    {d.colonia ? ` · ${d.colonia}` : ""}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-ink-secondary">Sin dirigente asignado</p>
+            )}
+          </div>
+        )}
+      </section>
+
       <div className="relative overflow-hidden rounded-pin-lg border border-line bg-surface shadow-pin">
         <div ref={containerRef} className="h-[min(70vh,640px)] w-full min-h-[360px]" />
         {loading ? (
@@ -373,6 +502,21 @@ export function MapaResultadosSecciones({ modo }: Props) {
             style={{ left: tooltip.x + 12, top: tooltip.y + 12 }}
           >
             <p className="font-semibold text-ink">{etiquetaSeccion(tooltip.seccion)}</p>
+            {tooltip.colonias ? (
+              <p className="mt-1 text-ink-secondary">
+                <span className="font-medium text-ink">
+                  {tooltip.colonias.includes("(") ? "Colonias:" : "Colonia:"}
+                </span>{" "}
+                {tooltip.colonias}
+              </p>
+            ) : (
+              <p className="mt-1 text-ink-secondary">Sin colonia registrada</p>
+            )}
+            {tooltip.asignada ? (
+              <p className="mt-1 text-ink-secondary">{tooltip.nombres}</p>
+            ) : (
+              <p className="mt-1 text-ink-secondary">Sin dirigente asignado</p>
+            )}
             <p className="mt-1 inline-flex items-center gap-2 font-medium text-ink">
               <span
                 className="inline-block size-3 rounded-sm border border-black/10"
@@ -390,14 +534,17 @@ export function MapaResultadosSecciones({ modo }: Props) {
             ) : (
               <p className="mt-1 text-ink-secondary">Sin resultados en este proceso</p>
             )}
+            {!seccionFijada ? (
+              <p className="mt-1 text-xs text-ink-secondary">Clic para fijar la sección</p>
+            ) : null}
           </div>
         ) : null}
       </div>
 
       <p className="text-xs text-ink-secondary">
         {modo === "partido"
-          ? "Cada sección se pinta con el color del partido que más votos obtuvo, sin agrupar coaliciones. PRI rojo, Verde verde, PAN azul, PRD amarillo, MORENA guinda y PT vino oscuro."
-          : "Cada sección se pinta con el color de la coalición ganadora. Los partidos que contendieron solos conservan su color original."}
+          ? "Cada sección se pinta con el color del partido que más votos obtuvo, sin agrupar coaliciones. PRI rojo, Verde verde, PAN azul, PRD amarillo, MORENA guinda y PT vino oscuro. Pasa el cursor o haz clic para ver colonia y dirigentes."
+          : "Cada sección se pinta con el color de la coalición ganadora. Los partidos que contendieron solos conservan su color original. Pasa el cursor o haz clic para ver colonia y dirigentes."}
       </p>
     </div>
   );
