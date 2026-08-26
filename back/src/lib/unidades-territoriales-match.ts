@@ -56,7 +56,7 @@ export const ALIAS_COLONIA_A_UT: Record<string, string[]> = {
   "romero de terreros": ["romero de terreros", "monte de piedad"],
   "pedregal de carrasco": ["vistas del maurel"],
   "villa panamericana": ["villa panamericana"],
-  "vistas del maurel": ["vistas del maurel", "pedregal del maurel"],
+  "vistas del maurel": ["vistas del maurel"],
   "pedregal de coyoacan": ["jardines de coyoacan"],
   "pedregal del sur": ["pedregal de san angel"],
   "la otra banda": ["viejo ejido santa ursula coapa"],

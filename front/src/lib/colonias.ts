@@ -1,7 +1,7 @@
 // Catálogo de colonias de la alcaldía Coyoacán con su código postal.
 // Fuente: SEPOMEX (Correos de México) — CPdescarga.txt — generado 2026-06-14
 // Alcaldía: Coyoacán (c_mnpio 003, Ciudad de México)
-// Total: 117 asentamientos, 83 códigos postales
+// Total: 120 asentamientos, 84 códigos postales
 // Regenerar: npm run geo:import-colonias -w control-back
 
 import { normalizarTextoGuardado } from "./normalizar-texto";
@@ -99,6 +99,8 @@ export const COLONIAS_COYOACAN: Colonia[] = [
   { nombre: "Olímpica", cp: "04710", lat: 19.3044491, lng: -99.1701792 },
   { nombre: "Vistas del Maurel", cp: "04718", lat: 19.3051206, lng: -99.1729913 },
   { nombre: "Pedregal del Sur", cp: "04719", lat: 19.3094651, lng: -99.1870701 },
+  // SEPOMEX CP 04720; ausente en el dump original. UT IECM 03-091 (secciones 460, 461, 462).
+  { nombre: "Pedregal del Maurel", cp: "04720", lat: 19.3088832, lng: -99.1747811 },
   { nombre: "Bosques de Tetlameya", cp: "04730", lat: 19.2989654, lng: -99.1539411 },
   { nombre: "Cantil del Pedregal", cp: "04730", lat: 19.2989654, lng: -99.1539411 },
   { nombre: "Modulo Social Imán", cp: "04738", lat: 19.3062682, lng: -99.1672964 },

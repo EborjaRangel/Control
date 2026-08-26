@@ -114,9 +114,10 @@ const MANUAL_OVERRIDES: Record<string, string[]> = {
   "Olímpica": ["03-083", "03-110"],
   "Paseos de Taxqueña": ["03-133", "03-134", "03-153", "03-172"],
   "Pedregal de Carrasco": ["03-124"],
+  "Pedregal del Maurel": ["03-091"],
   "Presidentes Ejidales 2a Sección": ["03-152", "03-165"],
   "Romero de Terreros": ["03-098", "03-099", "03-159", "03-151", "03-167"],
-  "Vistas del Maurel": ["03-124", "03-091"],
+  "Vistas del Maurel": ["03-124"],
 };
 
 function clavesParaColonia(colonia: string, uts: UtRow[]): string[] {

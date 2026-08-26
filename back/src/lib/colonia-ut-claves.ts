@@ -89,6 +89,7 @@ export const COLONIA_UT_CLAVES: Record<string, string[]> = {
   "Pedregal de San Francisco": ["03-089"],
   "Pedregal de Santa Úrsula": ["03-135", "03-136", "03-137", "03-138"],
   "Pedregal de Santo Domingo": ["03-139", "03-140", "03-141", "03-142", "03-143", "03-144", "03-145", "03-146", "03-147"],
+  "Pedregal del Maurel": ["03-091"],
   "Pedregal del Sur": ["03-088", "03-173"],
   "Petrolera Taxqueña": ["03-092"],
   "Prado Churubusco": ["03-094"],
@@ -120,7 +121,7 @@ export const COLONIA_UT_CLAVES: Record<string, string[]> = {
   "Villa Panamericana": ["03-115", "03-116", "03-117", "03-118", "03-119", "03-120", "03-121", "03-155", "03-166"],
   "Villa Quietud": ["03-122"],
   "Villas Copilco": ["03-024", "03-161"],
-  "Vistas del Maurel": ["03-091", "03-124"],
+  "Vistas del Maurel": ["03-124"],
   "Xotepingo": ["03-125"],
 };
 
