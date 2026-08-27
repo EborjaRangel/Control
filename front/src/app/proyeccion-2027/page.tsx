@@ -591,10 +591,16 @@ function ProyeccionSeccionCard({
       const short =
         escenarioId === "partidos_solos"
           ? b.id.slice(0, 3)
-          : id === "morena_aliados" || id === "morena_prd" || id === "morena_pt_prd_verde" || id === "morena_pt"
+          : id === "morena_aliados" ||
+              id === "morena_prd" ||
+              id === "morena_pt_prd_verde" ||
+              id === "morena_pt_verde" ||
+              id === "morena_pt"
             ? id === "morena_pt"
               ? "M+PT"
-              : "M+"
+              : id === "morena_pt_verde"
+                ? "M+V"
+                : "M+"
             : id === "pan_aliados" || id === "pan_pri"
               ? "P+"
               : id === "pan_pri_mc"

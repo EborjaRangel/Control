@@ -24,7 +24,8 @@ export type EscenarioProyeccionId =
   | "morena_prd_pan_pri_mc"
   | "pan_pri_mc_vs_morena_pt_prd_verde"
   | "intermedias_morena_pt_pan_pri"
-  | "morena_pt_prd_verde_pan_mc_pri";
+  | "morena_pt_prd_verde_pan_mc_pri"
+  | "morena_pt_verde_pan_pri_mc_prd";
 
 export type BloqueProyeccionResumen = {
   id: string;
@@ -225,18 +226,36 @@ export const ESCENARIOS_PROYECCION: ConfigEscenarioProyeccion[] = [
     ],
     distribuir: distribuirEscenarioMorenaPtPrdVerdePanMcPri,
   },
+  {
+    id: "morena_pt_verde_pan_pri_mc_prd",
+    etiqueta: "MORENA+PT+Verde · PAN · PRI · MC · PRD",
+    descripcion: "MORENA, PT y PVEM (Verde) juntos · PAN solo · PRI solo · MC solo · PRD solo.",
+    bloques: [
+      { id: "morena_pt_verde", etiqueta: "MORENA + PT + Verde", color: COLOR_MORENA },
+      { id: "pan", etiqueta: "PAN", color: COLOR_PAN },
+      { id: "pri", etiqueta: "PRI", color: COLOR_PRI },
+      { id: "mc", etiqueta: "MC", color: COLOR_MC },
+      { id: "prd", etiqueta: "PRD", color: COLOR_PRD_PT },
+    ],
+    distribuir: distribuirEscenarioMorenaPtVerdePanPriMcPrd,
+  },
 ];
 
 export const VISTA_META_PAN_SOLO_58 = "meta_pan_solo_58" as const;
 
 export type VistaProyeccionId = EscenarioProyeccionId | typeof VISTA_META_PAN_SOLO_58;
 
+const ESCENARIOS_AL_FINAL_COMBO = new Set<EscenarioProyeccionId>([
+  "morena_pt_prd_verde_pan_mc_pri",
+  "morena_pt_verde_pan_pri_mc_prd",
+]);
+
 export const OPCIONES_VISTA_PROYECCION: {
   id: VistaProyeccionId;
   etiqueta: string;
   descripcion: string;
 }[] = [
-  ...ESCENARIOS_PROYECCION.filter((esc) => esc.id !== "morena_pt_prd_verde_pan_mc_pri").map((esc) => ({
+  ...ESCENARIOS_PROYECCION.filter((esc) => !ESCENARIOS_AL_FINAL_COMBO.has(esc.id)).map((esc) => ({
     id: esc.id,
     etiqueta: esc.etiqueta,
     descripcion: esc.descripcion,
@@ -247,7 +266,7 @@ export const OPCIONES_VISTA_PROYECCION: {
     descripcion:
       "Solo secciones donde el PAN ganó solo (voto PAN, sin coalición) en 2015, 2018, 2021 y 2024. Muestra cuántos votos extra hacen falta en esas secciones para llegar al 58% de la votación total de la alcaldía.",
   },
-  ...ESCENARIOS_PROYECCION.filter((esc) => esc.id === "morena_pt_prd_verde_pan_mc_pri").map((esc) => ({
+  ...ESCENARIOS_PROYECCION.filter((esc) => ESCENARIOS_AL_FINAL_COMBO.has(esc.id)).map((esc) => ({
     id: esc.id,
     etiqueta: esc.etiqueta,
     descripcion: esc.descripcion,
@@ -277,6 +296,7 @@ const TOKENS_MORENA = new Set(["MOR", "MORENA", "PT", "PRD", "PES", "PVEM"]);
 const TOKENS_PAN = new Set(["PAN", "PRI"]);
 const TOKENS_MORENA_SIN_PT = new Set(["MOR", "MORENA", "PRD", "PES"]);
 const TOKENS_BLOQUE_IZQ = new Set(["MOR", "MORENA", "PT", "PRD", "PES", "PVEM"]);
+const TOKENS_MORENA_PT_VERDE = new Set(["MOR", "MORENA", "PT", "PES", "PVEM"]);
 const TOKENS_BLOQUE_DER = new Set(["PAN", "PRI", "MC"]);
 
 function round2(n: number): number {
@@ -334,6 +354,15 @@ function mapTokenMorenaPtPrdVerdePanMcPri(token: string): string | null {
   return null;
 }
 
+function mapTokenMorenaPtVerdePanPriMcPrd(token: string): string | null {
+  if (token === "MC") return "mc";
+  if (token === "PAN") return "pan";
+  if (token === "PRI") return "pri";
+  if (token === "PRD") return "prd";
+  if (TOKENS_MORENA_PT_VERDE.has(token)) return "morena_pt_verde";
+  return null;
+}
+
 function mapTokenMorenaPtPrd(token: string): string | null {
   if (token === "MC") return "mc";
   if (TOKENS_PAN.has(token)) return "pan_aliados";
@@ -379,6 +408,51 @@ function aplicarDistribucion(
   const out = vacio([...bloqueIds, "otros"]);
   reglas(clave.toUpperCase(), votos, out);
   return out;
+}
+
+function distribuirEscenarioMorenaPtVerdePanPriMcPrd(clave: string, votos: number): Record<string, number> {
+  return aplicarDistribucion(
+    clave,
+    votos,
+    ["morena_pt_verde", "pan", "pri", "mc", "prd"],
+    (k, v, out) => {
+      if (k === "MC" || k.includes("CONVERGENCIA")) {
+        out.mc = v;
+        return;
+      }
+      if (k === "PRD") {
+        out.prd = v;
+        return;
+      }
+      if (k === "PRD_PT" || k === "PT_PRD") {
+        out.morena_pt_verde = v * 0.5;
+        out.prd = v * 0.5;
+        return;
+      }
+      if (k === "MORENA" || k.includes("MORENA") || k === "PT" || k === "PVEM") {
+        out.morena_pt_verde = v;
+        return;
+      }
+      if (k === "PAN") {
+        out.pan = v;
+        return;
+      }
+      if (k === "PRI") {
+        out.pri = v;
+        return;
+      }
+      if (["PT_MOR", "MOR_PES", "PT_MOR_PES", "PT_MORENA", "PVEM_PT_MORENA"].includes(k)) {
+        out.morena_pt_verde = v;
+        return;
+      }
+      const split = repartoCoalicion(k, v, mapTokenMorenaPtVerdePanPriMcPrd);
+      if (split) {
+        for (const [id, val] of Object.entries(split)) out[id] = (out[id] ?? 0) + val;
+        return;
+      }
+      out.otros = v;
+    },
+  );
 }
 
 function distribuirEscenarioMorenaPtPrdVerdePanMcPri(clave: string, votos: number): Record<string, number> {
@@ -1426,6 +1500,14 @@ export function segmentosTituloEscenario(escenarioId: EscenarioProyeccionId): { 
         { texto: "PRI", color: COLOR_PRI },
         { texto: "MC", color: COLOR_MC },
       ];
+    case "morena_pt_verde_pan_pri_mc_prd":
+      return [
+        { texto: "MORENA+PT+Verde", color: COLOR_MORENA },
+        { texto: "PAN", color: COLOR_PAN },
+        { texto: "PRI", color: COLOR_PRI },
+        { texto: "MC", color: COLOR_MC },
+        { texto: "PRD", color: COLOR_PRD_PT },
+      ];
   }
 }
 
@@ -1436,6 +1518,8 @@ export function patronesResaltadoBloques(
   const base = [
     { patron: "MORENA + PT + PRD + Verde", color: COLOR_MORENA },
     { patron: "MORENA+PT+PRD+Verde", color: COLOR_PVEM },
+    { patron: "MORENA + PT + Verde", color: COLOR_MORENA },
+    { patron: "MORENA+PT+Verde", color: COLOR_MORENA },
     { patron: "MORENA+PT+PRD", color: COLOR_MORENA },
     { patron: "MORENA + PT", color: COLOR_MORENA },
     { patron: "MORENA+PT", color: COLOR_MORENA },
@@ -1467,6 +1551,15 @@ export function patronesResaltadoBloques(
       { patron: "PAN", color: COLOR_PAN },
       { patron: "PRI", color: COLOR_PRI },
       { patron: "MC", color: COLOR_MC },
+    ].sort((a, b) => b.patron.length - a.patron.length);
+  }
+  if (escenarioId === "morena_pt_verde_pan_pri_mc_prd") {
+    return [
+      ...base,
+      { patron: "PAN", color: COLOR_PAN },
+      { patron: "PRI", color: COLOR_PRI },
+      { patron: "MC", color: COLOR_MC },
+      { patron: "PRD", color: COLOR_PRD_PT },
     ].sort((a, b) => b.patron.length - a.patron.length);
   }
   return [...base, { patron: "MC", color: COLOR_MC }, { patron: "PT", color: COLOR_PT }].sort(
@@ -1649,6 +1742,12 @@ function homologacionEscenario(escenarioId: EscenarioProyeccionId): string {
         "PAN, PRI y MC compiten cada uno por separado: coaliciones como PAN_PRI o PAN_PRI_PRD se parten entre " +
         "los partidos del ticket. Sirve para ver al bloque morenista amplio frente a una oposición fragmentada."
       );
+    case "morena_pt_verde_pan_pri_mc_prd":
+      return (
+        "MORENA, PT y PVEM (Verde) van juntos (incluida PVEM_PT_MORENA). El PRD queda aparte: la alianza PRD-PT de 2015 " +
+        "se parte a la mitad entre PRD y el bloque MORENA+PT+Verde. PAN, PRI y MC también corren solos; " +
+        "coaliciones mixtas (PAN_PRI, PAN_PRI_PRD) se reparten entre los partidos del ticket."
+      );
   }
 }
 
@@ -1740,6 +1839,13 @@ export function generarAnalisisNarrativoProyeccion(
     parrafos.push(
       "Sin alianza PAN+PRI el voto opositor se reparte: el PAN conserva su ticket propio, el PRI queda como " +
         "fuerza aparte y MC no suma a ninguno. El bloque MORENA+PT+PRD+Verde concentra las coaliciones de 2018 y 2024.",
+    );
+  }
+
+  if (escenarioId === "morena_pt_verde_pan_pri_mc_prd") {
+    parrafos.push(
+      "El PRD separado resta al bloque morenista lo que históricamente fue voto perredista propio o mitad de PRD-PT. " +
+        "PAN, PRI y MC siguen fragmentados. El bloque MORENA+PT+Verde retiene 2024 (PVEM_PT_MORENA) entero.",
     );
   }
 
