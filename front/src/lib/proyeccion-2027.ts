@@ -23,7 +23,8 @@ export type EscenarioProyeccionId =
   | "partidos_solos"
   | "morena_prd_pan_pri_mc"
   | "pan_pri_mc_vs_morena_pt_prd_verde"
-  | "intermedias_morena_pt_pan_pri";
+  | "intermedias_morena_pt_pan_pri"
+  | "morena_pt_prd_verde_pan_mc_pri";
 
 export type BloqueProyeccionResumen = {
   id: string;
@@ -212,6 +213,18 @@ export const ESCENARIOS_PROYECCION: ConfigEscenarioProyeccion[] = [
     bloques: [],
     distribuir: distribuirPartidoSolo,
   },
+  {
+    id: "morena_pt_prd_verde_pan_mc_pri",
+    etiqueta: "MORENA+PT+PRD+Verde · PAN · PRI · MC",
+    descripcion: "MORENA, PT, PRD y PVEM (Verde) juntos · PAN solo · PRI solo · MC solo.",
+    bloques: [
+      { id: "morena_pt_prd_verde", etiqueta: "MORENA + PT + PRD + Verde", color: COLOR_MORENA },
+      { id: "pan", etiqueta: "PAN", color: COLOR_PAN },
+      { id: "pri", etiqueta: "PRI", color: COLOR_PRI },
+      { id: "mc", etiqueta: "MC", color: COLOR_MC },
+    ],
+    distribuir: distribuirEscenarioMorenaPtPrdVerdePanMcPri,
+  },
 ];
 
 export const VISTA_META_PAN_SOLO_58 = "meta_pan_solo_58" as const;
@@ -223,7 +236,7 @@ export const OPCIONES_VISTA_PROYECCION: {
   etiqueta: string;
   descripcion: string;
 }[] = [
-  ...ESCENARIOS_PROYECCION.map((esc) => ({
+  ...ESCENARIOS_PROYECCION.filter((esc) => esc.id !== "morena_pt_prd_verde_pan_mc_pri").map((esc) => ({
     id: esc.id,
     etiqueta: esc.etiqueta,
     descripcion: esc.descripcion,
@@ -234,6 +247,11 @@ export const OPCIONES_VISTA_PROYECCION: {
     descripcion:
       "Solo secciones donde el PAN ganó solo (voto PAN, sin coalición) en 2015, 2018, 2021 y 2024. Muestra cuántos votos extra hacen falta en esas secciones para llegar al 58% de la votación total de la alcaldía.",
   },
+  ...ESCENARIOS_PROYECCION.filter((esc) => esc.id === "morena_pt_prd_verde_pan_mc_pri").map((esc) => ({
+    id: esc.id,
+    etiqueta: esc.etiqueta,
+    descripcion: esc.descripcion,
+  })),
 ];
 
 export function esVistaMetaPanSolo58(id: VistaProyeccionId): id is typeof VISTA_META_PAN_SOLO_58 {
@@ -308,6 +326,14 @@ function mapTokenMorenaPtPrdVerde(token: string): string | null {
   return null;
 }
 
+function mapTokenMorenaPtPrdVerdePanMcPri(token: string): string | null {
+  if (token === "MC") return "mc";
+  if (token === "PAN") return "pan";
+  if (token === "PRI") return "pri";
+  if (TOKENS_BLOQUE_IZQ.has(token)) return "morena_pt_prd_verde";
+  return null;
+}
+
 function mapTokenMorenaPtPrd(token: string): string | null {
   if (token === "MC") return "mc";
   if (TOKENS_PAN.has(token)) return "pan_aliados";
@@ -353,6 +379,50 @@ function aplicarDistribucion(
   const out = vacio([...bloqueIds, "otros"]);
   reglas(clave.toUpperCase(), votos, out);
   return out;
+}
+
+function distribuirEscenarioMorenaPtPrdVerdePanMcPri(clave: string, votos: number): Record<string, number> {
+  return aplicarDistribucion(
+    clave,
+    votos,
+    ["morena_pt_prd_verde", "pan", "pri", "mc"],
+    (k, v, out) => {
+      if (k === "MC" || k.includes("CONVERGENCIA")) {
+        out.mc = v;
+        return;
+      }
+      if (
+        k === "MORENA" ||
+        k.includes("MORENA") ||
+        k === "PRD_PT" ||
+        k === "PT_PRD" ||
+        k === "PRD" ||
+        k === "PT" ||
+        k === "PVEM"
+      ) {
+        out.morena_pt_prd_verde = v;
+        return;
+      }
+      if (k === "PAN") {
+        out.pan = v;
+        return;
+      }
+      if (k === "PRI") {
+        out.pri = v;
+        return;
+      }
+      if (["PT_MOR", "MOR_PES", "PT_MOR_PES", "PT_MORENA", "PVEM_PT_MORENA"].includes(k)) {
+        out.morena_pt_prd_verde = v;
+        return;
+      }
+      const split = repartoCoalicion(k, v, mapTokenMorenaPtPrdVerdePanMcPri);
+      if (split) {
+        for (const [id, val] of Object.entries(split)) out[id] = (out[id] ?? 0) + val;
+        return;
+      }
+      out.otros = v;
+    },
+  );
 }
 
 function distribuirEscenarioMorenaPtPrdVerde(clave: string, votos: number): Record<string, number> {
@@ -1349,6 +1419,13 @@ export function segmentosTituloEscenario(escenarioId: EscenarioProyeccionId): { 
         { texto: "PRD", color: COLOR_PRD_PT },
         { texto: "Verde", color: COLOR_PVEM },
       ];
+    case "morena_pt_prd_verde_pan_mc_pri":
+      return [
+        { texto: "MORENA+PT+PRD+Verde", color: COLOR_MORENA },
+        { texto: "PAN", color: COLOR_PAN },
+        { texto: "PRI", color: COLOR_PRI },
+        { texto: "MC", color: COLOR_MC },
+      ];
   }
 }
 
@@ -1382,6 +1459,14 @@ export function patronesResaltadoBloques(
       { patron: "PRD", color: COLOR_PRD_PT },
       { patron: "PT", color: COLOR_PT },
       { patron: "PVEM", color: COLOR_PVEM },
+    ].sort((a, b) => b.patron.length - a.patron.length);
+  }
+  if (escenarioId === "morena_pt_prd_verde_pan_mc_pri") {
+    return [
+      ...base,
+      { patron: "PAN", color: COLOR_PAN },
+      { patron: "PRI", color: COLOR_PRI },
+      { patron: "MC", color: COLOR_MC },
     ].sort((a, b) => b.patron.length - a.patron.length);
   }
   return [...base, { patron: "MC", color: COLOR_MC }, { patron: "PT", color: COLOR_PT }].sort(
@@ -1558,6 +1643,12 @@ function homologacionEscenario(escenarioId: EscenarioProyeccionId): string {
         "La alianza PRD-PT de 2015 se parte a la mitad entre PRD y el bloque MORENA+PT. " +
         "La recta OLS de cada sección se traza con esos dos puntos y se prolonga a 2027 en las 403 secciones."
       );
+    case "morena_pt_prd_verde_pan_mc_pri":
+      return (
+        "MORENA, PT, PRD y PVEM (Verde) van juntos (incluida PRD-PT de 2015 y tickets como PVEM_PT_MORENA). " +
+        "PAN, PRI y MC compiten cada uno por separado: coaliciones como PAN_PRI o PAN_PRI_PRD se parten entre " +
+        "los partidos del ticket. Sirve para ver al bloque morenista amplio frente a una oposición fragmentada."
+      );
   }
 }
 
@@ -1642,6 +1733,13 @@ export function generarAnalisisNarrativoProyeccion(
       "Al omitir 2018 y 2024 (años concurrentes con presidencia y jefatura de gobierno) se evita que el arrastre " +
         "presidencial distorsione la tendencia de una elección intermedia como 2027. MC, PRD y Verde quedan como " +
         "fuerzas propias y pueden restar margen a MORENA+PT o a PAN+PRI según la sección.",
+    );
+  }
+
+  if (escenarioId === "morena_pt_prd_verde_pan_mc_pri") {
+    parrafos.push(
+      "Sin alianza PAN+PRI el voto opositor se reparte: el PAN conserva su ticket propio, el PRI queda como " +
+        "fuerza aparte y MC no suma a ninguno. El bloque MORENA+PT+PRD+Verde concentra las coaliciones de 2018 y 2024.",
     );
   }
 
