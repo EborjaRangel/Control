@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { apiJson } from "@/lib/api-response";
+import { apiJson, esAbortError, mensajeErrorRed } from "@/lib/api-response";
 import { NOMBRES_COLONIAS_COYOACAN } from "@/lib/colonias";
 import { nombreCompleto, TIPO_DIRIGENTE_LABEL, TIPOS_DIRIGENTE } from "@/lib/dirigentes";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
@@ -47,7 +47,7 @@ export function BuscarDirigenteParaOperador({ modo, selectedId, onSelect }: Prop
       .catch(() => undefined);
   }, []);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
     try {
@@ -59,23 +59,29 @@ export function BuscarDirigenteParaOperador({ modo, selectedId, onSelect }: Prop
       if (unidadTerritorialId) params.set("unidadTerritorialId", unidadTerritorialId);
       params.set(modo === "rc" ? "disponibleParaRc" : "disponibleParaRg", "true");
 
-      const res = await apiFetch(`/api/dirigentes?${params.toString()}`);
+      const res = await apiFetch(`/api/dirigentes?${params.toString()}`, { signal });
+      if (signal?.aborted) return;
       const data = await apiJson<DirigenteParaOperador[]>(res);
       setDirigentes(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al buscar");
+      if (esAbortError(err) || signal?.aborted) return;
+      setError(mensajeErrorRed(err, "Error al buscar"));
       setDirigentes([]);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, [buscar, tipo, colonia, seccionElectoral, unidadTerritorialId, modo]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const timer = setTimeout(() => {
-      void load();
+      void load(controller.signal);
     }, buscar ? 300 : 0);
-    return () => clearTimeout(timer);
-  }, [load, buscar]);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [load, buscar, tipo, colonia, seccionElectoral, unidadTerritorialId]);
 
   return (
     <section className="card-section space-y-4">

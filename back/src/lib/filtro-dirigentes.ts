@@ -4,7 +4,6 @@ import {
   variantesColoniaParaBusqueda,
 } from "./colonias.js";
 import { normalizarTextoGuardado } from "./normalizar-texto.js";
-import { distritosPorColonia } from "./unidades-territoriales.js";
 
 const modo = "insensitive" as const;
 
@@ -73,22 +72,13 @@ export async function buildFiltroBuscarDirigentes(
   const coloniasCoincidentes = coloniasCatalogoCoincidentes(texto);
   if (coloniasCoincidentes.length > 0) {
     const variantesColonia = new Set<string>();
-    const distritos = new Set<number>();
-
     for (const colonia of coloniasCoincidentes) {
       for (const variante of variantesColoniaParaBusqueda(colonia)) {
         variantesColonia.add(variante);
       }
-      for (const distrito of await distritosPorColonia(colonia)) {
-        distritos.add(distrito);
-      }
     }
-
     if (variantesColonia.size > 0) {
       or.push({ colonia: { in: [...variantesColonia] } });
-    }
-    if (distritos.size > 0) {
-      or.push({ distritoLocal: { in: [...distritos] } });
     }
   }
 

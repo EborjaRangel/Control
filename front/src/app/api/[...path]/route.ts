@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+export const preferredRegion = "sfo1";
+
 function apiBaseUrl() {
   return (
     process.env.API_PROXY_URL?.replace(/\/$/, "") ??
@@ -10,7 +14,7 @@ function apiBaseUrl() {
 
 function forwardRequestHeaders(request: NextRequest) {
   const headers = new Headers();
-  const allowed = ["content-type", "authorization", "accept", "accept-language"];
+  const allowed = ["content-type", "authorization", "accept", "accept-language", "cookie"];
 
   for (const name of allowed) {
     const value = request.headers.get(name);
@@ -25,20 +29,30 @@ async function proxyRequest(request: NextRequest, path: string[]) {
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
   const body = hasBody ? await request.arrayBuffer() : undefined;
 
-  const upstream = await fetch(target, {
-    method: request.method,
-    headers: forwardRequestHeaders(request),
-    body,
-    cache: "no-store",
-  });
+  try {
+    const upstream = await fetch(target, {
+      method: request.method,
+      headers: forwardRequestHeaders(request),
+      body,
+      cache: "no-store",
+      signal: AbortSignal.timeout(55_000),
+    });
 
-  const responseBody = await upstream.arrayBuffer();
-  const contentType = upstream.headers.get("content-type") ?? "application/json";
+    const responseBody = await upstream.arrayBuffer();
+    const contentType = upstream.headers.get("content-type") ?? "application/json";
 
-  return new NextResponse(responseBody, {
-    status: upstream.status,
-    headers: { "Content-Type": contentType },
-  });
+    return new NextResponse(responseBody, {
+      status: upstream.status,
+      headers: { "Content-Type": contentType },
+    });
+  } catch (error) {
+    const detalle = error instanceof Error ? error.message : "Error de red";
+    console.error("API proxy error", request.method, target, detalle);
+    return NextResponse.json(
+      { error: "No se pudo conectar con el servidor. Intenta de nuevo." },
+      { status: 502 },
+    );
+  }
 }
 
 type RouteContext = {

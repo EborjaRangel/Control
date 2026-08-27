@@ -23,3 +23,19 @@ export async function apiJson<T>(res: Response): Promise<T> {
   }
   return data;
 }
+
+export function esAbortError(err: unknown): boolean {
+  return (
+    (err instanceof DOMException && err.name === "AbortError") ||
+    (err instanceof Error && err.name === "AbortError")
+  );
+}
+
+export function mensajeErrorRed(err: unknown, fallback = "Error al cargar"): string {
+  if (esAbortError(err)) return "";
+  const msg = err instanceof Error ? err.message : "";
+  if (/failed to fetch|networkerror|load failed|fetch failed|aborted|timeout/i.test(msg)) {
+    return "No se pudo conectar con el servidor. Revisa tu conexión e intenta de nuevo.";
+  }
+  return msg.trim() || fallback;
+}

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
+import { esAbortError, mensajeErrorRed } from "@/lib/api-response";
 import { cn } from "@/lib/cn";
 import { NOMBRES_COLONIAS_COYOACAN } from "@/lib/colonias";
 import {
@@ -27,7 +28,7 @@ export default function DirigentesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
     try {
@@ -40,16 +41,18 @@ export default function DirigentesPage() {
       if (buscar.trim()) params.set("buscar", buscar.trim());
       if (tipo) params.set("tipo", tipo);
       if (colonia) params.set("colonia", colonia);
-      const res = await apiFetch(`/api/dirigentes?${params.toString()}`);
+      const res = await apiFetch(`/api/dirigentes?${params.toString()}`, { signal });
+      if (signal?.aborted) return;
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
         throw new Error(data.error ?? "Error al cargar dirigentes");
       }
       setDirigentes((await res.json()) as DirigenteDTO[]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al cargar");
+      if (esAbortError(err) || signal?.aborted) return;
+      setError(mensajeErrorRed(err, "Error al cargar dirigentes"));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, [buscar, incluirBajas, tipo, colonia]);
 
@@ -58,10 +61,14 @@ export default function DirigentesPage() {
   }, [pathname]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const timer = setTimeout(() => {
-      void load();
+      void load(controller.signal);
     }, buscar ? 300 : 0);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [load, buscar, incluirBajas, tipo, colonia, pathname]);
 
   const hayFiltros = Boolean(buscar.trim() || tipo || colonia || incluirBajas);
