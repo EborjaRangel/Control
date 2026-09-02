@@ -23,6 +23,7 @@ import {
   TIPOS_DIRIGENTE,
 } from "@/lib/dirigentes";
 import { apiFetch } from "@/lib/api";
+import { uploadImageFile } from "@/lib/upload-image";
 import type { UnidadTerritorialResumen } from "@/lib/unidades-territoriales";
 import { etiquetaUnidadTerritorial } from "@/lib/unidades-territoriales";
 import type { DirigenteFormValues } from "@/lib/validation";
@@ -406,17 +407,9 @@ function FotoUpload() {
     setUploading(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await apiFetch("/api/upload", { method: "POST", body: formData });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok) {
-        setError(data.error ?? "Error al subir la imagen");
-        return;
-      }
-      await setFieldValue("fotoUrl", data.url ?? null);
-    } catch {
-      setError("No se pudo subir la imagen");
+      await setFieldValue("fotoUrl", await uploadImageFile(file));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo subir la imagen");
     } finally {
       setUploading(false);
       e.target.value = "";

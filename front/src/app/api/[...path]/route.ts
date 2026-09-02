@@ -27,23 +27,32 @@ function forwardRequestHeaders(request: NextRequest) {
 async function proxyRequest(request: NextRequest, path: string[]) {
   const target = `${apiBaseUrl()}/api/${path.join("/")}${request.nextUrl.search}`;
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
-  const body = hasBody ? await request.arrayBuffer() : undefined;
+  const contentType = request.headers.get("content-type") ?? "";
+  const isMultipart = contentType.includes("multipart/form-data");
+
+  const init: RequestInit & { duplex?: "half" } = {
+    method: request.method,
+    headers: forwardRequestHeaders(request),
+    cache: "no-store",
+    signal: AbortSignal.timeout(55_000),
+  };
+
+  if (hasBody) {
+    if (isMultipart && request.body) {
+      init.body = request.body;
+      init.duplex = "half";
+    } else {
+      init.body = await request.arrayBuffer();
+    }
+  }
 
   try {
-    const upstream = await fetch(target, {
-      method: request.method,
-      headers: forwardRequestHeaders(request),
-      body,
-      cache: "no-store",
-      signal: AbortSignal.timeout(55_000),
-    });
+    const upstream = await fetch(target, init);
+    const responseContentType = upstream.headers.get("content-type") ?? "application/json";
 
-    const responseBody = await upstream.arrayBuffer();
-    const contentType = upstream.headers.get("content-type") ?? "application/json";
-
-    return new NextResponse(responseBody, {
+    return new NextResponse(upstream.body, {
       status: upstream.status,
-      headers: { "Content-Type": contentType },
+      headers: { "Content-Type": responseContentType },
     });
   } catch (error) {
     const detalle = error instanceof Error ? error.message : "Error de red";

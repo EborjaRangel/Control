@@ -96,7 +96,7 @@ export function ServicioUrbanoForm({
               <h2 className="section-title">Evidencia fotográfica</h2>
               <p className="text-sm text-ink-secondary">
                 Sube dos fotografías: una del estado anterior y otra del estado posterior del
-                servicio reportado.
+                servicio. Se compactan en el celular antes de enviarlas.
               </p>
               <div className="grid gap-6 sm:grid-cols-2">
                 <ImageUploadField

@@ -989,16 +989,20 @@ router.delete("/dirigentes/:id", requireStaff, async (req, res) => {
 });
 
 router.post("/upload", (req, res) => {
+  const started = Date.now();
   upload.single("file")(req, res, (err) => {
     if (err instanceof multer.MulterError) {
       if (err.code === "LIMIT_FILE_SIZE") {
+        console.warn(`upload reject size ms=${Date.now() - started}`);
         res.status(400).json({ error: "La imagen supera 5 MB" });
         return;
       }
+      console.warn(`upload multer ${err.code} ms=${Date.now() - started}`);
       res.status(400).json({ error: "Error al subir archivo" });
       return;
     }
     if (err) {
+      console.warn("upload error", err);
       res.status(400).json({ error: "Error al subir archivo" });
       return;
     }
@@ -1006,6 +1010,9 @@ router.post("/upload", (req, res) => {
       res.status(400).json({ error: "No se envió ningún archivo o formato no permitido" });
       return;
     }
+    console.log(
+      `upload ok bytes=${req.file.size} ms=${Date.now() - started} name=${req.file.filename}`,
+    );
     res.status(201).json({ url: `/uploads/${req.file.filename}` });
   });
 });

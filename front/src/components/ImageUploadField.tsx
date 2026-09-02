@@ -3,7 +3,7 @@
 import { UploadImage } from "@/components/UploadImage";
 import { useFormikContext } from "formik";
 import { useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { etiquetaEstadoSubida, uploadImageFile, type UploadImageStatus } from "@/lib/upload-image";
 
 type Props = {
   name: string;
@@ -15,6 +15,7 @@ export function ImageUploadField({ name, label, previewAlt = "Imagen" }: Props) 
   const { values, setFieldValue, errors, touched, submitCount } =
     useFormikContext<Record<string, unknown>>();
   const [uploading, setUploading] = useState(false);
+  const [status, setStatus] = useState<UploadImageStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const url = values[name] as string | null | undefined;
@@ -27,20 +28,15 @@ export function ImageUploadField({ name, label, previewAlt = "Imagen" }: Props) 
 
     setUploading(true);
     setError(null);
+    setStatus({ phase: "compress" });
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await apiFetch("/api/upload", { method: "POST", body: formData });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok) {
-        setError(data.error ?? "Error al subir la imagen");
-        return;
-      }
-      await setFieldValue(name, data.url ?? "");
-    } catch {
-      setError("No se pudo subir la imagen");
+      const uploadedUrl = await uploadImageFile(file, setStatus);
+      await setFieldValue(name, uploadedUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo subir la imagen");
     } finally {
       setUploading(false);
+      setStatus(null);
       e.target.value = "";
     }
   }
@@ -79,7 +75,9 @@ export function ImageUploadField({ name, label, previewAlt = "Imagen" }: Props) 
               Quitar imagen
             </button>
           ) : null}
-          {uploading ? <p className="text-xs text-ink-secondary">Subiendo…</p> : null}
+          {uploading ? (
+            <p className="text-xs text-ink-secondary">{etiquetaEstadoSubida(status) ?? "Subiendo…"}</p>
+          ) : null}
           {error ? <p className="field-error">{error}</p> : null}
           {showError ? <p className="field-error">{fieldError}</p> : null}
         </div>

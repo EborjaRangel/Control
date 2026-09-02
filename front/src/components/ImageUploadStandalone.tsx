@@ -2,7 +2,7 @@
 
 import { UploadImage } from "@/components/UploadImage";
 import { useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { etiquetaEstadoSubida, uploadImageFile, type UploadImageStatus } from "@/lib/upload-image";
 
 type Props = {
   label: string;
@@ -18,6 +18,7 @@ export function ImageUploadStandalone({
   previewAlt = "Imagen",
 }: Props) {
   const [uploading, setUploading] = useState(false);
+  const [status, setStatus] = useState<UploadImageStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -26,20 +27,14 @@ export function ImageUploadStandalone({
 
     setUploading(true);
     setError(null);
+    setStatus({ phase: "compress" });
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await apiFetch("/api/upload", { method: "POST", body: formData });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok) {
-        setError(data.error ?? "Error al subir la imagen");
-        return;
-      }
-      onChange(data.url ?? "");
-    } catch {
-      setError("No se pudo subir la imagen");
+      onChange(await uploadImageFile(file, setStatus));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo subir la imagen");
     } finally {
       setUploading(false);
+      setStatus(null);
       e.target.value = "";
     }
   }
@@ -78,7 +73,9 @@ export function ImageUploadStandalone({
               Quitar imagen
             </button>
           ) : null}
-          {uploading ? <p className="text-xs text-ink-secondary">Subiendo…</p> : null}
+          {uploading ? (
+            <p className="text-xs text-ink-secondary">{etiquetaEstadoSubida(status) ?? "Subiendo…"}</p>
+          ) : null}
           {error ? <p className="field-error">{error}</p> : null}
         </div>
       </div>
