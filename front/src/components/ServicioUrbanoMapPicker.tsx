@@ -9,7 +9,11 @@ type Props = {
   lat: number | null;
   lng: number | null;
   direccion: string;
-  onChange: (value: { lat: number; lng: number; direccion: string }) => void;
+  onChange: (value: {
+    lat: number | null;
+    lng: number | null;
+    direccion: string;
+  }) => void;
   readOnly?: boolean;
 };
 
@@ -154,7 +158,8 @@ export function ServicioUrbanoMapPicker({
     <div className="space-y-3">
       {!readOnly ? (
         <p className="text-sm text-ink-secondary">
-          Arrastra el pin o toca el mapa para marcar la ubicación exacta del reporte.
+          Arrastra el pin o toca el mapa para marcar la ubicación. El mapa sugiere la
+          dirección; puedes corregirla.
         </p>
       ) : null}
       <div
@@ -165,16 +170,36 @@ export function ServicioUrbanoMapPicker({
         <p className="text-xs text-ink-secondary">Obteniendo dirección…</p>
       ) : null}
       {geoError ? <p className="field-error">{geoError}</p> : null}
-      {direccion ? (
+      {!readOnly ? (
+        <label className="label" htmlFor="servicio-urbano-direccion">
+          Dirección
+          <textarea
+            id="servicio-urbano-direccion"
+            name="direccion"
+            rows={3}
+            className="input-area"
+            value={direccion}
+            disabled={geoLoading}
+            placeholder="Se llena con el pin; puedes editar calle, número o referencias"
+            onChange={(event) => {
+              onChangeRef.current({
+                lat,
+                lng,
+                direccion: event.target.value,
+              });
+            }}
+          />
+        </label>
+      ) : direccion ? (
         <div className="panel-soft p-3 text-sm">
           <span className="text-xs uppercase text-ink-secondary">Dirección</span>
           <p className="mt-1 font-medium text-ink">{direccion}</p>
-          {lat != null && lng != null ? (
-            <p className="mt-1 text-xs text-ink-secondary">
-              {lat.toFixed(6)}, {lng.toFixed(6)}
-            </p>
-          ) : null}
         </div>
+      ) : null}
+      {lat != null && lng != null ? (
+        <p className="mt-1 text-xs text-ink-secondary">
+          {lat.toFixed(6)}, {lng.toFixed(6)}
+        </p>
       ) : null}
     </div>
   );

@@ -23,7 +23,7 @@ export const servicioUrbanoFormSchema = Yup.object({
     .oneOf([...TIPOS], "Selecciona el tipo de servicio")
     .required("Selecciona el tipo de servicio"),
   descripcion: Yup.string().trim().max(2000, "Máximo 2000 caracteres"),
-  direccion: Yup.string().trim().required("Marca la ubicación en el mapa"),
+  direccion: Yup.string().trim().required("Escribe o corrige la dirección"),
   lat: Yup.number()
     .nullable()
     .typeError("Marca la ubicación en el mapa")
@@ -36,6 +36,6 @@ export const servicioUrbanoFormSchema = Yup.object({
     .min(-180, "Longitud inválida")
     .max(180, "Longitud inválida")
     .required("Marca la ubicación en el mapa"),
-  fotoAntesUrl: Yup.string().trim().required("Sube la foto del antes"),
-  fotoDespuesUrl: Yup.string().trim().required("Sube la foto del después"),
+  fotoAntesUrl: Yup.string().trim().required("Sube la foto del antes 1"),
+  fotoDespuesUrl: Yup.string().trim().required("Sube la foto del antes 2"),
 });

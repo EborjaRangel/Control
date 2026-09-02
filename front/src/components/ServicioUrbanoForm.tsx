@@ -95,19 +95,19 @@ export function ServicioUrbanoForm({
             <section className="space-y-4">
               <h2 className="section-title">Evidencia fotográfica</h2>
               <p className="text-sm text-ink-secondary">
-                Sube dos fotografías: una del estado anterior y otra del estado posterior del
-                servicio. Se compactan en el celular antes de enviarlas.
+                Sube dos fotografías del estado anterior: foto del antes 1 y foto del antes 2.
+                Se compactan en el celular antes de enviarlas.
               </p>
               <div className="grid gap-6 sm:grid-cols-2">
                 <ImageUploadField
                   name="fotoAntesUrl"
-                  label="Foto del antes"
-                  previewAlt="Antes del servicio"
+                  label="Foto del antes 1"
+                  previewAlt="Foto del antes 1"
                 />
                 <ImageUploadField
                   name="fotoDespuesUrl"
-                  label="Foto del después"
-                  previewAlt="Después del servicio"
+                  label="Foto del antes 2"
+                  previewAlt="Foto del antes 2"
                 />
               </div>
             </section>

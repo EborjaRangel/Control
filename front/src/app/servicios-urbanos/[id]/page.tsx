@@ -275,20 +275,20 @@ export default function ServicioUrbanoDetallePage() {
             <h2 className="section-title">Fotografías</h2>
             <div className="grid gap-6 sm:grid-cols-2">
               <div>
-                <p className="label mb-2">Antes</p>
+                <p className="label mb-2">Foto del antes 1</p>
                 <UploadImage
                   src={reporte.fotoAntesUrl}
-                  alt="Antes del servicio"
+                  alt="Foto del antes 1"
                   width={320}
                   height={200}
                   className="h-48 w-full max-w-md rounded-pin object-cover ring-2 ring-pin-light"
                 />
               </div>
               <div>
-                <p className="label mb-2">Después (dirigente)</p>
+                <p className="label mb-2">Foto del antes 2</p>
                 <UploadImage
                   src={reporte.fotoDespuesUrl}
-                  alt="Después del servicio"
+                  alt="Foto del antes 2"
                   width={320}
                   height={200}
                   className="h-48 w-full max-w-md rounded-pin object-cover ring-2 ring-pin-light"
