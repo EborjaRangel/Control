@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import { AuthProvider } from "@/components/AuthProvider";
-import { APP_DESCRIPTION, APP_TITLE } from "@/lib/site";
+import { APP_DESCRIPTION, APP_TITLE, appMetadataBase } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,9 +16,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: appMetadataBase(),
   title: APP_TITLE,
   description: APP_DESCRIPTION,
   applicationName: APP_TITLE,
+  openGraph: {
+    title: APP_TITLE,
+    description: APP_DESCRIPTION,
+    siteName: APP_TITLE,
+    locale: "es_MX",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: APP_TITLE,
+    description: APP_DESCRIPTION,
+  },
 };
 
 export const viewport: Viewport = {

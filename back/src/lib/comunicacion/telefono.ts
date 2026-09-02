@@ -8,11 +8,17 @@ import type { ResultadoEnvio } from "./email.js";
 import { enviarWhatsAppCloud, verificarWhatsAppCloud } from "./whatsapp-cloud.js";
 
 function mensajeErrorTwilio(raw: string, canal: "SMS" | "WHATSAPP"): string {
+  if (/63112/i.test(raw)) {
+    return (
+      "WhatsApp: Meta tiene restringida o sin verificar la cuenta de negocio (WABA). " +
+      "Completa la verificación en Meta Business y revisa notificaciones del portafolio."
+    );
+  }
   if (/63015|63016|outside the allowed window|opted in|join/i.test(raw)) {
     if (canal === "WHATSAPP") {
       return (
-        "WhatsApp: el destinatario debe unirse al sandbox de Twilio (envía «join <palabra>» al número " +
-        "de prueba) o usar un número de producción con plantilla aprobada por Meta."
+        "WhatsApp: fuera de la ventana de 24 h. Se necesita una plantilla aprobada " +
+        "(TWILIO_WHATSAPP_CONTENT_SID) o que el destinatario escriba primero."
       );
     }
   }
