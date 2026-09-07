@@ -78,6 +78,8 @@ export default function RepresentanteRcDetallePage() {
         <RepresentanteCasillaForm
           initialValues={representanteToFormValues(rep)}
           coloniaAsignada={rc.colonia}
+          tipoDirigente={rc.dirigente?.tipo}
+          seccionDirigente={rc.dirigente?.seccionElectoral}
           onSubmit={handleSubmit}
           cancelHref={`/rc/${id}`}
           submitLabel="Guardar cambios"

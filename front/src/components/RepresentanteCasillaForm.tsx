@@ -22,6 +22,7 @@ import {
   representanteCasillaSchema,
   type RepresentanteCasillaFormValues,
 } from "@/lib/validation-rc-rg";
+import { dirigenteCapturaSoloSuSeccion } from "@/lib/dirigente-seccion-captura";
 import * as Yup from "yup";
 
 type Props = {
@@ -30,6 +31,8 @@ type Props = {
   distritoLocal?: number | null;
   /** Rep. Casilla: colonia fija del dirigente; solo secciones de esa colonia. */
   coloniaAsignada?: string;
+  tipoDirigente?: string;
+  seccionDirigente?: string;
   onSubmit: (values: RepresentanteCasillaFormValues) => Promise<void>;
   cancelHref: string;
   submitLabel?: string;
@@ -97,6 +100,26 @@ function DomicilioFields({ coloniaFija }: { coloniaFija?: string }) {
       <FormField label="Número exterior" name="numeroExterior" />
       <FormField label="Número interior" name="numeroInterior" />
     </>
+  );
+}
+
+function SeccionElectoralFija({ seccion }: { seccion: string }) {
+  const { setFieldValue } = useFormikContext<RepresentanteCasillaFormValues>();
+
+  useEffect(() => {
+    void setFieldValue("seccionElectoral", seccion);
+  }, [seccion, setFieldValue]);
+
+  return (
+    <label className="label">
+      Sección electoral
+      <input
+        type="text"
+        readOnly
+        value={etiquetaSeccion(seccion)}
+        className="input bg-surface-muted"
+      />
+    </label>
   );
 }
 
@@ -181,7 +204,13 @@ function SeccionPorColoniaSelect({ coloniaCatalogo }: { coloniaCatalogo: string 
   );
 }
 
-function ColoniaSeccionElectoralFields({ distritoLocal }: { distritoLocal: number }) {
+function ColoniaSeccionElectoralFields({
+  distritoLocal,
+  seccionFija,
+}: {
+  distritoLocal: number;
+  seccionFija?: string;
+}) {
   const { values, setFieldValue } = useFormikContext<RepresentanteCasillaFormValues>();
   const [colonias, setColonias] = useState<string[]>([]);
   const [loadingColonias, setLoadingColonias] = useState(true);
@@ -229,7 +258,9 @@ function ColoniaSeccionElectoralFields({ distritoLocal }: { distritoLocal: numbe
         disabled={loadingColonias || colonias.length === 0}
         onChange={(e) => {
           void setFieldValue("coloniaSeccion", e.target.value);
-          void setFieldValue("seccionElectoral", "");
+          if (!seccionFija) {
+            void setFieldValue("seccionElectoral", "");
+          }
         }}
       >
         <option value="">
@@ -245,7 +276,11 @@ function ColoniaSeccionElectoralFields({ distritoLocal }: { distritoLocal: numbe
           </option>
         ))}
       </FormSelect>
-      <SeccionPorColoniaSelect coloniaCatalogo={coloniaCatalogo} />
+      {seccionFija ? (
+        <SeccionElectoralFija seccion={seccionFija} />
+      ) : (
+        <SeccionPorColoniaSelect coloniaCatalogo={coloniaCatalogo} />
+      )}
     </>
   );
 }
@@ -254,12 +289,18 @@ export function RepresentanteCasillaForm({
   initialValues,
   distritoLocal,
   coloniaAsignada,
+  tipoDirigente,
+  seccionDirigente,
   onSubmit,
   cancelHref,
   submitLabel = "Registrar representante",
 }: Props) {
   const [apiError, setApiError] = useState<string | null>(null);
   const coloniaRc = coloniaAsignada ? nombreColoniaCatalogo(coloniaAsignada) : "";
+  const seccionFija =
+    dirigenteCapturaSoloSuSeccion(tipoDirigente) && seccionDirigente
+      ? seccionDirigente
+      : undefined;
 
   const schema = distritoLocal
     ? representanteCasillaSchema.shape({
@@ -275,6 +316,7 @@ export function RepresentanteCasillaForm({
         ...initialValues,
         colonia: coloniaAsignada ? coloniaRc : initialValues.colonia,
         coloniaSeccion: coloniaAsignada ? coloniaRc : initialValues.coloniaSeccion,
+        seccionElectoral: seccionFija ?? initialValues.seccionElectoral,
       }}
       validationSchema={schema}
       enableReinitialize
@@ -295,14 +337,33 @@ export function RepresentanteCasillaForm({
             <h2 className="section-title">Datos generales</h2>
             {distritoLocal ? (
               <p className="text-sm text-ink-secondary">
-                Elige la colonia del <strong className="text-ink">distrito local {distritoLocal}</strong>{" "}
-                del dirigente; luego selecciona la sección electoral correspondiente.
+                {seccionFija ? (
+                  <>
+                    Elige la colonia del{" "}
+                    <strong className="text-ink">distrito local {distritoLocal}</strong> del
+                    dirigente. La sección electoral queda fija en{" "}
+                    <strong className="text-ink">{etiquetaSeccion(seccionFija)}</strong>.
+                  </>
+                ) : (
+                  <>
+                    Elige la colonia del{" "}
+                    <strong className="text-ink">distrito local {distritoLocal}</strong> del
+                    dirigente; luego selecciona la sección electoral correspondiente.
+                  </>
+                )}
               </p>
             ) : coloniaRc ? (
               <p className="text-sm text-ink-secondary">
-                Colonia asignada al dirigente:{" "}
-                <strong className="text-ink">{coloniaRc}</strong>. Solo puedes elegir secciones
-                electorales de esta colonia.
+                Colonia asignada al dirigente: <strong className="text-ink">{coloniaRc}</strong>.
+                {seccionFija ? (
+                  <>
+                    {" "}
+                    Solo puedes capturar en la sección{" "}
+                    <strong className="text-ink">{etiquetaSeccion(seccionFija)}</strong>.
+                  </>
+                ) : (
+                  " Solo puedes elegir secciones electorales de esta colonia."
+                )}
               </p>
             ) : null}
             <div className="grid gap-4 form-grid">
@@ -323,10 +384,17 @@ export function RepresentanteCasillaForm({
                     <span className="label">Colonia (asignada al dirigente)</span>
                     <p className="mt-1 text-sm font-medium text-ink">{coloniaRc}</p>
                   </div>
-                  <SeccionPorColoniaSelect coloniaCatalogo={coloniaRc} />
+                  {seccionFija ? (
+                    <SeccionElectoralFija seccion={seccionFija} />
+                  ) : (
+                    <SeccionPorColoniaSelect coloniaCatalogo={coloniaRc} />
+                  )}
                 </>
               ) : distritoLocal ? (
-                <ColoniaSeccionElectoralFields distritoLocal={distritoLocal} />
+                <ColoniaSeccionElectoralFields
+                  distritoLocal={distritoLocal}
+                  seccionFija={seccionFija}
+                />
               ) : (
                 <SeccionPorColoniaSelect
                   coloniaCatalogo={

@@ -66,8 +66,11 @@ export default function NuevaRepresentanteRcPage() {
           ...EMPTY_REPRESENTANTE,
           colonia: coloniaAsignada,
           coloniaSeccion: coloniaAsignada,
+          seccionElectoral: rc.dirigente?.seccionElectoral ?? "",
         }}
         coloniaAsignada={rc.colonia}
+        tipoDirigente={rc.dirigente?.tipo}
+        seccionDirigente={rc.dirigente?.seccionElectoral}
         onSubmit={handleSubmit}
         cancelHref={`/rc/${id}`}
       />

@@ -25,6 +25,7 @@ import {
   validarColoniaEnDistritoLocal,
   validarSeccionParaColonia,
 } from "../lib/unidades-territoriales.js";
+import { validarSeccionCapturaDirigente } from "../lib/dirigente-seccion-captura.js";
 import { nombreColoniaCatalogo } from "../lib/colonias.js";
 import { normalizarCamposNombrePersona } from "../lib/normalizar-texto.js";
 import {
@@ -90,9 +91,26 @@ async function validarColoniaRepresentanteRg(rgId: string, colonia: string) {
 }
 
 async function validarSeccionRepresentanteRg(
+  rgId: string,
   seccionElectoral: string,
   coloniaSeccion: string,
 ) {
+  const rg = await prisma.responsableGeneral.findUnique({
+    where: { id: rgId },
+    select: {
+      activo: true,
+      dirigente: { select: { tipo: true, seccionElectoral: true } },
+    },
+  });
+  if (!rg || !rg.activo) return "Responsable general no encontrado o inactivo";
+  if (rg.dirigente) {
+    const capturaError = validarSeccionCapturaDirigente(
+      rg.dirigente.tipo,
+      rg.dirigente.seccionElectoral,
+      seccionElectoral,
+    );
+    if (capturaError) return capturaError;
+  }
   return validarSeccionParaColonia(nombreColoniaCatalogo(coloniaSeccion), seccionElectoral);
 }
 
@@ -403,6 +421,7 @@ router.post("/:id/representantes", async (req, res) => {
       return;
     }
     const seccionError = await validarSeccionRepresentanteRg(
+      rgId,
       data.seccionElectoral,
       data.coloniaSeccion ?? data.colonia,
     );
@@ -480,6 +499,7 @@ router.put("/:id/representantes/:repId", async (req, res) => {
       return;
     }
     const seccionError = await validarSeccionRepresentanteRg(
+      rgId,
       data.seccionElectoral,
       data.coloniaSeccion ?? data.colonia,
     );

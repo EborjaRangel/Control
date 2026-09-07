@@ -69,8 +69,11 @@ export default function NuevaRepresentanteRgPage() {
           coloniaSeccion: rg.dirigente
             ? nombreColoniaCatalogo(rg.dirigente.colonia)
             : "",
+          seccionElectoral: rg.dirigente?.seccionElectoral ?? "",
         }}
         distritoLocal={distritoLocal}
+        tipoDirigente={rg.dirigente?.tipo}
+        seccionDirigente={rg.dirigente?.seccionElectoral}
         onSubmit={handleSubmit}
         cancelHref={`/rg/${id}`}
       />

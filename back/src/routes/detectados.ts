@@ -28,6 +28,7 @@ import {
   MENSAJE_CURP_DUPLICADA,
   validarCurpPersonaDetectadaDisponible,
 } from "../lib/persona-detectada-curp.js";
+import { validarSeccionCapturaDirigente } from "../lib/dirigente-seccion-captura.js";
 
 const router = Router();
 
@@ -264,16 +265,19 @@ router.post("/", requireAuth, async (req, res) => {
 
     const dirigente = await prisma.dirigente.findUnique({
       where: { id: data.dirigenteId },
-      select: { id: true, activo: true, seccionElectoral: true },
+      select: { id: true, activo: true, seccionElectoral: true, tipo: true },
     });
     if (!dirigente || !dirigente.activo) {
       res.status(400).json({ error: "Dirigente no encontrado o inactivo" });
       return;
     }
-    if (data.seccionElectoral !== dirigente.seccionElectoral) {
-      res.status(400).json({
-        error: `El detectado debe operar en la sección ${dirigente.seccionElectoral} del dirigente`,
-      });
+    const seccionDetectadoError = validarSeccionCapturaDirigente(
+      dirigente.tipo,
+      dirigente.seccionElectoral,
+      data.seccionElectoral,
+    );
+    if (seccionDetectadoError) {
+      res.status(400).json({ error: seccionDetectadoError });
       return;
     }
 
@@ -372,7 +376,7 @@ router.put("/:id", requireAuth, async (req, res) => {
 
     const existing = await prisma.detectado.findUnique({
       where: { id },
-      include: { dirigente: { select: { seccionElectoral: true, activo: true } } },
+      include: { dirigente: { select: { seccionElectoral: true, activo: true, tipo: true } } },
     });
     if (!existing) {
       res.status(404).json({ error: "No encontrado" });
@@ -397,15 +401,16 @@ router.put("/:id", requireAuth, async (req, res) => {
 
     const antes = snapshotDetectado(existing);
 
-    if (
-      existing.dirigente &&
-      existing.dirigente.activo &&
-      data.seccionElectoral !== existing.dirigente.seccionElectoral
-    ) {
-      res.status(400).json({
-        error: `El detectado debe operar en la sección ${existing.dirigente.seccionElectoral} del dirigente`,
-      });
-      return;
+    if (existing.dirigente && existing.dirigente.activo) {
+      const seccionDetectadoError = validarSeccionCapturaDirigente(
+        existing.dirigente.tipo,
+        existing.dirigente.seccionElectoral,
+        data.seccionElectoral,
+      );
+      if (seccionDetectadoError) {
+        res.status(400).json({ error: seccionDetectadoError });
+        return;
+      }
     }
 
     const detectado = await prisma.detectado.update({

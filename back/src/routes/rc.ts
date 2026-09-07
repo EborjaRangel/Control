@@ -29,6 +29,7 @@ import {
 import { nombreColoniaCatalogo, variantesColoniaParaBusqueda } from "../lib/colonias.js";
 import { normalizarCamposNombrePersona, normalizarTextoGuardado } from "../lib/normalizar-texto.js";
 import { validarSeccionParaColonia } from "../lib/unidades-territoriales.js";
+import { validarSeccionCapturaDirigente } from "../lib/dirigente-seccion-captura.js";
 import {
   dirigenteResumenSelect,
   serializeDirigenteRepresentantes,
@@ -94,9 +95,21 @@ async function validarColoniaRepresentante(rcId: string, colonia: string) {
 async function validarSeccionRepresentanteRc(rcId: string, seccionElectoral: string) {
   const rc = await prisma.responsableColonia.findUnique({
     where: { id: rcId },
-    select: { colonia: true, activo: true },
+    select: {
+      colonia: true,
+      activo: true,
+      dirigente: { select: { tipo: true, seccionElectoral: true } },
+    },
   });
   if (!rc || !rc.activo) return "Responsable de casilla no encontrado o inactivo";
+  if (rc.dirigente) {
+    const capturaError = validarSeccionCapturaDirigente(
+      rc.dirigente.tipo,
+      rc.dirigente.seccionElectoral,
+      seccionElectoral,
+    );
+    if (capturaError) return capturaError;
+  }
   return validarSeccionParaColonia(nombreColoniaCatalogo(rc.colonia), seccionElectoral);
 }
 

@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/api";
 import { TIPO_DIRIGENTE_LABEL } from "@/lib/dirigentes";
 import { EMPTY_DETECTADO, type DirigenteDetectadosDTO } from "@/lib/detectados";
 import { canManageDetectadosDirigente } from "@/lib/mi-panel";
+import { dirigenteCapturaSoloSuSeccion } from "@/lib/dirigente-seccion-captura";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
 import type { DetectadoFormValues } from "@/lib/validation-detectado";
 
@@ -111,8 +112,17 @@ export default function NuevoDetectadoDirigentePage() {
       </div>
 
       <p className="panel-soft text-sm text-ink-secondary">
-        El detectado operará en la sección electoral del dirigente:{" "}
-        <strong className="text-ink">{etiquetaSeccion(dirigente.seccionElectoral)}</strong>.
+        {dirigenteCapturaSoloSuSeccion(dirigente.tipo) ? (
+          <>
+            El detectado operará en la sección electoral del dirigente:{" "}
+            <strong className="text-ink">{etiquetaSeccion(dirigente.seccionElectoral)}</strong>.
+          </>
+        ) : (
+          <>
+            Como <strong className="text-ink">D1</strong>, puedes asignar detectados en otra sección
+            distinta a la tuya ({etiquetaSeccion(dirigente.seccionElectoral)}).
+          </>
+        )}
       </p>
 
       <DetectadoForm
@@ -124,7 +134,9 @@ export default function NuevoDetectadoDirigentePage() {
         cancelHref={`/detectados/dirigentes/${dirigenteId}`}
         submitLabel="Crear detectado"
         modo="crear"
-        seccionFija={dirigente.seccionElectoral}
+        seccionFija={
+          dirigenteCapturaSoloSuSeccion(dirigente.tipo) ? dirigente.seccionElectoral : undefined
+        }
       />
     </div>
   );

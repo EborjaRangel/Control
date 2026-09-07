@@ -84,6 +84,8 @@ export default function RepresentanteRgDetallePage() {
         <RepresentanteCasillaForm
           initialValues={representanteToFormValues(rep)}
           distritoLocal={rg.dirigente?.distritoLocal ?? null}
+          tipoDirigente={rg.dirigente?.tipo}
+          seccionDirigente={rg.dirigente?.seccionElectoral}
           onSubmit={handleSubmit}
           cancelHref={`/rg/${id}`}
           submitLabel="Guardar cambios"
