@@ -43,16 +43,30 @@ const detectadoInclude = {
   _count: { select: { personas: { where: { activo: true } } } },
 } as const;
 
-async function validarSeccionPersona(detectadoId: string, seccionElectoral: string) {
+async function validarCapturaPersonaDetectada(detectadoId: string, seccionElectoral: string) {
   const detectado = await prisma.detectado.findUnique({
     where: { id: detectadoId },
-    select: { seccionElectoral: true, activo: true },
+    select: {
+      seccionElectoral: true,
+      activo: true,
+      dirigente: { select: { tipo: true, seccionElectoral: true } },
+    },
   });
   if (!detectado || !detectado.activo) {
     return "Detectado no encontrado o inactivo";
   }
   if (!esSeccionValida(seccionElectoral)) {
     return "Sección electoral inválida para Coyoacán";
+  }
+  if (detectado.dirigente) {
+    const capturaDetectadoError = validarSeccionCapturaDirigente(
+      detectado.dirigente.tipo,
+      detectado.dirigente.seccionElectoral,
+      detectado.seccionElectoral,
+    );
+    if (capturaDetectadoError) {
+      return capturaDetectadoError;
+    }
   }
   if (seccionElectoral !== detectado.seccionElectoral) {
     return `Solo puedes registrar personas de la sección ${detectado.seccionElectoral}`;
@@ -507,7 +521,7 @@ router.post("/:id/personas", requireAuth, async (req, res) => {
     });
     const nombres = normalizarCamposNombrePersona(data);
 
-    const seccionError = await validarSeccionPersona(detectadoId, data.seccionElectoral);
+    const seccionError = await validarCapturaPersonaDetectada(detectadoId, data.seccionElectoral);
     if (seccionError) {
       res.status(400).json({ error: seccionError });
       return;
@@ -612,7 +626,7 @@ router.put("/:id/personas/:personaId", requireAuth, async (req, res) => {
     });
     const nombres = normalizarCamposNombrePersona(data);
 
-    const seccionError = await validarSeccionPersona(detectadoId, data.seccionElectoral);
+    const seccionError = await validarCapturaPersonaDetectada(detectadoId, data.seccionElectoral);
     if (seccionError) {
       res.status(400).json({ error: seccionError });
       return;

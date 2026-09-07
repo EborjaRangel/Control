@@ -7,6 +7,8 @@ import { useAuth } from "@/components/AuthProvider";
 import { PersonaDetectadaForm } from "@/components/PersonaDetectadaForm";
 import { apiFetch } from "@/lib/api";
 import { EMPTY_PERSONA_DETECTADA, type DetectadoDTO } from "@/lib/detectados";
+import { detectadoSeccionPermitidaParaDirigente } from "@/lib/dirigente-seccion-captura";
+import { etiquetaSeccion } from "@/lib/secciones-electorales";
 import type { PersonaDetectadaFormValues } from "@/lib/validation-detectado";
 
 export default function NuevaPersonaDetectadaPage() {
@@ -65,6 +67,27 @@ export default function NuevaPersonaDetectadaPage() {
         <div className="alert-error">Detectado no encontrado</div>
         <Link href="/detectados" className="btn-secondary btn-responsive">
           Volver
+        </Link>
+      </div>
+    );
+  }
+
+  const seccionDetectadoPermitida = detectadoSeccionPermitidaParaDirigente(
+    detectado.dirigente?.tipo,
+    detectado.dirigente?.seccionElectoral,
+    detectado.seccionElectoral,
+  );
+
+  if (!seccionDetectadoPermitida && detectado.dirigente) {
+    return (
+      <div className="space-y-4">
+        <div className="alert-error">
+          Este detectado opera en {etiquetaSeccion(detectado.seccionElectoral)}, pero como
+          dirigente {detectado.dirigente.tipo} solo puedes registrar detectados en{" "}
+          {etiquetaSeccion(detectado.dirigente.seccionElectoral)}.
+        </div>
+        <Link href={`/detectados/${id}`} className="btn-secondary btn-responsive">
+          Volver al detectado
         </Link>
       </div>
     );

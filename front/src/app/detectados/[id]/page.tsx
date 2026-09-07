@@ -10,6 +10,10 @@ import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import { detectadoToFormValues, type DetectadoDTO } from "@/lib/detectados";
 import { canManageDetectadosDirigente } from "@/lib/mi-panel";
+import {
+  detectadoSeccionPermitidaParaDirigente,
+  dirigenteCapturaSoloSuSeccion,
+} from "@/lib/dirigente-seccion-captura";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
 import type { DetectadoFormValues } from "@/lib/validation-detectado";
 
@@ -113,6 +117,12 @@ export default function DetectadoDetallePage() {
     );
   }
 
+  const seccionDetectadoPermitida = detectadoSeccionPermitidaParaDirigente(
+    detectado.dirigente?.tipo,
+    detectado.dirigente?.seccionElectoral,
+    detectado.seccionElectoral,
+  );
+
   return (
     <div className="space-y-6 sm:space-y-8">
       <div className="page-header">
@@ -135,7 +145,7 @@ export default function DetectadoDetallePage() {
           </p>
         </div>
         <div className="page-actions">
-          {canManage && detectado.activo ? (
+          {canManage && detectado.activo && seccionDetectadoPermitida ? (
             <Link
               href={`/detectados/${id}/personas/nueva`}
               className="btn-primary btn-responsive"
@@ -151,6 +161,15 @@ export default function DetectadoDetallePage() {
 
       {!detectado.activo ? (
         <p className="alert-warning">Este detectado está dado de baja.</p>
+      ) : null}
+
+      {!seccionDetectadoPermitida && detectado.dirigente ? (
+        <p className="alert-error">
+          Este detectado opera en {etiquetaSeccion(detectado.seccionElectoral)}, pero como
+          dirigente {detectado.dirigente.tipo} solo puedes registrar detectados en{" "}
+          {etiquetaSeccion(detectado.dirigente.seccionElectoral)}. No se pueden agregar personas
+          aquí hasta corregir la sección del detectado.
+        </p>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -283,7 +302,11 @@ export default function DetectadoDetallePage() {
             cancelHref={backHref}
             submitLabel="Guardar detectado"
             modo="editar"
-            seccionFija={detectado.seccionElectoral}
+            seccionFija={
+              detectado.dirigente && dirigenteCapturaSoloSuSeccion(detectado.dirigente.tipo)
+                ? detectado.dirigente.seccionElectoral
+                : undefined
+            }
           />
 
           {isStaff ? (

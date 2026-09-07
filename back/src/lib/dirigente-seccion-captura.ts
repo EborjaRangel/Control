@@ -14,7 +14,7 @@ export function validarSeccionCapturaDirigente(
     return "Sección electoral no válida para Coyoacán";
   }
   if (dirigenteCapturaSoloSuSeccion(tipo) && seccionCaptura !== seccionDirigente) {
-    return `Como dirigente ${tipo}, solo puedes capturar en la sección ${seccionDirigente}`;
+    return `Como dirigente ${tipo}, solo puedes registrar detectados en la sección ${seccionDirigente}`;
   }
   return null;
 }
