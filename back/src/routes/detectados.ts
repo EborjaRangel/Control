@@ -24,6 +24,10 @@ import {
   snapshotPersonaDetectada,
 } from "../lib/audit.js";
 import { normalizarCamposNombrePersona } from "../lib/normalizar-texto.js";
+import {
+  MENSAJE_CURP_DUPLICADA,
+  validarCurpPersonaDetectadaDisponible,
+} from "../lib/persona-detectada-curp.js";
 
 const router = Router();
 
@@ -307,6 +311,25 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
+router.get("/personas/verificar-curp", async (req, res) => {
+  try {
+    const curp = typeof req.query.curp === "string" ? req.query.curp : "";
+    const excludePersonaId =
+      typeof req.query.excludePersonaId === "string" ? req.query.excludePersonaId : undefined;
+
+    const result = await validarCurpPersonaDetectadaDisponible(curp, excludePersonaId);
+    if (!result.ok) {
+      res.json({ disponible: false, error: result.error });
+      return;
+    }
+
+    res.json({ disponible: true, curp: result.curp });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al verificar CURP" });
+  }
+});
+
 router.get("/:id", async (req, res) => {
   try {
     const id = paramId(req.params.id);
@@ -485,6 +508,12 @@ router.post("/:id/personas", requireAuth, async (req, res) => {
       return;
     }
 
+    const curpCheck = await validarCurpPersonaDetectadaDisponible(data.curp);
+    if (!curpCheck.ok) {
+      res.status(409).json({ error: curpCheck.error });
+      return;
+    }
+
     const persona = await prisma.personaDetectada.create({
       data: {
         detectadoId,
@@ -492,7 +521,7 @@ router.post("/:id/personas", requireAuth, async (req, res) => {
         fechaNacimiento: new Date(data.fechaNacimiento),
         sexo: data.sexo || null,
         claveElector: data.claveElector || null,
-        curp: data.curp || null,
+        curp: curpCheck.curp,
         seccionElectoral: data.seccionElectoral,
         colonia: data.colonia,
         calle: data.calle,
@@ -523,6 +552,13 @@ router.post("/:id/personas", requireAuth, async (req, res) => {
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
+      return;
+    }
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      res.status(409).json({ error: MENSAJE_CURP_DUPLICADA });
       return;
     }
     console.error(error);
@@ -585,6 +621,12 @@ router.put("/:id/personas/:personaId", requireAuth, async (req, res) => {
       return;
     }
 
+    const curpCheck = await validarCurpPersonaDetectadaDisponible(data.curp, personaId);
+    if (!curpCheck.ok) {
+      res.status(409).json({ error: curpCheck.error });
+      return;
+    }
+
     const antes = snapshotPersonaDetectada(existing);
 
     const persona = await prisma.personaDetectada.update({
@@ -594,7 +636,7 @@ router.put("/:id/personas/:personaId", requireAuth, async (req, res) => {
         fechaNacimiento: new Date(data.fechaNacimiento),
         sexo: data.sexo || null,
         claveElector: data.claveElector || null,
-        curp: data.curp || null,
+        curp: curpCheck.curp,
         seccionElectoral: data.seccionElectoral,
         colonia: data.colonia,
         calle: data.calle,
@@ -626,6 +668,13 @@ router.put("/:id/personas/:personaId", requireAuth, async (req, res) => {
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
+      return;
+    }
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      res.status(409).json({ error: MENSAJE_CURP_DUPLICADA });
       return;
     }
     console.error(error);

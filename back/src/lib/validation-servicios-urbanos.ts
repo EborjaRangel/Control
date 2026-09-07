@@ -16,6 +16,8 @@ export const servicioUrbanoCreateSchema = Yup.object({
     .oneOf([...TIPOS], "Tipo de servicio inválido")
     .required("Selecciona el tipo de servicio"),
   descripcion: Yup.string().trim().max(2000, "Máximo 2000 caracteres").nullable(),
+  suac: Yup.string().trim().max(100, "Máximo 100 caracteres").nullable(),
+  referencia: Yup.string().trim().max(500, "Máximo 500 caracteres").nullable(),
   direccion: Yup.string().trim().required("Escribe o corrige la dirección"),
   lat: Yup.number()
     .typeError("Latitud inválida")

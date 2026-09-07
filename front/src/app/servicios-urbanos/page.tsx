@@ -73,7 +73,7 @@ export default function ServiciosUrbanosPage() {
           type="search"
           value={buscar}
           onChange={(e) => setBuscar(e.target.value)}
-          placeholder="Buscar por folio, dirección, colonia o dirigente…"
+          placeholder="Buscar por folio, SUAC, referencia, dirección, colonia o dirigente…"
           className="input-search"
         />
         <SemaforoLeyenda />

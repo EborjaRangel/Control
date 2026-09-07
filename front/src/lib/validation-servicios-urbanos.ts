@@ -11,6 +11,8 @@ const TIPOS = [
 export type ServicioUrbanoFormValues = {
   tipo: (typeof TIPOS)[number] | "";
   descripcion: string;
+  suac: string;
+  referencia: string;
   direccion: string;
   lat: number | null;
   lng: number | null;
@@ -23,6 +25,8 @@ export const servicioUrbanoFormSchema = Yup.object({
     .oneOf([...TIPOS], "Selecciona el tipo de servicio")
     .required("Selecciona el tipo de servicio"),
   descripcion: Yup.string().trim().max(2000, "Máximo 2000 caracteres"),
+  suac: Yup.string().trim().max(100, "Máximo 100 caracteres"),
+  referencia: Yup.string().trim().max(500, "Máximo 500 caracteres"),
   direccion: Yup.string().trim().required("Escribe o corrige la dirección"),
   lat: Yup.number()
     .nullable()

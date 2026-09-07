@@ -129,6 +129,7 @@ export default function PersonaDetectadaDetallePage() {
         onSubmit={handleSubmit}
         cancelHref={`/detectados/${id}`}
         submitLabel="Guardar cambios"
+        excludePersonaId={personaId}
       />
     </div>
   );

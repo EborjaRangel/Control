@@ -301,6 +301,8 @@ export function snapshotServicioUrbano(r: {
   dirigenteId: string;
   tipo: string;
   descripcion: string | null;
+  suac: string | null;
+  referencia: string | null;
   colonia: string | null;
   seccionElectoral: string | null;
   direccion: string;
@@ -318,6 +320,8 @@ export function snapshotServicioUrbano(r: {
     dirigenteId: r.dirigenteId,
     tipo: r.tipo,
     descripcion: r.descripcion,
+    suac: r.suac,
+    referencia: r.referencia,
     colonia: r.colonia,
     seccionElectoral: r.seccionElectoral,
     direccion: r.direccion,

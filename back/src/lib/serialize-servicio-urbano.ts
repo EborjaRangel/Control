@@ -22,6 +22,8 @@ type ReporteRow = {
   dirigenteId: string;
   tipo: TipoServicioUrbano;
   descripcion: string | null;
+  suac: string | null;
+  referencia: string | null;
   colonia: string | null;
   seccionElectoral: string | null;
   direccion: string;
@@ -57,6 +59,8 @@ export function serializeReporteServicioUrbano(r: ReporteRow) {
     tipo: r.tipo,
     tipoLabel: TIPO_SERVICIO_URBANO_LABEL[r.tipo],
     descripcion: r.descripcion,
+    suac: r.suac,
+    referencia: r.referencia,
     colonia: r.colonia,
     seccionElectoral: r.seccionElectoral,
     direccion: r.direccion,

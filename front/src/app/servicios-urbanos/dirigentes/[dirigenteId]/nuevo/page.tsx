@@ -73,6 +73,8 @@ export default function NuevoServicioUrbanoPage() {
         dirigenteId,
         tipo: values.tipo,
         descripcion: values.descripcion.trim() || null,
+        suac: values.suac.trim() || null,
+        referencia: values.referencia.trim() || null,
         direccion: values.direccion.trim(),
         lat: values.lat,
         lng: values.lng,

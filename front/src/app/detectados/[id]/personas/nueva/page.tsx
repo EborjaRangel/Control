@@ -89,6 +89,7 @@ export default function NuevaPersonaDetectadaPage() {
         seccionAsignada={detectado.seccionElectoral}
         onSubmit={handleSubmit}
         cancelHref={`/detectados/${id}`}
+        requiereVerificacionCurp
       />
     </div>
   );

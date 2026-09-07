@@ -77,6 +77,8 @@ export function ServiciosUrbanosMapa({
           <p class="font-mono font-semibold text-pin">${reporte.folio}</p>
           <p class="font-medium">${reporte.tipoLabel}</p>
           <p class="text-xs text-ink-secondary">${reporte.estatusLabel}</p>
+          ${reporte.suac ? `<p class="text-xs text-ink-secondary"><span class="font-medium">SUAC:</span> ${reporte.suac}</p>` : ""}
+          ${reporte.referencia ? `<p class="text-xs text-ink-secondary"><span class="font-medium">Referencia:</span> ${reporte.referencia}</p>` : ""}
           <p class="text-xs text-ink-secondary">${reporte.direccion}</p>
         `;
         const link = document.createElement("a");

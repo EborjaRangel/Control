@@ -49,7 +49,7 @@ export default function ConvocatoriaPage() {
         <div>
           <h1 className="page-title">Convocatoria</h1>
           <p className="page-subtitle">
-            Captura un mensaje y envíalo por correo, SMS, WhatsApp o notificaciones in-app.
+            Captura un mensaje y envíalo por correo, SMS, WhatsApp o notificaciones en la web.
           </p>
         </div>
         {isStaff ? (
@@ -66,7 +66,7 @@ export default function ConvocatoriaPage() {
           <h2 className="section-title">Canales de envío</h2>
           <ul className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <li className="panel-soft">
-              <span className="font-medium">Notificaciones in-app: </span>
+              <span className="font-medium">Notificaciones en la web: </span>
               {config.notificaciones ? (
                 <span className="text-success-text">Siempre disponible</span>
               ) : (

@@ -151,7 +151,7 @@ export default function ServiciosUrbanosPanelPage() {
               type="search"
               value={filtros.buscar ?? ""}
               onChange={(e) => setFiltro("buscar", e.target.value)}
-              placeholder="Folio, dirección, dirigente…"
+              placeholder="Folio, SUAC, referencia, dirección, dirigente…"
               className="input"
             />
           </label>
@@ -324,6 +324,13 @@ export default function ServiciosUrbanosPanelPage() {
                         {rep.folio}
                       </Link>
                       <p className="font-medium">{rep.tipoLabel}</p>
+                      {rep.suac || rep.referencia ? (
+                        <p className="text-xs text-ink-secondary">
+                          {rep.suac ? `SUAC: ${rep.suac}` : null}
+                          {rep.suac && rep.referencia ? " · " : null}
+                          {rep.referencia ? `Ref: ${rep.referencia}` : null}
+                        </p>
+                      ) : null}
                       <p className="text-xs text-ink-secondary">
                         {rep.dirigente?.nombreCompleto ?? "—"} · {formatReporteFecha(rep.createdAt)}
                       </p>

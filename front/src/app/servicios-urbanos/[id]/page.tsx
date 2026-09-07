@@ -23,6 +23,8 @@ function reporteToFormValues(r: ReporteServicioUrbanoDTO): ServicioUrbanoFormVal
   return {
     tipo: r.tipo,
     descripcion: r.descripcion ?? "",
+    suac: r.suac ?? "",
+    referencia: r.referencia ?? "",
     direccion: r.direccion,
     lat: r.lat,
     lng: r.lng,
@@ -82,6 +84,8 @@ export default function ServicioUrbanoDetallePage() {
       body: JSON.stringify({
         tipo: values.tipo,
         descripcion: values.descripcion.trim() || null,
+        suac: values.suac.trim() || null,
+        referencia: values.referencia.trim() || null,
         direccion: values.direccion.trim(),
         lat: values.lat,
         lng: values.lng,
@@ -245,10 +249,27 @@ export default function ServicioUrbanoDetallePage() {
         />
       ) : (
         <>
-          {reporte.descripcion ? (
-            <section className="card-section">
-              <h2 className="section-title">Descripción</h2>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-ink">{reporte.descripcion}</p>
+          {reporte.descripcion || reporte.suac || reporte.referencia ? (
+            <section className="card-section space-y-4">
+              <h2 className="section-title">Datos del reporte</h2>
+              {reporte.descripcion ? (
+                <div>
+                  <p className="label mb-1">Descripción</p>
+                  <p className="whitespace-pre-wrap text-sm text-ink">{reporte.descripcion}</p>
+                </div>
+              ) : null}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="label mb-1">SUAC</p>
+                  <p className="text-sm text-ink">{reporte.suac ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="label mb-1">Referencia</p>
+                  <p className="whitespace-pre-wrap text-sm text-ink">
+                    {reporte.referencia ?? "—"}
+                  </p>
+                </div>
+              </div>
             </section>
           ) : null}
 

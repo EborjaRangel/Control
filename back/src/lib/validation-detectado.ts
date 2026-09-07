@@ -55,8 +55,8 @@ export const personaDetectadaSchema = Yup.object({
     .matches(/^[A-Z0-9]{18}$/, "Clave de elector: 18 caracteres alfanuméricos"),
   curp: Yup.string()
     .trim()
-    .transform((v) => (v === "" ? null : v))
-    .nullable()
+    .required("La CURP es obligatoria")
+    .transform((v) => (typeof v === "string" ? v.toUpperCase() : v))
     .matches(/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/, "CURP inválida"),
   seccionElectoral: Yup.string()
     .oneOf([...SECCIONES_ELECTORALES_COYOACAN], "Sección electoral inválida")

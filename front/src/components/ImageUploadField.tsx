@@ -1,6 +1,7 @@
 "use client";
 
 import { UploadImage } from "@/components/UploadImage";
+import { ImageCapturePicker } from "@/components/ImageCapturePicker";
 import { useFormikContext } from "formik";
 import { useState } from "react";
 import { etiquetaEstadoSubida, uploadImageFile, type UploadImageStatus } from "@/lib/upload-image";
@@ -22,10 +23,7 @@ export function ImageUploadField({ name, label, previewAlt = "Imagen" }: Props) 
   const fieldError = errors[name] as string | undefined;
   const showError = Boolean(fieldError && (touched[name] || submitCount > 0));
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  async function handleFile(file: File) {
     setUploading(true);
     setError(null);
     setStatus({ phase: "compress" });
@@ -37,7 +35,6 @@ export function ImageUploadField({ name, label, previewAlt = "Imagen" }: Props) 
     } finally {
       setUploading(false);
       setStatus(null);
-      e.target.value = "";
     }
   }
 
@@ -59,13 +56,7 @@ export function ImageUploadField({ name, label, previewAlt = "Imagen" }: Props) 
           </div>
         )}
         <div className="min-w-0 flex-1 space-y-2">
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            onChange={handleFile}
-            disabled={uploading}
-            className="text-sm text-ink-secondary file:mr-3 file:rounded-full file:border-0 file:bg-pin-light file:px-4 file:py-2 file:text-xs file:font-semibold file:text-pin-dark hover:file:bg-pin-muted"
-          />
+          <ImageCapturePicker onFile={handleFile} disabled={uploading} />
           {url ? (
             <button
               type="button"

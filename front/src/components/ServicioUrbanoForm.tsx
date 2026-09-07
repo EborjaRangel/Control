@@ -71,6 +71,18 @@ export function ServicioUrbanoForm({
                 rows={3}
                 placeholder="Detalle adicional del reporte…"
               />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField
+                  label="SUAC (opcional)"
+                  name="suac"
+                  placeholder="Número de folio SUAC"
+                />
+                <FormField
+                  label="Referencia (opcional)"
+                  name="referencia"
+                  placeholder="Referencia adicional del trámite"
+                />
+              </div>
             </section>
 
             <section className="space-y-4">

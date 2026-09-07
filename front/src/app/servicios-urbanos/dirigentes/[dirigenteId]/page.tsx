@@ -146,6 +146,13 @@ export default function DirigenteServiciosUrbanosPage() {
                         {rep.folio}
                       </Link>
                       <p className="mt-1 font-medium text-ink">{rep.tipoLabel}</p>
+                      {rep.suac || rep.referencia ? (
+                        <p className="mt-1 text-xs text-ink-secondary">
+                          {rep.suac ? `SUAC: ${rep.suac}` : null}
+                          {rep.suac && rep.referencia ? " · " : null}
+                          {rep.referencia ? `Ref: ${rep.referencia}` : null}
+                        </p>
+                      ) : null}
                       <p className="mt-1 text-xs text-ink-secondary">
                         {formatReporteFecha(rep.createdAt)}
                       </p>

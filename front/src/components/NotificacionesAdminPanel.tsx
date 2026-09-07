@@ -162,10 +162,10 @@ export function NotificacionesAdminPanel() {
   return (
     <section className="card-section space-y-6">
       <div>
-        <h2 className="section-title">Notificaciones in-app</h2>
+        <h2 className="section-title">Notificaciones en la web</h2>
         <p className="mt-1 text-sm text-ink-secondary">
-          El mensaje aparecerá en la app de cada usuario destinatario. Queda guardado hasta que lo
-          marquen como visto.
+          El mensaje aparecerá en el panel web de cada usuario destinatario. Queda guardado hasta
+          que lo marquen como visto.
         </p>
       </div>
 

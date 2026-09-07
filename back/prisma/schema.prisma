@@ -272,6 +272,8 @@ model ReporteServicioUrbano {
 
   tipo             TipoServicioUrbano
   descripcion      String?
+  suac             String?
+  referencia       String?
   colonia          String?
   seccionElectoral String?
   direccion        String
@@ -309,7 +311,7 @@ model PersonaDetectada {
   fechaNacimiento  DateTime  @db.Date
   sexo             String?
   claveElector     String?
-  curp             String?
+  curp             String?   @unique
 
   seccionElectoral String
   colonia          String
@@ -329,7 +331,6 @@ model PersonaDetectada {
   @@index([seccionElectoral])
   @@index([activo])
   @@index([claveElector])
-  @@index([curp])
 }
 
 /// Responsable de casilla — vinculado a un dirigente activo

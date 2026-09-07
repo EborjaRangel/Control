@@ -37,6 +37,8 @@ export type ReporteServicioUrbanoDTO = {
   tipo: TipoServicioUrbano;
   tipoLabel: string;
   descripcion: string | null;
+  suac: string | null;
+  referencia: string | null;
   colonia: string | null;
   seccionElectoral: string | null;
   direccion: string;
@@ -174,6 +176,8 @@ export function buildServiciosUrbanosQuery(filtros: ServiciosUrbanosFiltros) {
 export const EMPTY_SERVICIO_URBANO = {
   tipo: "" as TipoServicioUrbano | "",
   descripcion: "",
+  suac: "",
+  referencia: "",
   direccion: "",
   lat: null as number | null,
   lng: null as number | null,
