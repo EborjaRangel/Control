@@ -8,6 +8,7 @@ export type DetectadoDTO = {
   segundoApellido: string | null;
   nombreCompleto: string;
   telefonoCelular: string | null;
+  curp: string | null;
   seccionElectoral: string;
   ineFrenteUrl: string;
   ineReversoUrl: string;
@@ -76,6 +77,7 @@ export const EMPTY_DETECTADO = {
   primerApellido: "",
   segundoApellido: "",
   telefonoCelular: "",
+  curp: "",
   seccionElectoral: "",
   ineFrenteUrl: "",
   ineReversoUrl: "",
@@ -105,6 +107,7 @@ export function detectadoToFormValues(d: DetectadoDTO) {
     primerApellido: d.primerApellido,
     segundoApellido: d.segundoApellido ?? "",
     telefonoCelular: d.telefonoCelular ?? "",
+    curp: d.curp ?? "",
     seccionElectoral: d.seccionElectoral,
     ineFrenteUrl: d.ineFrenteUrl,
     ineReversoUrl: d.ineReversoUrl,

@@ -77,6 +77,7 @@ export default function NuevoDetectadoDirigentePage() {
       body: JSON.stringify({
         ...values,
         dirigenteId,
+        curp: values.curp,
         segundoApellido: values.segundoApellido || null,
         telefonoCelular: values.telefonoCelular || null,
       }),
@@ -134,6 +135,7 @@ export default function NuevoDetectadoDirigentePage() {
         cancelHref={`/detectados/dirigentes/${dirigenteId}`}
         submitLabel="Crear detectado"
         modo="crear"
+        requiereVerificacionCurp
         seccionFija={
           dirigenteCapturaSoloSuSeccion(dirigente.tipo) ? dirigente.seccionElectoral : undefined
         }

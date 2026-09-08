@@ -1,11 +1,13 @@
 import { prisma } from "./prisma.js";
-
-const CURP_REGEX = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
+import {
+  curpRegistradaEnSistema,
+  MENSAJE_CURP_DETECTADO_DUPLICADA,
+  MENSAJE_CURP_PERSONA_DUPLICADA,
+  normalizarCurpSistema,
+} from "./curp-sistema-detectados.js";
 
 export function normalizarCurpPersonaDetectada(input: string): string | null {
-  const curp = input.trim().toUpperCase();
-  if (!curp || !CURP_REGEX.test(curp)) return null;
-  return curp;
+  return normalizarCurpSistema(input);
 }
 
 export async function personaDetectadaConCurp(curp: string, excludePersonaId?: string) {
@@ -26,17 +28,15 @@ export async function validarCurpPersonaDetectadaDisponible(
     return { ok: false, error: "CURP inválida" };
   }
 
-  const existing = await personaDetectadaConCurp(curp, excludePersonaId);
-  if (existing) {
-    return {
-      ok: false,
-      error:
-        "Esta CURP ya está registrada como persona detectada en el sistema. No se puede registrar dos veces, aunque haya sido capturada por otro dirigente.",
-    };
+  const existing = await curpRegistradaEnSistema(curp, { excludePersonaId });
+  if (existing === "persona") {
+    return { ok: false, error: MENSAJE_CURP_PERSONA_DUPLICADA };
+  }
+  if (existing === "detectado") {
+    return { ok: false, error: MENSAJE_CURP_DETECTADO_DUPLICADA };
   }
 
   return { ok: true, curp };
 }
 
-export const MENSAJE_CURP_DUPLICADA =
-  "Esta CURP ya está registrada como persona detectada en el sistema. No se puede registrar dos veces, aunque haya sido capturada por otro dirigente.";
+export const MENSAJE_CURP_DUPLICADA = MENSAJE_CURP_PERSONA_DUPLICADA;

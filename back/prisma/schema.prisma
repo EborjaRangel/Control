@@ -250,6 +250,7 @@ model Detectado {
   primerApellido   String
   segundoApellido  String?
   telefonoCelular  String?
+  curp             String?  @unique
   seccionElectoral String
   ineFrenteUrl     String
   ineReversoUrl    String

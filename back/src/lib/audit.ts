@@ -192,6 +192,7 @@ export function snapshotDetectado(d: {
   primerApellido: string;
   segundoApellido: string | null;
   telefonoCelular: string | null;
+  curp: string | null;
   seccionElectoral: string;
   activo: boolean;
 }) {
@@ -202,6 +203,7 @@ export function snapshotDetectado(d: {
     primerApellido: d.primerApellido,
     segundoApellido: d.segundoApellido,
     telefonoCelular: d.telefonoCelular,
+    curp: d.curp,
     seccionElectoral: d.seccionElectoral,
     activo: d.activo,
   });

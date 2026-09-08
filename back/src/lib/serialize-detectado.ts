@@ -31,6 +31,7 @@ type DetectadoRow = {
   primerApellido: string;
   segundoApellido: string | null;
   telefonoCelular: string | null;
+  curp: string | null;
   seccionElectoral: string;
   ineFrenteUrl: string;
   ineReversoUrl: string;
@@ -97,6 +98,7 @@ export function serializeDetectado(
     ...nombres,
     nombreCompleto: nombreCompleto(nombres),
     telefonoCelular: d.telefonoCelular,
+    curp: d.curp,
     seccionElectoral: d.seccionElectoral,
     ineFrenteUrl: d.ineFrenteUrl,
     ineReversoUrl: d.ineReversoUrl,

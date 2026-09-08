@@ -25,6 +25,10 @@ import {
 } from "../lib/audit.js";
 import { normalizarCamposNombrePersona } from "../lib/normalizar-texto.js";
 import {
+  MENSAJE_CURP_DETECTADO_DUPLICADA_EN_BD,
+  validarCurpDetectadoDisponible,
+} from "../lib/detectado-curp.js";
+import {
   MENSAJE_CURP_DUPLICADA,
   validarCurpPersonaDetectadaDisponible,
 } from "../lib/persona-detectada-curp.js";
@@ -295,11 +299,18 @@ router.post("/", requireAuth, async (req, res) => {
       return;
     }
 
+    const curpCheck = await validarCurpDetectadoDisponible(data.curp);
+    if (!curpCheck.ok) {
+      res.status(409).json({ error: curpCheck.error });
+      return;
+    }
+
     const detectado = await prisma.detectado.create({
       data: {
         dirigenteId: data.dirigenteId,
         ...nombres,
         telefonoCelular: data.telefonoCelular || null,
+        curp: curpCheck.curp,
         seccionElectoral: data.seccionElectoral,
         ineFrenteUrl: data.ineFrenteUrl,
         ineReversoUrl: data.ineReversoUrl,
@@ -324,8 +335,31 @@ router.post("/", requireAuth, async (req, res) => {
       res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
       return;
     }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      res.status(409).json({ error: MENSAJE_CURP_DETECTADO_DUPLICADA_EN_BD });
+      return;
+    }
     console.error(error);
     res.status(500).json({ error: "Error al crear detectado" });
+  }
+});
+
+router.get("/verificar-curp", async (req, res) => {
+  try {
+    const curp = typeof req.query.curp === "string" ? req.query.curp : "";
+    const excludeDetectadoId =
+      typeof req.query.excludeDetectadoId === "string" ? req.query.excludeDetectadoId : undefined;
+
+    const result = await validarCurpDetectadoDisponible(curp, excludeDetectadoId);
+    if (!result.ok) {
+      res.json({ disponible: false, error: result.error });
+      return;
+    }
+
+    res.json({ disponible: true, curp: result.curp });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al verificar CURP" });
   }
 });
 
@@ -427,11 +461,18 @@ router.put("/:id", requireAuth, async (req, res) => {
       }
     }
 
+    const curpCheck = await validarCurpDetectadoDisponible(data.curp, id);
+    if (!curpCheck.ok) {
+      res.status(409).json({ error: curpCheck.error });
+      return;
+    }
+
     const detectado = await prisma.detectado.update({
       where: { id },
       data: {
         ...nombres,
         telefonoCelular: data.telefonoCelular || null,
+        curp: curpCheck.curp,
         seccionElectoral: data.seccionElectoral,
         ineFrenteUrl: data.ineFrenteUrl,
         ineReversoUrl: data.ineReversoUrl,
@@ -460,6 +501,10 @@ router.put("/:id", requireAuth, async (req, res) => {
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
+      return;
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      res.status(409).json({ error: MENSAJE_CURP_DETECTADO_DUPLICADA_EN_BD });
       return;
     }
     console.error(error);

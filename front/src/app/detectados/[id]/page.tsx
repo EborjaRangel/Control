@@ -67,6 +67,7 @@ export default function DetectadoDetallePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...values,
+        curp: values.curp,
         segundoApellido: values.segundoApellido || null,
         telefonoCelular: values.telefonoCelular || null,
       }),
@@ -172,7 +173,11 @@ export default function DetectadoDetallePage() {
         </p>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="card max-w-sm text-center">
+          <p className="text-2xl font-bold text-ink">{detectado.curp ?? "—"}</p>
+          <p className="text-xs text-ink-secondary">CURP</p>
+        </div>
         <div className="card max-w-sm text-center">
           <p className="text-2xl font-bold text-ink">{detectado.telefonoCelular ?? "—"}</p>
           <p className="text-xs text-ink-secondary">Celular</p>
@@ -302,6 +307,8 @@ export default function DetectadoDetallePage() {
             cancelHref={backHref}
             submitLabel="Guardar detectado"
             modo="editar"
+            excludeDetectadoId={id}
+            requiereVerificacionCurp={!detectado.curp}
             seccionFija={
               detectado.dirigente && dirigenteCapturaSoloSuSeccion(detectado.dirigente.tipo)
                 ? detectado.dirigente.seccionElectoral

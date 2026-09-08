@@ -12,6 +12,11 @@ export const detectadoBaseSchema = Yup.object({
     .trim()
     .matches(/^\d{10}$/, "El celular debe tener 10 dígitos")
     .nullable(),
+  curp: Yup.string()
+    .trim()
+    .required("La CURP es obligatoria")
+    .transform((v) => (typeof v === "string" ? v.toUpperCase() : v))
+    .matches(/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/, "CURP inválida"),
   seccionElectoral: Yup.string()
     .oneOf([...SECCIONES_ELECTORALES_COYOACAN], "Selecciona una sección electoral de Coyoacán")
     .required("La sección electoral es obligatoria"),
