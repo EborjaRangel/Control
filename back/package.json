@@ -34,6 +34,7 @@
     "db:update-dirigentes-distrito-federal": "tsx scripts/update-dirigentes-distrito-federal.ts",
     "db:import-nomina-matriz": "tsx scripts/import-nomina-matriz-pagos.ts",
     "db:provision-usuarios": "tsx scripts/provision-usuarios-dirigentes.ts",
+    "db:baja-detectados-seccion-invalida": "tsx scripts/baja-detectados-seccion-invalida.ts",
     "db:sync-to-production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-local-to-production.ps1",
     "db:sync-from-production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-production-to-local.ps1",
     "env:sync-from-railway": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-env-from-railway.ps1",
