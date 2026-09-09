@@ -6,6 +6,8 @@ import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import {
+  contarNoLeidas,
+  emitirResumenNotificaciones,
   formatFechaNotificacion,
   formatRelativaNotificacion,
   type NotificacionUsuarioDTO,
@@ -25,7 +27,9 @@ export default function NotificacionesPage() {
     try {
       const res = await apiFetch("/api/notificaciones/mias");
       if (!res.ok) throw new Error("No se pudieron cargar las notificaciones");
-      setItems((await res.json()) as NotificacionUsuarioDTO[]);
+      const list = (await res.json()) as NotificacionUsuarioDTO[];
+      setItems(list);
+      emitirResumenNotificaciones(contarNoLeidas(list));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al cargar");
     } finally {
@@ -43,7 +47,11 @@ export default function NotificacionesPage() {
       const res = await apiFetch(`/api/notificaciones/${id}/visto`, { method: "POST" });
       if (!res.ok) throw new Error("No se pudo marcar como vista");
       const updated = (await res.json()) as NotificacionUsuarioDTO;
-      setItems((prev) => prev.map((n) => (n.id === id ? updated : n)));
+      setItems((prev) => {
+        const next = prev.map((n) => (n.id === id ? updated : n));
+        emitirResumenNotificaciones(contarNoLeidas(next));
+        return next;
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
     } finally {
@@ -51,7 +59,7 @@ export default function NotificacionesPage() {
     }
   }
 
-  const noLeidas = items.filter((n) => !n.leida).length;
+  const noLeidas = contarNoLeidas(items);
 
   return (
     <div className="space-y-4 sm:space-y-5">

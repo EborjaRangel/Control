@@ -11,6 +11,7 @@ import { cn } from "@/lib/cn";
 import { APP_TITLE, NAVBAR_TITLE } from "@/lib/site";
 import { brandHrefForUser, navItemsForUser } from "@/lib/mi-panel";
 import { canAccessPrivilegedStaffNav, isAdminRol, isLimitedPanelRol, isStaffRol } from "@/lib/auth";
+import { NOTIFICACIONES_RESUMEN_EVENT } from "@/lib/notificaciones";
 
 const NOTIFICACIONES_NAV = {
   href: "/notificaciones",
@@ -235,10 +236,40 @@ export function SiteNavbar() {
       setNoLeidas(0);
       return;
     }
-    void apiFetch("/api/notificaciones/resumen")
-      .then(async (res) => (res.ok ? ((await res.json()) as { noLeidas: number }) : { noLeidas: 0 }))
-      .then((data) => setNoLeidas(data.noLeidas))
-      .catch(() => setNoLeidas(0));
+
+    let cancelled = false;
+    let requestId = 0;
+
+    async function refreshResumen() {
+      const id = ++requestId;
+      try {
+        const res = await apiFetch("/api/notificaciones/resumen");
+        const data = res.ok
+          ? ((await res.json()) as { noLeidas: number })
+          : { noLeidas: 0 };
+        if (!cancelled && id === requestId) setNoLeidas(data.noLeidas);
+      } catch {
+        if (!cancelled && id === requestId) setNoLeidas(0);
+      }
+    }
+
+    void refreshResumen();
+
+    function onResumen(event: Event) {
+      const noLeidas = (event as CustomEvent<{ noLeidas?: number }>).detail?.noLeidas;
+      if (typeof noLeidas === "number" && Number.isFinite(noLeidas)) {
+        requestId += 1;
+        setNoLeidas(Math.max(0, noLeidas));
+        return;
+      }
+      void refreshResumen();
+    }
+
+    window.addEventListener(NOTIFICACIONES_RESUMEN_EVENT, onResumen);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(NOTIFICACIONES_RESUMEN_EVENT, onResumen);
+    };
   }, [user]);
 
   const allNavItems = isStaff

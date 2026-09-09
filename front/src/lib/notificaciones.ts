@@ -32,6 +32,19 @@ export type NotificacionResumen = {
   noLeidas: number;
 };
 
+export const NOTIFICACIONES_RESUMEN_EVENT = "control:notificaciones-resumen";
+
+export function emitirResumenNotificaciones(noLeidas: number) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(NOTIFICACIONES_RESUMEN_EVENT, { detail: { noLeidas } }),
+  );
+}
+
+export function contarNoLeidas(items: ReadonlyArray<{ leida: boolean }>) {
+  return items.filter((n) => !n.leida).length;
+}
+
 export type NotificacionEnviarResultado = {
   notificacionId: string | null;
   alcanceLabel: string;
