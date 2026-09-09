@@ -1,7 +1,6 @@
 import {
   curpRegistradaEnSistema,
   MENSAJE_CURP_DETECTADO_DUPLICADA,
-  MENSAJE_CURP_PERSONA_DUPLICADA,
   normalizarCurpSistema,
 } from "./curp-sistema-detectados.js";
 
@@ -15,11 +14,8 @@ export async function validarCurpDetectadoDisponible(
   }
 
   const existing = await curpRegistradaEnSistema(curp, { excludeDetectadoId });
-  if (existing === "detectado") {
+  if (existing === "detectado" || existing === "persona") {
     return { ok: false, error: MENSAJE_CURP_DETECTADO_DUPLICADA };
-  }
-  if (existing === "persona") {
-    return { ok: false, error: MENSAJE_CURP_PERSONA_DUPLICADA };
   }
 
   return { ok: true, curp };

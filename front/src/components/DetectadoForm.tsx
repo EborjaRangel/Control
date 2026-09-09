@@ -27,6 +27,9 @@ type Props = {
   excludeDetectadoId?: string;
 };
 
+const MENSAJE_CURP_DETECTADO_DUPLICADA =
+  "Esa CURP ya existe. Imposible duplicar un detectado.";
+
 const CURP_REGEX = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
 
 export function DetectadoForm({
@@ -65,7 +68,7 @@ export function DetectadoForm({
       const res = await apiFetch(`/api/detectados/verificar-curp?${params}`);
       const data = (await res.json()) as { disponible?: boolean; error?: string; curp?: string };
       if (!res.ok || !data.disponible) {
-        setCurpError(data.error ?? "Esta CURP ya está registrada en el sistema");
+        setCurpError(data.error ?? MENSAJE_CURP_DETECTADO_DUPLICADA);
         return;
       }
       setCurpInput(data.curp ?? curp);

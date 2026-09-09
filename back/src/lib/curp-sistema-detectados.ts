@@ -34,7 +34,7 @@ export async function curpRegistradaEnSistema(
 }
 
 export const MENSAJE_CURP_DETECTADO_DUPLICADA =
-  "Esta CURP ya está registrada como detectado en el sistema. No se puede registrar dos veces, aunque haya sido capturada por otro dirigente.";
+  "Esa CURP ya existe. Imposible duplicar un detectado.";
 
 export const MENSAJE_CURP_PERSONA_DUPLICADA =
   "Esta CURP ya está registrada como persona detectada en el sistema. No se puede registrar dos veces, aunque haya sido capturada por otro dirigente.";
