@@ -5,15 +5,18 @@ import type { ReactNode } from "react";
 import { AxisSplash } from "@/components/AxisSplash";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteNavbar } from "@/components/SiteNavbar";
+import { isPaseListaLocation, isPaseListaPath } from "@/lib/pase-lista-path";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isAuthPage =
+  const isStandalonePage =
     pathname === "/login" ||
     pathname === "/login/recuperar" ||
-    pathname.startsWith("/login/restablecer/");
+    pathname.startsWith("/login/restablecer/") ||
+    isPaseListaPath(pathname) ||
+    isPaseListaLocation();
 
-  if (isAuthPage) {
+  if (isStandalonePage) {
     return (
       <>
         <AxisSplash />

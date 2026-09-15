@@ -2,21 +2,20 @@ import { Router } from "express";
 import { ValidationError } from "yup";
 import { prisma } from "../lib/prisma.js";
 import { isAsistenciaRol, isConvocatoriaRol, requireAsistenciaOrStaff, requireAuth, requireEventosAsistenciaRead, requireStaff } from "../lib/auth.js";
-import { codigoQrDesdeTextoQr } from "../lib/codigo-qr.js";
 import { nombreCompleto } from "../lib/dirigentes.js";
 import {
+  cuerpoRespuestaEscaneo,
+  procesarEscaneoAsistencia,
+  rawCodigoDesdeEscaneo,
+} from "../lib/escanear-asistencia.js";
+import {
   detalleAsistenciaDirigente,
-  dirigenteEsElegible,
   enriquecerEvento,
   filtroDirigentesElegibles,
   obtenerEvento,
   resumenAsistenciaDirigentes,
-  serializeEvento,
 } from "../lib/eventos-asistencia.js";
-import {
-  eventoCreateSchema,
-  registrarAsistenciaSchema,
-} from "../lib/validation-asistencia.js";
+import { eventoCreateSchema } from "../lib/validation-asistencia.js";
 import {
   registrarAuditoria,
   snapshotEventoAsistencia,
@@ -331,115 +330,14 @@ router.post("/eventos/:id/cerrar", requireStaff, async (req, res) => {
 router.post("/eventos/:id/registrar", requireAsistenciaOrStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
-    const rawCodigo =
-      typeof req.body?.codigoQr === "string"
-        ? req.body.codigoQr
-        : typeof req.body?.raw === "string"
-          ? req.body.raw
-          : "";
-
-    const parsed = await registrarAsistenciaSchema.validate(
-      { codigoQr: codigoQrDesdeTextoQr(rawCodigo) ?? rawCodigo.trim() },
-      { abortEarly: false },
-    );
-
-    const evento = await obtenerEvento(id);
-    if (!evento) {
-      res.status(404).json({ error: "Evento no encontrado" });
-      return;
-    }
-    if (evento.estado !== "ABIERTO") {
-      res.status(400).json({
-        error:
-          evento.estado === "CERRADO"
-            ? "El pase de lista está cerrado. Ya no se pueden registrar asistencias."
-            : "Debes abrir el pase de lista antes de registrar asistencias.",
-      });
-      return;
-    }
-
-    const dirigente = await prisma.dirigente.findUnique({
-      where: { codigoQr: parsed.codigoQr },
+    const resultado = await procesarEscaneoAsistencia({
+      raw: rawCodigoDesdeEscaneo(req),
+      eventoId: id,
+      registradoPorId: req.user?.sub ?? null,
+      req,
     });
-    if (!dirigente) {
-      res.status(404).json({ error: "Código QR no válido" });
-      return;
-    }
-    if (!dirigenteEsElegible(dirigente, evento)) {
-      res.status(400).json({
-        error: "Este dirigente no pertenece al alcance del evento (colonia, sección o UT).",
-      });
-      return;
-    }
-
-    const existente = await prisma.registroAsistencia.findUnique({
-      where: {
-        eventoId_dirigenteId: { eventoId: id, dirigenteId: dirigente.id },
-      },
-    });
-    if (existente) {
-      res.status(409).json({
-        error: "Asistencia ya registrada",
-        registradoAt: existente.registradoAt.toISOString(),
-        dirigente: {
-          id: dirigente.id,
-          nombreCompleto: nombreCompleto(dirigente),
-        },
-      });
-      return;
-    }
-
-    const registro = await prisma.registroAsistencia.create({
-      data: {
-        eventoId: id,
-        dirigenteId: dirigente.id,
-        registradoPorId: req.user!.sub,
-      },
-      include: {
-        dirigente: {
-          select: {
-            id: true,
-            nombre: true,
-            primerApellido: true,
-            segundoApellido: true,
-            tipo: true,
-            colonia: true,
-            seccionElectoral: true,
-          },
-        },
-      },
-    });
-
-    await registrarAuditoria(req, {
-      accion: "CREATE",
-      entidad: "RegistroAsistencia",
-      entidadId: registro.id,
-      entidadLabel: nombreCompleto(registro.dirigente),
-      dirigenteId: registro.dirigente.id,
-      despues: {
-        eventoId: id,
-        eventoTitulo: evento.titulo,
-        dirigenteId: registro.dirigente.id,
-        dirigenteNombre: nombreCompleto(registro.dirigente),
-      },
-    });
-
-    res.status(201).json({
-      id: registro.id,
-      registradoAt: registro.registradoAt.toISOString(),
-      dirigente: {
-        id: registro.dirigente.id,
-        nombreCompleto: nombreCompleto(registro.dirigente),
-        tipo: registro.dirigente.tipo,
-        colonia: registro.dirigente.colonia,
-        seccionElectoral: registro.dirigente.seccionElectoral,
-      },
-    });
+    res.status(resultado.status).json(cuerpoRespuestaEscaneo(resultado));
   } catch (error) {
-    if (error instanceof ValidationError) {
-      res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
-      return;
-    }
     console.error(error);
     res.status(500).json({ error: "Error al registrar asistencia" });
   }

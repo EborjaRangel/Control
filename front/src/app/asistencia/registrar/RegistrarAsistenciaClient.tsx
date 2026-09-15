@@ -1,181 +1,118 @@
 "use client";
 
-import { UploadImage } from "@/components/UploadImage";
-import Link from "next/link";
+import { AxisLogo } from "@/components/AxisLogo";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useAuth } from "@/components/AuthProvider";
-import { apiFetch } from "@/lib/api";
-import { formatFechaQr, type AsistenciaDirigenteResumen } from "@/lib/qr";
+import { FormEvent, useState } from "react";
 
-function CampoVerificacion({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="label">{label}</dt>
-      <dd className="break-words text-sm font-semibold text-ink">{value || "—"}</dd>
-    </div>
-  );
+type CodigoEscaneo =
+  | "ASISTENCIA_TOMADA"
+  | "ASISTENCIA_DUPLICADA"
+  | "QR_INVALIDO"
+  | "PASE_CERRADO"
+  | "CLAVE_INCORRECTA";
+
+type RespuestaEscaneo = {
+  mensaje?: string;
+  error?: string;
+  codigo?: CodigoEscaneo;
+  dirigente?: { nombreCompleto?: string };
+  evento?: { titulo?: string };
+};
+
+type Visual = "formulario" | "ok" | "aviso" | "error";
+
+function visualDeCodigo(codigo: CodigoEscaneo | undefined, ok: boolean): Visual {
+  if (ok || codigo === "ASISTENCIA_TOMADA") return "ok";
+  if (codigo === "ASISTENCIA_DUPLICADA" || codigo === "PASE_CERRADO") return "aviso";
+  return "error";
 }
 
 export default function RegistrarAsistenciaClient() {
   const searchParams = useSearchParams();
-  const codigo = searchParams.get("c")?.trim() ?? "";
-  const { isStaff, loading: authLoading } = useAuth();
-  const [dirigente, setDirigente] = useState<AsistenciaDirigenteResumen | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const codigoQr = searchParams.get("c")?.trim() ?? "";
+  const [clave, setClave] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [visual, setVisual] = useState<Visual>("formulario");
+  const [mensaje, setMensaje] = useState<string | null>(null);
+  const [detalle, setDetalle] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (authLoading || !isStaff || !codigo) {
-      setDirigente(null);
-      setError(null);
-      return;
-    }
+  async function pasarLista(event: FormEvent) {
+    event.preventDefault();
+    setEnviando(true);
+    setMensaje(null);
+    setDetalle(null);
 
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    void apiFetch(`/api/asistencia/dirigente/${encodeURIComponent(codigo)}`)
-      .then(async (res) => {
-        const data = (await res.json()) as AsistenciaDirigenteResumen & { error?: string };
-        if (!res.ok) {
-          throw new Error(data.error ?? "No se pudo verificar el código QR");
-        }
-        return data;
-      })
-      .then((data) => {
-        if (!cancelled) setDirigente(data);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Error al verificar");
-          setDirigente(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+    try {
+      const res = await fetch("/api/asistencia/escanear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ raw: codigoQr, clave: clave.trim() }),
       });
+      const data = (await res.json()) as RespuestaEscaneo;
+      const texto = data.mensaje ?? data.error ?? "El QR es inválido";
+      setMensaje(texto);
+      setDetalle(data.dirigente?.nombreCompleto ?? data.evento?.titulo ?? null);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, isStaff, codigo]);
-
-  if (authLoading) {
-    return (
-      <div className="flex items-center gap-3 text-ink-secondary">
-        <span className="size-5 animate-pulse rounded-full bg-pin-light" />
-        Verificando sesión…
-      </div>
-    );
+      if (data.codigo === "CLAVE_INCORRECTA") {
+        setVisual("formulario");
+        return;
+      }
+      setVisual(visualDeCodigo(data.codigo, res.ok));
+    } catch {
+      setVisual("formulario");
+      setMensaje("El QR es inválido");
+      setDetalle(null);
+    } finally {
+      setEnviando(false);
+    }
   }
 
-  if (!isStaff) {
-    return (
-      <div className="space-y-4">
-        <div className="alert-warning">
-          Solo un administrador puede registrar asistencia escaneando códigos QR.
-        </div>
-        <Link href="/" className="btn-secondary btn-responsive inline-flex">
-          Volver al inicio
-        </Link>
-      </div>
-    );
-  }
-
-  if (!codigo) {
-    return (
-      <div className="space-y-4">
-        <h1 className="page-title">Registrar asistencia</h1>
-        <div className="alert-error">Falta el código QR en la URL. Escanea un código válido.</div>
-        <Link href="/" className="btn-secondary btn-responsive inline-flex">
-          Volver al listado
-        </Link>
-      </div>
-    );
-  }
+  const caja =
+    visual === "ok"
+      ? "alert-success"
+      : visual === "aviso"
+        ? "alert-warning"
+        : "alert-error";
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
-      <div>
-        <h1 className="page-title">Registrar asistencia</h1>
-        <p className="page-subtitle">Datos extraídos del QR y verificados en la base de datos</p>
-      </div>
-
-      {loading ? (
-        <div className="card flex items-center gap-3 py-10 text-ink-secondary">
-          <span className="size-5 animate-pulse rounded-full bg-pin-light" />
-          Consultando base de datos…
+    <div className="mx-auto flex w-full max-w-md flex-col justify-center py-6 sm:py-12">
+      <div className="card space-y-6 p-5 sm:p-8">
+        <div className="space-y-3 text-center">
+          <AxisLogo size={160} badge className="mx-auto" />
+          <h1 className="page-title">Pase de lista</h1>
+          {visual === "formulario" ? (
+            <p className="text-sm text-ink-secondary">Ingresa el código para registrar la asistencia</p>
+          ) : null}
         </div>
-      ) : null}
 
-      {error ? <div className="alert-error">{error}</div> : null}
+        {visual === "formulario" ? (
+          <form className="space-y-4" onSubmit={(event) => void pasarLista(event)}>
+            {mensaje ? <div className="alert-error text-center font-semibold">{mensaje}</div> : null}
 
-      {dirigente ? (
-        <article className="card-section space-y-5">
-          <div className="flex items-start gap-4">
-            {dirigente.fotoUrl ? (
-              <UploadImage
-                src={dirigente.fotoUrl}
-                alt=""
-                width={72}
-                height={72}
-                className="size-[72px] shrink-0 rounded-full object-cover ring-2 ring-pin-light"
+            <label className="label">
+              Código
+              <input
+                className="input"
+                type="password"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={clave}
+                onChange={(event) => setClave(event.target.value)}
+                required
               />
-            ) : (
-              <div className="flex size-[72px] shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-medium text-ink-secondary">
-                Sin foto
-              </div>
-            )}
-            <div className="min-w-0">
-              <h2 className="text-lg font-bold text-ink">{dirigente.nombreCompleto}</h2>
-              <p className="mt-1 text-sm text-ink-secondary">
-                {dirigente.tipo} · Sección {dirigente.seccionElectoral} · {dirigente.colonia}
-              </p>
-              {!dirigente.activo ? (
-                <span className="badge-muted mt-2 inline-flex">Baja</span>
-              ) : (
-                <span className="badge-pin mt-2 inline-flex">Activo</span>
-              )}
-            </div>
+            </label>
+
+            <button type="submit" className="btn-primary btn-responsive w-full" disabled={enviando}>
+              {enviando ? "Registrando…" : "Pasar lista"}
+            </button>
+          </form>
+        ) : (
+          <div className="space-y-3">
+            <div className={`${caja} text-center text-lg font-semibold leading-snug`}>{mensaje}</div>
+            {detalle ? <p className="text-center text-sm text-ink-secondary">{detalle}</p> : null}
           </div>
-
-          <div className="panel-soft space-y-3">
-            <p className="text-sm font-semibold text-ink">Identificación única (base de datos)</p>
-            <dl className="grid gap-3 sm:grid-cols-2">
-              <CampoVerificacion label="Nombre(s)" value={dirigente.nombre} />
-              <CampoVerificacion label="Primer apellido" value={dirigente.primerApellido} />
-              <CampoVerificacion
-                label="Segundo apellido"
-                value={dirigente.segundoApellido ?? "—"}
-              />
-              <CampoVerificacion
-                label="Fecha de nacimiento"
-                value={formatFechaQr(dirigente.fechaNacimiento)}
-              />
-            </dl>
-          </div>
-
-          <div className="panel-pin">
-            <p className="text-sm font-medium text-pin-dark">
-              Código QR verificado. Los datos coinciden con el registro único del dirigente en la base
-              de datos.
-            </p>
-          </div>
-
-          <Link
-            href={`/dirigentes/${dirigente.id}/consultar`}
-            className="btn-secondary btn-responsive inline-flex"
-          >
-            Ver ficha completa
-          </Link>
-        </article>
-      ) : null}
-
-      <Link href="/" className="btn-ghost btn-responsive inline-flex">
-        Volver al listado
-      </Link>
+        )}
+      </div>
     </div>
   );
 }

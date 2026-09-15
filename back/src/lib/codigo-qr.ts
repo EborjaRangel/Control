@@ -29,26 +29,12 @@ export function urlQrAsistencia(codigoQr: string): string {
     process.env.PUBLIC_APP_URL?.replace(/\/$/, "") ??
     process.env.FRONTEND_URL?.replace(/\/$/, "") ??
     "http://localhost:3000";
-  return `${base}/asistencia/registrar?c=${encodeURIComponent(codigoQr)}`;
+  return `${base}/pase?c=${encodeURIComponent(codigoQr)}`;
 }
 
-function fechaIso(d: string | Date): string {
-  if (typeof d === "string") return d.slice(0, 10);
-  return d.toISOString().slice(0, 10);
-}
-
-/** Contenido del QR: datos únicos del dirigente desde la base de datos + enlace de verificación. */
+/** Contenido imprimible del QR: URL pública que abre la cámara de cualquier teléfono. */
 export function payloadQrDirigente(d: DatosQrDirigente): string {
-  const payload: QrDirigentePayload = {
-    v: 1,
-    codigoQr: d.codigoQr,
-    nombre: d.nombre.trim(),
-    primerApellido: d.primerApellido.trim(),
-    segundoApellido: (d.segundoApellido ?? "").trim(),
-    fechaNacimiento: fechaIso(d.fechaNacimiento),
-    url: urlQrAsistencia(d.codigoQr),
-  };
-  return JSON.stringify(payload);
+  return urlQrAsistencia(d.codigoQr);
 }
 
 export function parseQrDirigentePayload(raw: string): QrDirigentePayload | null {
@@ -77,7 +63,9 @@ export function codigoQrDesdeTextoQr(texto: string): string | null {
   if (parsed) return parsed.codigoQr;
 
   try {
-    const url = new URL(trimmed);
+    const url = trimmed.startsWith("/")
+      ? new URL(trimmed, "https://axis.local")
+      : new URL(trimmed);
     const c = url.searchParams.get("c")?.trim();
     if (c) return c;
   } catch {

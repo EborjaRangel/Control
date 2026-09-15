@@ -172,7 +172,7 @@ export function DirigenteDetalle({
       {d.codigoQr ? (
         <DirigenteQrCard
           codigoQr={d.codigoQr}
-          qrPayload={d.qrPayload}
+          qrUrl={d.qrUrl}
           nombre={d.nombre}
           primerApellido={d.primerApellido}
           segundoApellido={d.segundoApellido}

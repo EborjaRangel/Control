@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { ConvocatoriaEventoPanel } from "@/components/ConvocatoriaEventoPanel";
+import { EscanerQrAsistencia } from "@/components/EscanerQrAsistencia";
 import { RegistrarAsistenciaQrForm } from "@/components/RegistrarAsistenciaQrForm";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
@@ -26,10 +27,11 @@ export default function EventoDetalleClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const [mensajeOk, setMensajeOk] = useState(false);
   const [accionando, setAccionando] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     setError(null);
     try {
       const res = await apiFetch(`/api/asistencia/eventos/${id}/pase`);
@@ -39,7 +41,7 @@ export default function EventoDetalleClient() {
       setError(err instanceof Error ? err.message : "Error al cargar");
       setData(null);
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }, [id]);
 
@@ -61,14 +63,17 @@ export default function EventoDetalleClient() {
   async function abrirPase() {
     setAccionando(true);
     setMensaje(null);
+    setMensajeOk(false);
     try {
       const res = await apiFetch(`/api/asistencia/eventos/${id}/abrir`, { method: "POST" });
       const body = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(body.error ?? "No se pudo abrir");
-      setMensaje("Pase de lista abierto. Ya puedes registrar asistencias.");
-      await load();
+      setMensaje("Pase de lista abierto. Ya puedes leer los QR con la cámara de cualquier teléfono.");
+      setMensajeOk(true);
+      await load({ silent: true });
     } catch (err) {
       setMensaje(err instanceof Error ? err.message : "Error");
+      setMensajeOk(false);
     } finally {
       setAccionando(false);
     }
@@ -78,33 +83,48 @@ export default function EventoDetalleClient() {
     if (!confirm("¿Cerrar el pase de lista? Ya no se podrán registrar más asistencias.")) return;
     setAccionando(true);
     setMensaje(null);
+    setMensajeOk(false);
     try {
       const res = await apiFetch(`/api/asistencia/eventos/${id}/cerrar`, { method: "POST" });
       const body = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(body.error ?? "No se pudo cerrar");
       setMensaje("Pase de lista cerrado.");
-      await load();
+      setMensajeOk(true);
+      await load({ silent: true });
     } catch (err) {
       setMensaje(err instanceof Error ? err.message : "Error");
+      setMensajeOk(false);
     } finally {
       setAccionando(false);
     }
   }
 
+  const registrarDesdeQr = useCallback(
+    async (raw: string) => {
+      setMensaje(null);
+      setMensajeOk(false);
+      const res = await apiFetch(`/api/asistencia/eventos/${id}/registrar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ raw: raw.trim() }),
+      });
+      const body = (await res.json()) as {
+        error?: string;
+        mensaje?: string;
+        codigo?: string;
+        dirigente?: { nombreCompleto: string };
+      };
+      const texto = body.mensaje ?? body.error ?? "El QR es inválido";
+      setMensaje(texto);
+      setMensajeOk(res.ok);
+      if (!res.ok) throw new Error(texto);
+      await load({ silent: true });
+    },
+    [id, load],
+  );
+
   async function registrarAsistencia(values: RegistrarAsistenciaFormValues) {
-    setMensaje(null);
-    const res = await apiFetch(`/api/asistencia/eventos/${id}/registrar`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ raw: values.raw.trim() }),
-    });
-    const body = (await res.json()) as {
-      error?: string;
-      dirigente?: { nombreCompleto: string };
-    };
-    if (!res.ok) throw new Error(body.error ?? "No se pudo registrar");
-    setMensaje(`Asistencia registrada: ${body.dirigente?.nombreCompleto ?? "Dirigente"}`);
-    await load();
+    await registrarDesdeQr(values.raw);
   }
 
   if (!canTakeAsistencia) return null;
@@ -224,7 +244,8 @@ export default function EventoDetalleClient() {
 
       {isStaff && evento.estado === "ABIERTO" ? (
         <div className="panel-pin text-sm text-pin-dark">
-          El pase está abierto. Cuando termines, pulsa <strong>Cerrar evento</strong> arriba.
+          El pase está abierto. Apunta la cámara de cualquier teléfono al QR del dirigente. Cuando
+          termines, pulsa <strong>Cerrar evento</strong> arriba.
         </div>
       ) : null}
 
@@ -239,14 +260,32 @@ export default function EventoDetalleClient() {
         <section className="card-section space-y-4">
           <h2 className="section-title">Registrar asistencia (QR)</h2>
           <p className="text-sm text-ink-secondary">
-            Escanea el QR del dirigente o pega el código / JSON del QR.
+            Apunta la cámara de este teléfono o de cualquier otro al QR del dirigente. El teléfono
+            que haga la lectura mostrará si la asistencia ya fue tomada, si el QR es inválido o si
+            ya estaba registrada.
           </p>
+          <EscanerQrAsistencia
+            onScan={registrarDesdeQr}
+            feedback={
+              mensaje
+                ? {
+                    texto: mensaje,
+                    tipo: mensajeOk
+                      ? "ok"
+                      : mensaje.includes("imposible") || mensaje.includes("No hay")
+                        ? "aviso"
+                        : "error",
+                  }
+                : null
+            }
+          />
           <RegistrarAsistenciaQrForm
             onSubmit={async (values) => {
               try {
                 await registrarAsistencia(values);
               } catch (err) {
-                setMensaje(err instanceof Error ? err.message : "Error al registrar");
+                setMensaje(err instanceof Error ? err.message : "El QR es inválido");
+                setMensajeOk(false);
                 throw err;
               }
             }}
@@ -263,11 +302,11 @@ export default function EventoDetalleClient() {
       {mensaje ? (
         <div
           className={
-            mensaje.toLowerCase().includes("error") ||
-            mensaje.includes("No ") ||
-            mensaje.includes("no ")
-              ? "alert-error"
-              : "panel-pin text-sm font-medium text-pin-dark"
+            mensajeOk
+              ? "alert-success text-base font-semibold"
+              : mensaje.includes("imposible") || mensaje.includes("No hay")
+                ? "alert-warning text-base font-semibold"
+                : "alert-error text-base font-semibold"
           }
         >
           {mensaje}

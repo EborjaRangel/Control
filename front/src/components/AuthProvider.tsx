@@ -15,6 +15,7 @@ import { AxisAnimatedMark } from "@/components/AxisAnimatedMark";
 import type { SessionUser } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
 import { homeForUser, pathAllowedForUser } from "@/lib/mi-panel";
+import { isPaseListaLocation, isPaseListaPath } from "@/lib/pase-lista-path";
 import { canManageConvocatoria, canTakeAsistencia, hasAdminPrivilegesRol, isAdminRol, isAsistenciaRol, isConvocatoriaRol, isCoordinadorRol, isStaffRol } from "@/lib/auth";
 import {
   clearSessionToken,
@@ -44,10 +45,20 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const PUBLIC_PATHS = new Set(["/login", "/login/recuperar"]);
+const AUTH_ENTRY_PATHS = new Set(["/login", "/login/recuperar"]);
 
-function isPublicPath(pathname: string) {
-  return PUBLIC_PATHS.has(pathname) || pathname.startsWith("/login/restablecer/");
+function isAuthEntryPath(pathname: string) {
+  return AUTH_ENTRY_PATHS.has(pathname) || pathname.startsWith("/login/restablecer/");
+}
+
+function isOpenPath(pathname: string) {
+  return isAuthEntryPath(pathname) || isPaseListaPath(pathname);
+}
+
+function isOpenNow(pathname: string) {
+  if (isOpenPath(pathname) || isPaseListaLocation()) return true;
+  if (typeof window !== "undefined" && isPaseListaPath(window.location.pathname)) return true;
+  return false;
 }
 
 type LoginResponse = SessionUser & {
@@ -90,6 +101,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    const codigo = new URLSearchParams(window.location.search).get("c")?.trim();
+    if (codigo && !isPaseListaPath(window.location.pathname)) {
+      window.location.replace(`/pase?c=${encodeURIComponent(codigo)}`);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     void fetchMe().then((me) => {
@@ -104,16 +123,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const codigo = new URLSearchParams(window.location.search).get("c")?.trim();
+      const path = window.location.pathname;
+      if (codigo && !isPaseListaPath(path)) {
+        router.replace(`/pase?c=${encodeURIComponent(codigo)}`);
+        return;
+      }
+    }
     if (loading) return;
-    if (!user && !isPublicPath(pathname)) {
+    if (isOpenNow(pathname)) {
+      if (user && isAuthEntryPath(pathname) && !isPaseListaPath(pathname) && !isPaseListaLocation()) {
+        router.replace(homeForUser(user));
+      }
+      return;
+    }
+    if (!user) {
       router.replace("/login");
       return;
     }
-    if (user && isPublicPath(pathname)) {
+    if (user && isAuthEntryPath(pathname)) {
       router.replace(homeForUser(user));
       return;
     }
-    if (user && pathname !== "/login" && !pathAllowedForUser(user, pathname)) {
+    if (user && !pathAllowedForUser(user, pathname)) {
       router.replace(homeForUser(user));
     }
   }, [user, loading, pathname, router]);
@@ -171,7 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user, loading, login, logout, refresh],
   );
 
-  if (loading && !isPublicPath(pathname)) {
+  if (loading && !isOpenNow(pathname)) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-ink-secondary">
         <AxisAnimatedMark variant="icon" mode="idle" size={72} title="AXIS" />
@@ -180,7 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user && !isPublicPath(pathname)) return null;
+  if (!user && !isOpenNow(pathname)) return null;
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

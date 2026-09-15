@@ -7,7 +7,7 @@ export function appBaseUrl(): string {
 }
 
 export function urlQrAsistencia(codigoQr: string): string {
-  return `${appBaseUrl()}/asistencia/registrar?c=${encodeURIComponent(codigoQr)}`;
+  return `${appBaseUrl()}/pase?c=${encodeURIComponent(codigoQr)}`;
 }
 
 export type QrDirigentePayload = {
@@ -29,16 +29,7 @@ export type DatosQrDirigente = {
 };
 
 export function payloadQrDirigente(d: DatosQrDirigente): string {
-  const payload: QrDirigentePayload = {
-    v: 1,
-    codigoQr: d.codigoQr,
-    nombre: d.nombre.trim(),
-    primerApellido: d.primerApellido.trim(),
-    segundoApellido: (d.segundoApellido ?? "").trim(),
-    fechaNacimiento: d.fechaNacimiento.slice(0, 10),
-    url: urlQrAsistencia(d.codigoQr),
-  };
-  return JSON.stringify(payload);
+  return urlQrAsistencia(d.codigoQr);
 }
 
 export function parseQrDirigentePayload(raw: string): QrDirigentePayload | null {
@@ -66,7 +57,9 @@ export function codigoQrDesdeTextoQr(texto: string): string | null {
   if (parsed) return parsed.codigoQr;
 
   try {
-    const url = new URL(trimmed);
+    const url = trimmed.startsWith("/")
+      ? new URL(trimmed, "https://axis.local")
+      : new URL(trimmed);
     const c = url.searchParams.get("c")?.trim();
     if (c) return c;
   } catch {

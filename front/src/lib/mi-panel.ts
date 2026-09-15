@@ -74,6 +74,8 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
 
   if (isAsistenciaRol(user.rol)) {
     if (pathname === "/asistencia") return true;
+    if (pathname === "/asistencia/registrar") return true;
+    if (pathname === "/pase" || pathname.startsWith("/pase/")) return true;
     if (/^\/asistencia\/eventos\/[^/]+$/.test(pathname)) return true;
     return false;
   }
