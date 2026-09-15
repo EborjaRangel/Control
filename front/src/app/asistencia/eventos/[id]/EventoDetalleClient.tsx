@@ -5,8 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { ConvocatoriaEventoPanel } from "@/components/ConvocatoriaEventoPanel";
-import { EscanerQrAsistencia } from "@/components/EscanerQrAsistencia";
-import { RegistrarAsistenciaQrForm } from "@/components/RegistrarAsistenciaQrForm";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -17,7 +15,6 @@ import {
   type EventoAsistenciaDTO,
   type PaseListaResponse,
 } from "@/lib/asistencia";
-import type { RegistrarAsistenciaFormValues } from "@/lib/validation-asistencia";
 
 export default function EventoDetalleClient() {
   const { id } = useParams<{ id: string }>();
@@ -135,35 +132,6 @@ export default function EventoDetalleClient() {
     }
   }
 
-  const registrarDesdeQr = useCallback(
-    async (raw: string) => {
-      setMensaje(null);
-      setMensajeOk(false);
-      const res = await apiFetch(`/api/asistencia/eventos/${id}/registrar`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ raw: raw.trim() }),
-      });
-      const body = (await res.json()) as {
-        error?: string;
-        mensaje?: string;
-        codigo?: string;
-        dirigente?: { nombreCompleto: string };
-      };
-      const texto = body.mensaje ?? body.error ?? "El QR es inválido";
-      setMensaje(texto);
-      setMensajeOk(res.ok);
-      if (!res.ok) throw new Error(texto);
-      setPestana("recientes");
-      await load({ silent: true });
-    },
-    [id, load],
-  );
-
-  async function registrarAsistencia(values: RegistrarAsistenciaFormValues) {
-    await registrarDesdeQr(values.raw);
-  }
-
   if (!canTakeAsistencia) return null;
 
   if (loading) {
@@ -252,7 +220,7 @@ export default function EventoDetalleClient() {
         </div>
       ) : null}
 
-      {isStaff ? (
+      {isStaff && evento.estado !== "ABIERTO" ? (
         <ConvocatoriaEventoPanel eventoId={evento.id} totalElegibles={lista.length} />
       ) : null}
 
@@ -292,43 +260,6 @@ export default function EventoDetalleClient() {
           El pase de lista aún no está abierto. Un administrador debe iniciarlo para registrar
           asistencias.
         </div>
-      ) : null}
-
-      {evento.estado === "ABIERTO" ? (
-        <section className="card-section space-y-4">
-          <h2 className="section-title">Registrar asistencia (QR)</h2>
-          <p className="text-sm text-ink-secondary">
-            Apunta la cámara de este teléfono o de cualquier otro al QR del dirigente. El teléfono
-            que haga la lectura mostrará si la asistencia ya fue tomada, si el QR es inválido o si
-            ya estaba registrada.
-          </p>
-          <EscanerQrAsistencia
-            onScan={registrarDesdeQr}
-            feedback={
-              mensaje
-                ? {
-                    texto: mensaje,
-                    tipo: mensajeOk
-                      ? "ok"
-                      : mensaje.includes("imposible") || mensaje.includes("No hay")
-                        ? "aviso"
-                        : "error",
-                  }
-                : null
-            }
-          />
-          <RegistrarAsistenciaQrForm
-            onSubmit={async (values) => {
-              try {
-                await registrarAsistencia(values);
-              } catch (err) {
-                setMensaje(err instanceof Error ? err.message : "El QR es inválido");
-                setMensajeOk(false);
-                throw err;
-              }
-            }}
-          />
-        </section>
       ) : null}
 
       {evento.estado === "CERRADO" ? (
