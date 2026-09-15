@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ciclo de control · Dirigentes Coyoacán</title>
+  <style>
+    :root {
+      --pin: #0055a4;
+      --pin-dark: #003366;
+      --pin-mid: #1565c0;
+      --gold: #c9a227;
+      --ink: #0e1726;
+      --muted: #5b6b7c;
+      --paper: #f4f7fb;
+      --white: #ffffff;
+      --line: rgba(255, 255, 255, 0.18);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #071018;
+      color: var(--ink);
+      font-family: "Segoe UI", system-ui, sans-serif;
+      overflow: hidden;
+    }
+
+    .deck {
+      height: 100%;
+      width: 100%;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      padding: clamp(1.4rem, 4vw, 3.2rem) clamp(1.5rem, 6vw, 5rem) 4.2rem;
+      overflow: auto;
+    }
+
+    .slide.active { display: flex; flex-direction: column; justify-content: center; }
+
+    .slide.cover, .slide.dark, .slide.close {
+      background:
+        radial-gradient(1200px 500px at 12% -10%, rgba(21, 101, 192, 0.45), transparent 55%),
+        radial-gradient(900px 420px at 100% 110%, rgba(201, 162, 39, 0.18), transparent 50%),
+        linear-gradient(165deg, #04101c 0%, #003366 48%, #0055a4 100%);
+      color: var(--white);
+    }
+
+    .slide.light {
+      background:
+        linear-gradient(180deg, #ffffff 0%, #f4f7fb 100%);
+    }
+
+    .kicker {
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      font-weight: 700;
+      opacity: 0.78;
+      margin-bottom: 0.7rem;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5.4vw, 3.6rem);
+      line-height: 1.08;
+      font-weight: 800;
+      max-width: 16ch;
+    }
+
+    h2 {
+      font-size: clamp(1.55rem, 3.4vw, 2.35rem);
+      line-height: 1.15;
+      font-weight: 800;
+      color: var(--pin-dark);
+      margin-bottom: 0.35rem;
+    }
+
+    .slide.dark h2, .slide.cover h2, .slide.close h2 { color: var(--white); }
+
+    .lead {
+      margin-top: 1rem;
+      font-size: clamp(1.05rem, 2vw, 1.28rem);
+      line-height: 1.45;
+      max-width: 42rem;
+      opacity: 0.92;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 1.02rem;
+      margin-bottom: 1.4rem;
+      max-width: 46rem;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 1.6rem;
+    }
+
+    .mark {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      color: var(--pin);
+      font-weight: 900;
+      font-size: 1.15rem;
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.15);
+    }
+
+    .brand-name { font-weight: 800; font-size: 1.05rem; }
+    .brand-sub { font-size: 0.82rem; opacity: 0.75; }
+
+    .cycle {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.65rem;
+      margin-top: 2rem;
+    }
+
+    .cycle button, .cycle .step {
+      border: 0;
+      text-align: left;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid var(--line);
+      color: #fff;
+      border-radius: 14px;
+      padding: 0.9rem 0.85rem;
+      cursor: pointer;
+    }
+
+    .cycle .n {
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      opacity: 0.7;
+      margin-bottom: 0.25rem;
+    }
+
+    .cycle strong { font-size: 0.95rem; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.85rem;
+    }
+
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .card {
+      background: #fff;
+      border: 1px solid #dce6f0;
+      border-radius: 16px;
+      padding: 1rem 1.1rem;
+      box-shadow: 0 8px 24px rgba(0, 51, 102, 0.05);
+    }
+
+    .dark .card, .close .card {
+      background: rgba(255,255,255,0.08);
+      border-color: var(--line);
+      color: #fff;
+      box-shadow: none;
+    }
+
+    .card h3 {
+      font-size: 0.98rem;
+      margin-bottom: 0.35rem;
+      color: var(--pin);
+    }
+
+    .dark .card h3, .close .card h3 { color: #f3d37a; }
+
+    .card p, .card li {
+      font-size: 0.92rem;
+      line-height: 1.4;
+      color: #334155;
+    }
+
+    .dark .card p, .dark .card li,
+    .close .card p, .close .card li { color: rgba(255,255,255,0.88); }
+
+    ul { padding-left: 1.1rem; }
+    li + li { margin-top: 0.28rem; }
+
+    .tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 1rem;
+    }
+
+    .chip {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      padding: 0.28rem 0.6rem;
+      border-radius: 999px;
+      background: #e8f0fa;
+      color: var(--pin-dark);
+    }
+
+    .dark .chip, .close .chip {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-top: 1.2rem;
+    }
+
+    .flow .card { min-height: 8.2rem; }
+
+    .hint {
+      margin-top: 1.4rem;
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+
+    .bar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.2rem;
+      background: rgba(4, 16, 28, 0.88);
+      color: #fff;
+      backdrop-filter: blur(10px);
+      z-index: 5;
+    }
+
+    .dots { display: flex; gap: 0.35rem; align-items: center; }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.28);
+      border: 0;
+      cursor: pointer;
+    }
+
+    .dot.on { background: #f3d37a; width: 22px; border-radius: 999px; }
+
+    .navbtns { display: flex; gap: 0.4rem; }
+
+    .navbtns button, .fs {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 8px;
+      padding: 0.35rem 0.7rem;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .count { font-size: 0.82rem; opacity: 0.8; min-width: 4.5rem; }
+
+    @media (max-width: 980px) {
+      .cycle, .grid, .grid.three, .flow { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .cycle, .grid, .grid.three, .flow { grid-template-columns: 1fr; }
+      h1 { max-width: none; }
+    }
+
+    @media print {
+      body { overflow: visible; background: #fff; }
+      .bar { display: none; }
+      .slide { position: relative; display: flex !important; page-break-after: always; min-height: 100vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck" id="deck">
+
+    <section class="slide cover active">
+      <div class="brand-row">
+        <div class="mark">C</div>
+        <div>
+          <div class="brand-name">Control de Dirigentes</div>
+          <div class="brand-sub">Grupo Coyoacán</div>
+        </div>
+      </div>
+      <p class="kicker">Presentación operativa</p>
+      <h1>Planeación del sistema de control</h1>
+      <p class="lead">
+        Comunicación, capacitación, organización, dirección, operación, control
+        y evaluación de usuarios con toda la herramienta de Control.
+      </p>
+      <p class="hint">Usa flechas, espacio o clic en los puntos para avanzar.</p>
+    </section>
+
+    <section class="slide dark">
+      <p class="kicker">El ciclo</p>
+      <h2>Ocho etapas, una sola herramienta</h2>
+      <p class="lead">Después de planear se comunica el rumbo, se capacita a la gente y recién entonces se organiza la operación.</p>
+      <div class="cycle">
+        <button class="step" data-go="2"><span class="n">01</span><strong>Planeación</strong></button>
+        <button class="step" data-go="3"><span class="n">02</span><strong>Comunicación</strong></button>
+        <button class="step" data-go="4"><span class="n">03</span><strong>Capacitación</strong></button>
+        <button class="step" data-go="5"><span class="n">04</span><strong>Organización</strong></button>
+        <button class="step" data-go="6"><span class="n">05</span><strong>Dirección</strong></button>
+        <button class="step" data-go="7"><span class="n">06</span><strong>Operación</strong></button>
+        <button class="step" data-go="8"><span class="n">07</span><strong>Control</strong></button>
+        <button class="step" data-go="9"><span class="n">08</span><strong>Evaluación</strong></button>
+      </div>
+    </section>
+
+    <section class="slide light">
+      <p class="kicker">01 · Planeación</p>
+      <h2>Definir territorio, metas y escenario</h2>
+      <p class="sub">Antes de mover gente, el sistema muestra dónde estamos y a dónde hay que llegar.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Diagnóstico territorial</h3>
+          <p>Mapa y mapa electoral: colonias, secciones, casillas básicas y contiguas, distritos locales 26 y 30.</p>
+        </div>
+        <div class="card">
+          <h3>Análisis electoral</h3>
+          <p>Tendencias 2021–2024, liderazgo por sección y comparación de bloques para priorizar territorio.</p>
+        </div>
+        <div class="card">
+          <h3>Proyección 2027</h3>
+          <p>Escenarios de votación y meta de crecimiento para orientar la planeación de mediano plazo.</p>
+        </div>
+        <div class="card">
+          <h3>Operación (meta)</h3>
+          <p>Meta del 30% de la votación estimada por sección: votos proyectados, faltante y cobertura de dirigentes.</p>
+        </div>
+      </div>
+      <div class="tools">
+        <span class="chip">Mapa</span>
+        <span class="chip">Electoral</span>
+        <span class="chip">Análisis</span>
+        <span class="chip">Proyección 2027</span>
+        <span class="chip">Operación</span>
+      </div>
+    </section>
+
+    <section class="slide light">
+      <p class="kicker">02 · Comunicación</p>
+      <h2>Transmitir el plan a toda la estructura</h2>
+      <p class="sub">Cuando la meta ya está definida, el sistema lleva el mensaje a cada dirigente, RC, RG y staff.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Convocatoria</h3>
+          <p>WhatsApp como canal prioritario, correo y SMS opcional para informar eventos, reuniones y el rumbo de la operación.</p>
+        </div>
+        <div class="card">
+          <h3>Avisos en el sistema</h3>
+          <p>Notificaciones con badge de no leídas: el plan no se queda en una junta, queda visible en el panel de cada usuario.</p>
+        </div>
+        <div class="card">
+          <h3>Datos de contacto</h3>
+          <p>Ficha del dirigente con teléfono y correo: la comunicación sale hacia la persona correcta, en su sección y colonia.</p>
+        </div>
+        <div class="card">
+          <h3>Eventos como mensaje</h3>
+          <p>Alta de eventos con fecha, lugar y a quién aplica: la convocatoria concreta el plan en una cita de trabajo.</p>
+        </div>
+      </div>
+      <div class="tools">
+        <span class="chip">Convocatoria</span>
+        <span class="chip">Notificaciones</span>
+        <span class="chip">WhatsApp / correo / SMS</span>
+        <span class="chip">Fichas de dirigentes</span>
+      </div>
+    </section>
+
+    <section class="slide light">
+      <p class="kicker">03 · Capacitación</p>
+      <h2>Enseñar a usar la herramienta según el rol</h2>
+      <p class="sub">Después de informar el rumbo, cada usuario aprende qué capturar, cómo entrar y cómo acreditar su trabajo.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Por nivel de dirigente</h3>
+          <p>D1 a D4 marcan experiencia: el principiante se forma en ficha, detectados y servicios; el avanzado en cobertura y meta.</p>
+        </div>
+        <div class="card">
+          <h3>Por perfil de usuario</h3>
+          <p>Staff, captura de asistencia, convocatoria, dirigente, RC y RG entran a un panel distinto: se capacita solo en lo que van a operar.</p>
+        </div>
+        <div class="card">
+          <h3>Sesiones con evidencia</h3>
+          <p>Eventos de capacitación con pase de lista por QR: se convoca, se forma y queda constancia de quién asistió.</p>
+        </div>
+        <div class="card">
+          <h3>Credenciales y práctica</h3>
+          <p>Usuario, contraseña y tarjeta QR para que cada persona practique su ficha, detectados, RC/RG y servicios urbanos.</p>
+        </div>
+      </div>
+      <div class="tools">
+        <span class="chip">Usuarios y roles</span>
+        <span class="chip">Dirigentes D1–D4</span>
+        <span class="chip">Eventos y QR</span>
+        <span class="chip">Panel del operador</span>
+      </div>
+    </section>
+
+    <section class="slide light">
+      <p class="kicker">04 · Organización</p>
+      <h2>Estructura de gente y de territorio</h2>
+      <p class="sub">Quién hace qué, con qué rol y en qué sección, colonia o unidad territorial.</p>
+      <div class="grid three">
+        <div class="card">
+          <h3>Mando</h3>
+          <ul>
+            <li>Administrador</li>
+            <li>Coordinador</li>
+            <li>Supervisor</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Apoyo especializado</h3>
+          <ul>
+            <li>Captura de asistencia</li>
+            <li>Convocatorias</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Territorio</h3>
+          <ul>
+            <li>Dirigentes D1–D4</li>
+            <li>Representante de casilla (RC)</li>
+            <li>Representante general (RG)</li>
+            <li>Detectados</li>
+          </ul>
+        </div>
+      </div>
+      <div class="tools">
+        <span class="chip">Usuarios</span>
+        <span class="chip">Dirigentes</span>
+        <span class="chip">RC / RG</span>
+        <span class="chip">Credenciales y fichas</span>
+      </div>
+    </section>
+
+    <section class="slide light">
+      <p class="kicker">05 · Dirección</p>
+      <h2>Activar la estructura y dar la orden de trabajo</h2>
+      <p class="sub">Con gente informada y capacitada, el mando asigna territorio, activa eventos y pone a cada rol en su módulo.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Orden del día operativa</h3>
+          <p>Eventos de trabajo: fecha, lugar y a quién aplica, para pasar de la capacitación a la tarea concreta.</p>
+        </div>
+        <div class="card">
+          <h3>Asignación de territorio</h3>
+          <p>Dirigente, colonia, sección, RC y RG quedan vinculados: cada quien sabe de qué pedazo es responsable.</p>
+        </div>
+        <div class="card">
+          <h3>Permisos por rol</h3>
+          <p>El dirigente ve su ficha; asistencia y convocatoria solo su módulo; admin y coordinador ven nómina, usuarios y auditoría.</p>
+        </div>
+        <div class="card">
+          <h3>Seguimiento de lectura</h3>
+          <p>Avisos y convocatorias con rastro de quién recibió y quién abrió el mensaje, para dirigir con certeza.</p>
+        </div>
+      </div>
+      <div class="tools">
+        <span class="chip">Eventos</span>
+        <span class="chip">Dirigentes / RC / RG</span>
+        <span class="chip">Notificaciones</span>
+        <span class="chip">Permisos por rol</span>
+      </div>
+    </section>
+
+    <section class="slide light">
+      <p class="kicker">06 · Operación</p>
+      <h2>Trabajo de campo dentro del sistema</h2>
+      <p class="sub">La operación diaria queda registrada: personas, servicios, representantes y asistencia.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Panel del dirigente</h3>
+          <p>Ficha, detectados, RC, RG y servicios urbanos de su territorio, con credenciales propias.</p>
+        </div>
+        <div class="card">
+          <h3>Detectados</h3>
+          <p>Captura de personas vinculadas al dirigente: avance de cobertura y seguimiento por colonia/sección.</p>
+        </div>
+        <div class="card">
+          <h3>RC, RG y servicios</h3>
+          <p>Armado de estructura electoral y registro de servicios urbanos desde el mismo usuario de territorio.</p>
+        </div>
+        <div class="card">
+          <h3>Asistencia y nómina</h3>
+          <p>Pase de lista con QR en eventos y consulta de nómina / composición de sueldo según privilegios.</p>
+        </div>
+      </div>
+      <div class="tools">
+        <span class="chip">Detectados</span>
+        <span class="chip">Servicios urbanos</span>
+        <span class="chip">RC / RG</span>
+        <span class="chip">Asistencia QR</span>
+        <span class="chip">Nóminas</span>
+      </div>
+    </section>
+
+    <section class="slide light">
+      <p class="kicker">07 · Control</p>
+      <h2>Verificar que lo planeado se cumpla</h2>
+      <p class="sub">Control no es solo vigilar: es contrastar cobertura, asistencia, altas/bajas y bitácora.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Asistencia</h3>
+          <p>Registro por QR, dashboard por dirigente (asistencias vs faltas) y exportación a Excel.</p>
+        </div>
+        <div class="card">
+          <h3>Auditoría</h3>
+          <p>Quién creó, editó o dio de baja un registro, con fecha, entidad y detalle de la acción.</p>
+        </div>
+        <div class="card">
+          <h3>Estatus de plantilla</h3>
+          <p>Altas y bajas de dirigentes, reactivación y filtros por tipo D1–D4, colonia y sección.</p>
+        </div>
+        <div class="card">
+          <h3>Cobertura en mapa</h3>
+          <p>Control visual de secciones, colonias y casillas para detectar huecos de estructura.</p>
+        </div>
+      </div>
+      <div class="tools">
+        <span class="chip">Asistencia</span>
+        <span class="chip">Auditoría</span>
+        <span class="chip">Dirigentes alta/baja</span>
+        <span class="chip">Mapa</span>
+      </div>
+    </section>
+
+    <section class="slide light">
+      <p class="kicker">08 · Evaluación de usuarios</p>
+      <h2>Medir a las personas, no solo al territorio</h2>
+      <p class="sub">Cada usuario deja huella: asistencia, cobertura, avance de detectados y rastro en auditoría.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Desempeño de dirigentes</h3>
+          <p>Dashboard de asistencia, tipo D1–D4 (experiencia) y avance de detectados / servicios a su cargo.</p>
+        </div>
+        <div class="card">
+          <h3>Resultado vs meta</h3>
+          <p>Módulo Operación: votos proyectados, meta del 30% y faltante por sección con dirigentes asignados.</p>
+        </div>
+        <div class="card">
+          <h3>Uso del sistema</h3>
+          <p>Auditoría y roles activos: quién entra, qué captura y si su panel corresponde a su función.</p>
+        </div>
+        <div class="card">
+          <h3>Lectura gerencial</h3>
+          <p>Análisis y proyección 2027 convierten la evaluación individual en decisión de territorio.</p>
+        </div>
+      </div>
+      <div class="tools">
+        <span class="chip">Dashboard asistencia</span>
+        <span class="chip">Detectados</span>
+        <span class="chip">Operación</span>
+        <span class="chip">Auditoría</span>
+        <span class="chip">Análisis</span>
+      </div>
+    </section>
+
+    <section class="slide dark">
+      <p class="kicker">Uso integral</p>
+      <h2>Toda la herramienta, en un solo flujo</h2>
+      <div class="flow">
+        <div class="card"><h3>1. Planear</h3><p>Análisis, mapa electoral, proyección 2027 y meta de operación por sección.</p></div>
+        <div class="card"><h3>2. Comunicar</h3><p>Convocatoria, avisos y contacto para que el plan llegue a cada usuario.</p></div>
+        <div class="card"><h3>3. Capacitar</h3><p>Roles, D1–D4, eventos con QR y práctica en el panel de cada perfil.</p></div>
+        <div class="card"><h3>4. Organizar</h3><p>Usuarios, dirigentes, RC, RG y credenciales de territorio.</p></div>
+        <div class="card"><h3>5. Dirigir</h3><p>Eventos de trabajo, asignación de sección y permisos por rol.</p></div>
+        <div class="card"><h3>6. Operar</h3><p>Detectados, servicios, representantes y pase de lista con QR.</p></div>
+        <div class="card"><h3>7. Controlar</h3><p>Asistencia, auditoría, altas/bajas y cobertura en mapa.</p></div>
+        <div class="card"><h3>8. Evaluar</h3><p>Desempeño de usuarios, faltante vs meta y rastro de auditoría.</p></div>
+      </div>
+    </section>
+
+    <section class="slide close">
+      <p class="kicker">Cierre</p>
+      <h2>El sistema no sustituye la estructura: la hace medible</h2>
+      <p class="lead">
+        Planeación, comunicación, capacitación, organización, dirección,
+        operación, control y evaluación de usuarios viven en Control de
+        Dirigentes Grupo Coyoacán.
+      </p>
+      <div class="tools" style="margin-top:1.6rem">
+        <span class="chip">Dirigentes</span>
+        <span class="chip">Mapa</span>
+        <span class="chip">Electoral</span>
+        <span class="chip">Asistencia</span>
+        <span class="chip">Convocatoria</span>
+        <span class="chip">Notificaciones</span>
+        <span class="chip">Nóminas</span>
+        <span class="chip">Detectados</span>
+        <span class="chip">Servicios urbanos</span>
+        <span class="chip">RC / RG</span>
+        <span class="chip">Usuarios</span>
+        <span class="chip">Auditoría</span>
+        <span class="chip">Análisis</span>
+        <span class="chip">Proyección 2027</span>
+        <span class="chip">Operación</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="bar">
+    <div class="dots" id="dots"></div>
+    <span class="count" id="count">1 / 12</span>
+    <div class="navbtns">
+      <button type="button" id="prev" aria-label="Anterior">←</button>
+      <button type="button" id="next" aria-label="Siguiente">→</button>
+      <button type="button" class="fs" id="fs">Pantalla completa</button>
+    </div>
+  </div>
+
+  <script>
+    const slides = [...document.querySelectorAll(".slide")];
+    const dots = document.getElementById("dots");
+    const count = document.getElementById("count");
+    let i = 0;
+
+    slides.forEach((_, idx) => {
+      const b = document.createElement("button");
+      b.className = "dot" + (idx === 0 ? " on" : "");
+      b.type = "button";
+      b.addEventListener("click", () => go(idx));
+      dots.appendChild(b);
+    });
+
+    function go(n) {
+      i = (n + slides.length) % slides.length;
+      slides.forEach((s, idx) => s.classList.toggle("active", idx === i));
+      [...dots.children].forEach((d, idx) => d.classList.toggle("on", idx === i));
+      count.textContent = (i + 1) + " / " + slides.length;
+    }
+
+    document.getElementById("prev").onclick = () => go(i - 1);
+    document.getElementById("next").onclick = () => go(i + 1);
+    document.getElementById("fs").onclick = () => {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    };
+
+    document.querySelectorAll("[data-go]").forEach((el) => {
+      el.addEventListener("click", () => go(Number(el.dataset.go)));
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(e.key)) {
+        e.preventDefault();
+        go(i + 1);
+      }
+      if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) {
+        e.preventDefault();
+        go(i - 1);
+      }
+      if (e.key === "Home") go(0);
+      if (e.key === "End") go(slides.length - 1);
+    });
+  </script>
+</body>
+</html>

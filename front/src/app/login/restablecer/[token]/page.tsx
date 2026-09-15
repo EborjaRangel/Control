@@ -70,7 +70,7 @@ export default function RestablecerContrasenaPage() {
     <div className="mx-auto flex w-full max-w-md flex-col justify-center py-6 sm:py-12">
       <div className="card space-y-6 p-5 sm:p-8">
         <div className="space-y-3 text-center">
-          <AxisLogo size={168} badge className="mx-auto" />
+          <AxisLogo size={248} badge className="mx-auto" />
           <h1 className="sr-only">AXIS</h1>
           <p className="text-sm text-ink-secondary">Nueva contraseña</p>
         </div>

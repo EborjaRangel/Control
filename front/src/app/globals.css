@@ -577,3 +577,204 @@
     word-break: break-word;
   }
 }
+
+/* Animación de marca AXIS */
+.axis-logo {
+  display: block;
+  overflow: visible;
+}
+
+.axis-orbit-ring {
+  stroke-dasharray: 240;
+  stroke-dashoffset: 0;
+}
+
+.axis-logo--intro .axis-glow,
+.axis-logo--splash .axis-glow {
+  animation: axis-glow-in 1.1s ease-out both, axis-glow-pulse 3.2s ease-in-out 1.1s infinite;
+}
+
+.axis-logo--idle .axis-glow {
+  animation: axis-glow-pulse 3.2s ease-in-out infinite;
+}
+
+.axis-logo--intro .axis-x,
+.axis-logo--splash .axis-x {
+  transform-origin: 50% 50%;
+  transform-box: fill-box;
+  animation: axis-x-in 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.axis-logo--intro .axis-orbit-ring,
+.axis-logo--splash .axis-orbit-ring {
+  stroke-dashoffset: 240;
+  animation: axis-orbit-draw 0.95s ease-out 0.28s both;
+}
+
+.axis-logo--intro .axis-orbit-shine,
+.axis-logo--splash .axis-orbit-shine {
+  animation: axis-orbit-shine 2.4s linear 1.1s infinite;
+}
+
+.axis-logo--idle .axis-orbit-shine {
+  animation: axis-orbit-shine 2.4s linear infinite;
+}
+
+.axis-logo--intro .axis-sphere,
+.axis-logo--splash .axis-sphere {
+  transform-origin: 50% 50%;
+  transform-box: fill-box;
+  animation: axis-sphere-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.78s both;
+}
+
+.axis-logo--intro .axis-wordmark,
+.axis-logo--splash .axis-wordmark {
+  animation: axis-word-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) 1.05s both;
+}
+
+.axis-splash {
+  background-color: #02080f;
+}
+
+.axis-splash-glow {
+  position: absolute;
+  top: 18%;
+  left: 22%;
+  width: min(42vw, 28rem);
+  height: min(42vw, 28rem);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(62, 180, 255, 0.28), transparent 68%);
+  filter: blur(8px);
+  animation: axis-splash-orb 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.axis-splash-glow--alt {
+  top: auto;
+  left: auto;
+  right: 12%;
+  bottom: 18%;
+  width: min(28vw, 18rem);
+  height: min(28vw, 18rem);
+  background: radial-gradient(circle, rgba(0, 85, 164, 0.35), transparent 70%);
+  animation-delay: -1.6s;
+}
+
+.axis-splash .axis-logo {
+  position: relative;
+  z-index: 1;
+}
+
+.axis-splash--out {
+  animation: axis-splash-out 0.65s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes axis-x-in {
+  from {
+    opacity: 0;
+    transform: scale(0.55) rotate(-12deg);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: blur(0);
+  }
+}
+
+@keyframes axis-orbit-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes axis-orbit-shine {
+  to {
+    stroke-dashoffset: -248;
+  }
+}
+
+@keyframes axis-sphere-in {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes axis-word-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes axis-glow-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes axis-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes axis-splash-orb {
+  0%,
+  100% {
+    transform: translate(-18%, -12%) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(8%, 10%) scale(1.12);
+    opacity: 1;
+  }
+}
+
+@keyframes axis-splash-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .axis-logo .axis-x,
+  .axis-logo .axis-orbit-ring,
+  .axis-logo .axis-orbit-shine,
+  .axis-logo .axis-sphere,
+  .axis-logo .axis-wordmark,
+  .axis-logo .axis-glow,
+  .axis-splash-glow {
+    animation: none !important;
+  }
+
+  .axis-orbit-ring {
+    stroke-dashoffset: 0;
+  }
+
+  .axis-orbit-spin animateTransform {
+    display: none;
+  }
+
+  .axis-splash {
+    display: none;
+  }
+}

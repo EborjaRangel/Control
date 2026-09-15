@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { AxisAnimatedMark } from "@/components/AxisAnimatedMark";
 import { cn } from "@/lib/cn";
 
 type Props = {
@@ -9,6 +9,8 @@ type Props = {
   badge?: boolean;
   /** Ícono cuadrado compacto (navbar) o logo completo con wordmark (login). */
   variant?: "full" | "icon";
+  /** intro en login, idle en navbar y estados ya montados. */
+  mode?: "intro" | "idle";
 };
 
 /** Marca AXIS. */
@@ -18,9 +20,10 @@ export function AxisLogo({
   title = "AXIS",
   badge = false,
   variant = "full",
+  mode,
 }: Props) {
-  const src = variant === "icon" ? "/axis-icon.svg" : "/axis-logo.svg";
-  const height = variant === "icon" ? size : Math.round(size * 0.36);
+  const resolvedMode = mode ?? (variant === "full" ? "intro" : "idle");
+  const markSize = variant === "icon" ? size : Math.round(size * 1.45);
 
   return (
     <span
@@ -31,15 +34,12 @@ export function AxisLogo({
       )}
       title={title}
     >
-      <Image
-        src={src}
-        alt={title}
-        width={size}
-        height={height}
-        className="h-auto w-auto object-contain"
-        style={{ width: size, height }}
-        priority={variant === "full"}
-        unoptimized
+      <AxisAnimatedMark
+        variant={variant}
+        mode={resolvedMode}
+        theme="light"
+        title={title}
+        size={markSize}
       />
     </span>
   );

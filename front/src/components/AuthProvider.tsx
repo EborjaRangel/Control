@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { AxisAnimatedMark } from "@/components/AxisAnimatedMark";
 import type { SessionUser } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
 import { homeForUser, pathAllowedForUser } from "@/lib/mi-panel";
@@ -172,9 +173,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   if (loading && !isPublicPath(pathname)) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center text-ink-secondary">
-        <span className="size-5 animate-pulse rounded-full bg-pin-light" />
-        <span className="ml-3">Verificando sesión…</span>
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-ink-secondary">
+        <AxisAnimatedMark variant="icon" mode="idle" size={72} title="AXIS" />
+        <span className="text-sm">Verificando sesión…</span>
       </div>
     );
   }
