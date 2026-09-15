@@ -56,10 +56,21 @@ export type PaseListaResponse = {
     seccionElectoral: string;
     codigoQr: string;
     asistio: boolean;
+    registradoAt: string | null;
+    registradoPor: {
+      id: string;
+      username: string;
+      rol: string;
+    } | null;
   }[];
   registros: {
     id: string;
     registradoAt: string;
+    registradoPor: {
+      id: string;
+      username: string;
+      rol: string;
+    } | null;
     dirigente: {
       id: string;
       nombreCompleto: string;

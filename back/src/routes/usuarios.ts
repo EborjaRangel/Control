@@ -76,7 +76,12 @@ router.post("/", async (req, res) => {
     });
 
     if (!puedeAsignarRol(req.user?.rol, body.rol as PanelUserRol)) {
-      res.status(403).json({ error: "Solo un administrador puede crear cuentas de administrador" });
+      res.status(403).json({
+        error:
+          body.rol === "ASISTENCIA"
+            ? "El rol Captura de asistencia ya no está disponible"
+            : "Solo un administrador puede crear cuentas de administrador",
+      });
       return;
     }
 

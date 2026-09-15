@@ -158,6 +158,9 @@ export async function procesarEscaneoAsistencia(input: {
             seccionElectoral: true,
           },
         },
+        registradoPor: {
+          select: { id: true, username: true, rol: true },
+        },
       },
     });
 
@@ -172,6 +175,8 @@ export async function procesarEscaneoAsistencia(input: {
         eventoTitulo: evento.titulo,
         dirigenteId: registro.dirigente.id,
         dirigenteNombre: nombreCompleto(registro.dirigente),
+        registradoPorId: registro.registradoPorId,
+        registradoPorUsername: registro.registradoPor?.username ?? null,
         origen: input.eventoId ? "pase_lista" : "camara_qr",
       },
     });

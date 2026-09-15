@@ -35,7 +35,7 @@ const createSchema = Yup.object({
     otherwise: (schema) => schema.min(6, "Mínimo 6 caracteres").required("La contraseña es obligatoria"),
   }),
   rol: Yup.string()
-    .oneOf(["ADMIN", "COORDINADOR", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA", "PASE_LISTA"])
+    .oneOf(["ADMIN", "COORDINADOR", "SUPERVISOR", "CONVOCATORIA", "PASE_LISTA"])
     .required(),
 });
 
@@ -56,6 +56,20 @@ const editSchema = Yup.object({
     .required(),
   activo: Yup.boolean().required(),
 });
+
+function EstadoUsuarioBadge({ activo }: { activo: boolean }) {
+  return (
+    <span
+      className={
+        activo
+          ? "inline-flex items-center rounded-full bg-pin px-3 py-1 text-xs font-bold italic text-white"
+          : "inline-flex items-center rounded-full bg-[#ffe082] px-3 py-1 text-xs font-bold italic text-warning-text"
+      }
+    >
+      {activo ? "Activo" : "Inactivo"}
+    </span>
+  );
+}
 
 function emptyForm(): FormValues {
   return { username: "", password: "", rol: "SUPERVISOR", activo: true };
@@ -150,11 +164,11 @@ export default function UsuariosPage() {
 
   const rolOptions: StaffRol[] = [
     "SUPERVISOR",
-    "ASISTENCIA",
     "PASE_LISTA",
     "CONVOCATORIA",
     "COORDINADOR",
     "ADMIN",
+    ...(editing?.rol === "ASISTENCIA" ? (["ASISTENCIA"] as const) : []),
   ];
 
   const initialValues: FormValues = editing
@@ -205,11 +219,12 @@ export default function UsuariosPage() {
                 <div className="list-card-header">
                   <div className="min-w-0">
                     <p className="break-words font-bold text-ink">{u.username}</p>
-                    <p className="mt-1 text-xs text-ink-secondary">
-                      {STAFF_ROL_LABEL[u.rol]} · {u.activo ? "Activo" : "Inactivo"}
-                    </p>
+                    <p className="mt-1 text-xs text-ink-secondary">{STAFF_ROL_LABEL[u.rol]}</p>
                   </div>
-                  <span className="badge-pin shrink-0">{STAFF_ROL_LABEL[u.rol]}</span>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span className="badge-pin">{STAFF_ROL_LABEL[u.rol]}</span>
+                    <EstadoUsuarioBadge activo={u.activo} />
+                  </div>
                 </div>
                 <p className="break-all font-mono text-xs text-ink-secondary">{u.password ?? "—"}</p>
                 {puedeEditarUsuarioStaff(actorRol, u.rol) ? (
@@ -243,11 +258,7 @@ export default function UsuariosPage() {
                     <span className="badge-pin">{STAFF_ROL_LABEL[u.rol]}</span>
                   </td>
                   <td>
-                    {u.activo ? (
-                      <span className="badge-muted">Activo</span>
-                    ) : (
-                      <span className="badge-muted opacity-60">Inactivo</span>
-                    )}
+                    <EstadoUsuarioBadge activo={u.activo} />
                   </td>
                   <td className="font-mono text-sm text-ink-secondary">{u.password ?? "—"}</td>
                   <td>
@@ -349,7 +360,7 @@ export default function UsuariosPage() {
                       disabled={editing?.id === session?.id || (editing ? !puedeEditarUsuarioStaff(actorRol, editing.rol) : false)}
                     >
                       {rolOptions
-                        .filter((rol) => puedeAsignarRolStaff(actorRol, rol))
+                        .filter((rol) => editing?.rol === rol || puedeAsignarRolStaff(actorRol, rol))
                         .map((rol) => (
                           <option key={rol} value={rol}>
                             {STAFF_ROL_LABEL[rol]}

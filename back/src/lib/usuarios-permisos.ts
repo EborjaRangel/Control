@@ -10,6 +10,8 @@ export const PANEL_USER_ROLES = [
   "PASE_LISTA",
 ] as const;
 
+export const ROLES_ASIGNABLES_NUEVOS = PANEL_USER_ROLES.filter((rol) => rol !== "ASISTENCIA");
+
 export type PanelUserRol = (typeof PANEL_USER_ROLES)[number];
 
 export function esRolPanel(rol: string): rol is PanelUserRol {
@@ -17,6 +19,7 @@ export function esRolPanel(rol: string): rol is PanelUserRol {
 }
 
 export function puedeAsignarRol(actorRol: RolUsuario | undefined, rolNuevo: PanelUserRol): boolean {
+  if (rolNuevo === "ASISTENCIA") return false;
   if (rolNuevo === "ADMIN" && !isAdminRol(actorRol)) return false;
   return true;
 }
@@ -30,7 +33,10 @@ export function puedeModificarUsuarioStaff(
   if (isCoordinadorRol(actorRol) && targetRol === "ADMIN") {
     return "Un coordinador no puede modificar administradores";
   }
-  if (cambios.rol && !puedeAsignarRol(actorRol, cambios.rol)) {
+  if (cambios.rol && cambios.rol !== targetRol && !puedeAsignarRol(actorRol, cambios.rol)) {
+    if (cambios.rol === "ASISTENCIA") {
+      return "El rol Captura de asistencia ya no está disponible";
+    }
     return "Solo un administrador puede asignar el rol de administrador";
   }
   if (

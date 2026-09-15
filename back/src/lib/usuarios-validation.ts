@@ -1,6 +1,6 @@
 import * as Yup from "yup";
 import { USERNAME_REGEX } from "./auth-validation.js";
-import { PANEL_USER_ROLES } from "./usuarios-permisos.js";
+import { PANEL_USER_ROLES, ROLES_ASIGNABLES_NUEVOS } from "./usuarios-permisos.js";
 
 export const staffUserCreateSchema = Yup.object({
   username: Yup.string()
@@ -14,7 +14,7 @@ export const staffUserCreateSchema = Yup.object({
       otherwise: (schema) => schema.min(6, "Mínimo 6 caracteres").required("La contraseña es obligatoria"),
     }),
   rol: Yup.string()
-    .oneOf([...PANEL_USER_ROLES], "Rol inválido")
+    .oneOf([...ROLES_ASIGNABLES_NUEVOS], "Rol inválido")
     .required("El rol es obligatorio"),
 });
 

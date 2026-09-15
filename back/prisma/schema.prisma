@@ -507,6 +507,7 @@ model Usuario {
   rg           ResponsableGeneral? @relation(fields: [rgId], references: [id], onDelete: Cascade)
   notificacionesRecibidas NotificacionDestinatario[]
   passwordResetTokens     PasswordResetToken[]
+  asistenciasRegistradas  RegistroAsistencia[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
@@ -633,11 +634,14 @@ model RegistroAsistencia {
   dirigenteId     String
   dirigente       Dirigente        @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
   registradoAt    DateTime         @default(now())
+  /// Usuario que tomó el pase de lista (cuenta PASE_LISTA u operador del panel)
   registradoPorId String?
+  registradoPor   Usuario?         @relation(fields: [registradoPorId], references: [id], onDelete: SetNull)
 
   @@unique([eventoId, dirigenteId])
   @@index([eventoId])
   @@index([dirigenteId])
+  @@index([registradoPorId])
 }
 
 /// Registro de convocatoria enviada a un dirigente (correo, SMS o WhatsApp)

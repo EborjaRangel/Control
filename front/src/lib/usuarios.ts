@@ -31,6 +31,7 @@ export function puedeAsignarRolStaff(
   actorRol: StaffRol | undefined,
   rolNuevo: StaffRol,
 ): boolean {
+  if (rolNuevo === "ASISTENCIA") return false;
   if (rolNuevo === "ADMIN" && actorRol !== "ADMIN") return false;
   return true;
 }

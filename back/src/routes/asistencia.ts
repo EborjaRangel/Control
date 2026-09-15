@@ -2,7 +2,7 @@ import { Router } from "express";
 import { ValidationError } from "yup";
 import { prisma } from "../lib/prisma.js";
 import { isAsistenciaRol, isConvocatoriaRol, requireAsistenciaOrStaff, requireAuth, requireEventosAsistenciaRead, requireStaff } from "../lib/auth.js";
-import { nombreCompleto } from "../lib/dirigentes.js";
+import { compararDirigentePorApellidosNombre, nombreCompleto } from "../lib/dirigentes.js";
 import {
   cuerpoRespuestaEscaneo,
   inhabilitarUsuariosPaseLista,
@@ -190,7 +190,7 @@ router.get("/eventos/:id/pase", requireAsistenciaOrStaff, async (req, res) => {
           seccionElectoral: true,
           codigoQr: true,
         },
-        orderBy: [{ primerApellido: "asc" }, { nombre: "asc" }],
+        orderBy: [{ primerApellido: "asc" }, { segundoApellido: "asc" }, { nombre: "asc" }],
       }),
       prisma.registroAsistencia.findMany({
         where: { eventoId: id },
@@ -206,27 +206,49 @@ router.get("/eventos/:id/pase", requireAsistenciaOrStaff, async (req, res) => {
               seccionElectoral: true,
             },
           },
+          registradoPor: {
+            select: { id: true, username: true, rol: true },
+          },
         },
-        orderBy: { registradoAt: "asc" },
+        orderBy: { registradoAt: "desc" },
       }),
     ]);
 
-    const asistioIds = new Set(registros.map((r) => r.dirigenteId));
+    const asistioPorDirigente = new Map(registros.map((r) => [r.dirigenteId, r]));
+    const listaOrdenada = [...elegibles].sort(compararDirigentePorApellidosNombre);
 
     res.json({
       evento: await enriquecerEvento(evento),
-      lista: elegibles.map((d) => ({
-        id: d.id,
-        nombreCompleto: nombreCompleto(d),
-        tipo: d.tipo,
-        colonia: d.colonia,
-        seccionElectoral: d.seccionElectoral,
-        codigoQr: d.codigoQr,
-        asistio: asistioIds.has(d.id),
-      })),
+      lista: listaOrdenada.map((d) => {
+        const registro = asistioPorDirigente.get(d.id);
+        return {
+          id: d.id,
+          nombreCompleto: nombreCompleto(d),
+          tipo: d.tipo,
+          colonia: d.colonia,
+          seccionElectoral: d.seccionElectoral,
+          codigoQr: d.codigoQr,
+          asistio: Boolean(registro),
+          registradoAt: registro?.registradoAt.toISOString() ?? null,
+          registradoPor: registro?.registradoPor
+            ? {
+                id: registro.registradoPor.id,
+                username: registro.registradoPor.username,
+                rol: registro.registradoPor.rol,
+              }
+            : null,
+        };
+      }),
       registros: registros.map((r) => ({
         id: r.id,
         registradoAt: r.registradoAt.toISOString(),
+        registradoPor: r.registradoPor
+          ? {
+              id: r.registradoPor.id,
+              username: r.registradoPor.username,
+              rol: r.registradoPor.rol,
+            }
+          : null,
         dirigente: {
           id: r.dirigente.id,
           nombreCompleto: nombreCompleto(r.dirigente),

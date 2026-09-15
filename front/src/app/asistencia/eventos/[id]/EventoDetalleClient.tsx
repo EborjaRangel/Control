@@ -9,6 +9,7 @@ import { EscanerQrAsistencia } from "@/components/EscanerQrAsistencia";
 import { RegistrarAsistenciaQrForm } from "@/components/RegistrarAsistenciaQrForm";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
+import { cn } from "@/lib/cn";
 import {
   ESTADO_EVENTO_LABEL,
   badgeEstadoEvento,
@@ -29,6 +30,7 @@ export default function EventoDetalleClient() {
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [mensajeOk, setMensajeOk] = useState(false);
   const [accionando, setAccionando] = useState(false);
+  const [pestana, setPestana] = useState<"pase" | "recientes">("pase");
 
   const load = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true);
@@ -320,79 +322,118 @@ export default function EventoDetalleClient() {
       ) : null}
 
       <section className="card-section space-y-4">
-        <h2 className="section-title">Pase de lista ({lista.length})</h2>
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Listas del evento">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={pestana === "pase"}
+            className={cn("btn-responsive", pestana === "pase" ? "btn-primary" : "btn-secondary")}
+            onClick={() => setPestana("pase")}
+          >
+            Pase de lista ({lista.length})
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={pestana === "recientes"}
+            className={cn("btn-responsive", pestana === "recientes" ? "btn-primary" : "btn-secondary")}
+            onClick={() => setPestana("recientes")}
+          >
+            Registros recientes ({registros.length})
+          </button>
+        </div>
 
-        <ul className="mobile-only-list">
-          {lista.map((d) => (
-            <li key={d.id} className="list-card">
-              <div className="list-card-header">
-                <div className="min-w-0">
-                  <p className="break-words font-bold text-ink">{d.nombreCompleto}</p>
-                  <p className="mt-1 text-xs text-ink-secondary">
-                    {d.tipo} · {d.colonia}
-                  </p>
-                </div>
-                {d.asistio ? (
-                  <span className="badge-pin shrink-0">Presente</span>
-                ) : (
-                  <span className="badge-muted shrink-0">
-                    {evento.estado === "CERRADO" ? "Falta" : "Pendiente"}
-                  </span>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+        {pestana === "pase" ? (
+          <>
+            <h2 className="section-title">Pase de lista</h2>
 
-        <div className="desktop-only-table">
-          <TableWrap>
-            <table className="w-full min-w-[520px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-line text-xs text-ink-secondary">
-                <th className="py-2 pr-3">Dirigente</th>
-                <th className="py-2 pr-3">Tipo</th>
-                <th className="py-2 pr-3">Colonia</th>
-                <th className="py-2">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
+            {lista.length === 0 ? (
+              <p className="text-sm text-ink-secondary">No hay dirigentes elegibles para este evento.</p>
+            ) : null}
+
+            <ul className="mobile-only-list">
               {lista.map((d) => (
-                <tr key={d.id} className="border-b border-line/60">
-                  <td className="py-2.5 pr-3 font-medium text-ink">{d.nombreCompleto}</td>
-                  <td className="py-2.5 pr-3 text-ink-secondary">{d.tipo}</td>
-                  <td className="py-2.5 pr-3 text-ink-secondary">{d.colonia}</td>
-                  <td className="py-2.5">
+                <li key={d.id} className="list-card">
+                  <div className="list-card-header">
+                    <div className="min-w-0">
+                      <p className="break-words font-bold text-ink">{d.nombreCompleto}</p>
+                      <p className="mt-1 text-xs text-ink-secondary">
+                        {d.tipo} · {d.colonia}
+                        {d.asistio && d.registradoPor
+                          ? ` · Pasó lista: ${d.registradoPor.username}`
+                          : ""}
+                      </p>
+                    </div>
                     {d.asistio ? (
-                      <span className="badge-pin">Presente</span>
+                      <span className="badge-pin shrink-0">Presente</span>
                     ) : (
-                      <span className="badge-muted">
+                      <span className="badge-muted shrink-0">
                         {evento.estado === "CERRADO" ? "Falta" : "Pendiente"}
                       </span>
                     )}
-                  </td>
-                </tr>
+                  </div>
+                </li>
               ))}
-            </tbody>
-          </table>
-          </TableWrap>
-        </div>
-      </section>
+            </ul>
 
-      {registros.length > 0 ? (
-        <section className="card-section space-y-3">
-          <h2 className="section-title">Registros recientes ({registros.length})</h2>
-          <ul className="space-y-2">
-            {registros.map((r) => (
-              <li key={r.id} className="panel-soft flex flex-wrap justify-between gap-2 text-sm">
-                <span className="font-medium text-ink">{r.dirigente.nombreCompleto}</span>
-                <span className="text-ink-secondary">
-                  {new Date(r.registradoAt).toLocaleString("es-MX")}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+            <div className="desktop-only-table">
+              <TableWrap>
+                <table className="w-full min-w-[640px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-line text-xs text-ink-secondary">
+                    <th className="py-2 pr-3">Dirigente</th>
+                    <th className="py-2 pr-3">Tipo</th>
+                    <th className="py-2 pr-3">Colonia</th>
+                    <th className="py-2 pr-3">Pasó lista</th>
+                    <th className="py-2">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lista.map((d) => (
+                    <tr key={d.id} className="border-b border-line/60">
+                      <td className="py-2.5 pr-3 font-medium text-ink">{d.nombreCompleto}</td>
+                      <td className="py-2.5 pr-3 text-ink-secondary">{d.tipo}</td>
+                      <td className="py-2.5 pr-3 text-ink-secondary">{d.colonia}</td>
+                      <td className="py-2.5 pr-3 text-ink-secondary">
+                        {d.asistio ? (d.registradoPor?.username ?? "—") : "—"}
+                      </td>
+                      <td className="py-2.5">
+                        {d.asistio ? (
+                          <span className="badge-pin">Presente</span>
+                        ) : (
+                          <span className="badge-muted">
+                            {evento.estado === "CERRADO" ? "Falta" : "Pendiente"}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </TableWrap>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="section-title">Registros recientes</h2>
+            {registros.length === 0 ? (
+              <p className="text-sm text-ink-secondary">Aún no hay registros en este evento.</p>
+            ) : (
+              <ul className="space-y-2">
+                {registros.map((r) => (
+                  <li key={r.id} className="panel-soft flex flex-wrap justify-between gap-2 text-sm">
+                    <span className="font-medium text-ink">{r.dirigente.nombreCompleto}</span>
+                    <span className="text-ink-secondary">
+                      {r.registradoPor ? `Pasó lista: ${r.registradoPor.username} · ` : ""}
+                      {new Date(r.registradoAt).toLocaleString("es-MX")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </section>
     </div>
   );
 }
