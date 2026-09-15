@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { ConvocatoriaEventoPanel } from "@/components/ConvocatoriaEventoPanel";
 import { EscanerQrAsistencia } from "@/components/EscanerQrAsistencia";
@@ -31,15 +31,19 @@ export default function EventoDetalleClient() {
   const [mensajeOk, setMensajeOk] = useState(false);
   const [accionando, setAccionando] = useState(false);
   const [pestana, setPestana] = useState<"pase" | "recientes">("pase");
+  const registrosPreviosRef = useRef(0);
 
   const load = useCallback(async (opts?: { silent?: boolean }) => {
-    if (!opts?.silent) setLoading(true);
-    setError(null);
+    if (!opts?.silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const res = await apiFetch(`/api/asistencia/eventos/${id}/pase`);
       if (!res.ok) throw new Error("No se pudo cargar el evento");
       setData((await res.json()) as PaseListaResponse);
     } catch (err) {
+      if (opts?.silent) return;
       setError(err instanceof Error ? err.message : "Error al cargar");
       setData(null);
     } finally {
@@ -50,6 +54,30 @@ export default function EventoDetalleClient() {
   useEffect(() => {
     if (canTakeAsistencia) void load();
   }, [canTakeAsistencia, load]);
+
+  useEffect(() => {
+    if (!canTakeAsistencia) return;
+    if (data?.evento.estado !== "ABIERTO") return;
+
+    const refrescar = () => {
+      if (document.visibilityState === "hidden") return;
+      void load({ silent: true });
+    };
+    const timer = window.setInterval(refrescar, 2000);
+    document.addEventListener("visibilitychange", refrescar);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refrescar);
+    };
+  }, [canTakeAsistencia, data?.evento.estado, data?.evento.id, load]);
+
+  useEffect(() => {
+    const total = data?.registros.length ?? 0;
+    if (total > registrosPreviosRef.current && registrosPreviosRef.current > 0) {
+      setPestana("recientes");
+    }
+    registrosPreviosRef.current = total;
+  }, [data?.registros.length]);
 
   useEffect(() => {
     if (!canTakeAsistencia) return;
@@ -126,6 +154,7 @@ export default function EventoDetalleClient() {
       setMensaje(texto);
       setMensajeOk(res.ok);
       if (!res.ok) throw new Error(texto);
+      setPestana("recientes");
       await load({ silent: true });
     },
     [id, load],
@@ -157,7 +186,8 @@ export default function EventoDetalleClient() {
     );
   }
 
-  const { evento, lista, registros } = data;
+  const { evento, lista, registros: registrosApi } = data;
+  const registros = [...registrosApi].sort((a, b) => b.registradoAt.localeCompare(a.registradoAt));
   const asistieron = lista.filter((d) => d.asistio).length;
   const faltas = evento.estado === "CERRADO" ? lista.length - asistieron : null;
 
