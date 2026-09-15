@@ -99,3 +99,12 @@ export function etiquetaCalificacion(calificacion: number | null) {
   if (calificacion == null) return "—";
   return `${calificacion} / 5`;
 }
+
+/** Más reciente arriba, más antigua abajo (fecha, hora y captura). */
+export function compararAsambleaRecientePrimero(a: AsambleaDTO, b: AsambleaDTO): number {
+  const claveA = `${a.fecha}T${a.hora}`;
+  const claveB = `${b.fecha}T${b.hora}`;
+  const porFechaHora = claveB.localeCompare(claveA);
+  if (porFechaHora !== 0) return porFechaHora;
+  return b.createdAt.localeCompare(a.createdAt);
+}

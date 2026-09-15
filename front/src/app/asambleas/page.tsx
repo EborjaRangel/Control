@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import {
+  compararAsambleaRecientePrimero,
   etiquetaCalificacion,
   formatAsambleaFecha,
   type AsambleaDTO,
@@ -28,7 +29,8 @@ export default function AsambleasAdminListPage() {
       if (buscar.trim()) params.set("buscar", buscar.trim());
       const res = await apiFetch(`/api/asambleas?${params.toString()}`);
       if (!res.ok) throw new Error("Error al cargar asambleas");
-      setAsambleas((await res.json()) as AsambleaDTO[]);
+      const data = (await res.json()) as AsambleaDTO[];
+      setAsambleas(data.slice().sort(compararAsambleaRecientePrimero));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
     } finally {

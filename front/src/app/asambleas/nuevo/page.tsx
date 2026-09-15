@@ -6,7 +6,10 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { AsambleaAdminForm } from "@/components/AsambleaAdminForm";
 import { apiFetch } from "@/lib/api";
-import { nombreCompleto } from "@/lib/dirigentes";
+import {
+  compararDirigentePorApellidosNombre,
+  etiquetaApellidosNombre,
+} from "@/lib/dirigentes";
 import type { DirigenteDTO } from "@/lib/types";
 import { EMPTY_ASAMBLEA_ADMIN, type AsambleaAdminFormValues } from "@/lib/validation-asambleas";
 
@@ -24,14 +27,14 @@ export default function NuevaAsambleaAdminPage() {
       router.replace("/");
       return;
     }
-    void apiFetch("/api/dirigentes?estatus=alta")
+    void apiFetch("/api/dirigentes?estatus=alta&orden=apellidos")
       .then(async (res) => {
         if (!res.ok) throw new Error("Error al cargar dirigentes");
         const data = (await res.json()) as DirigenteDTO[];
         setDirigentes(
-          data.map((d) => ({
+          [...data].sort(compararDirigentePorApellidosNombre).map((d) => ({
             id: d.id,
-            nombreCompleto: nombreCompleto(d),
+            nombreCompleto: etiquetaApellidosNombre(d),
             seccionElectoral: d.seccionElectoral,
             colonia: d.colonia,
           })),

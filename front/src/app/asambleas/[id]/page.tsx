@@ -5,29 +5,26 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { AsambleaAdminForm } from "@/components/AsambleaAdminForm";
-import { AsambleaForm } from "@/components/AsambleaForm";
 import { AsambleaSeccionMapPicker } from "@/components/AsambleaSeccionMapPicker";
 import { UploadImage } from "@/components/UploadImage";
 import { apiFetch } from "@/lib/api";
-import { isStaffRol } from "@/lib/auth";
 import {
   asambleaToAdminFormValues,
-  asambleaToFormValues,
   etiquetaCalificacion,
   formatAsambleaFecha,
   type AsambleaDTO,
 } from "@/lib/asambleas";
 import { canViewOwnDirigente } from "@/lib/mi-panel";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
-import type { AsambleaAdminFormValues, AsambleaFormValues } from "@/lib/validation-asambleas";
+import type { AsambleaAdminFormValues } from "@/lib/validation-asambleas";
 
 export default function AsambleaDetallePage() {
   const { id } = useParams<{ id: string }>();
-  const { isStaff, user } = useAuth();
+  const { isAdmin, isStaff, user } = useAuth();
   const [asamblea, setAsamblea] = useState<AsambleaDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editando, setEditando] = useState(false);
+  const [guardado, setGuardado] = useState(false);
 
   const canAccess =
     isStaff || (asamblea ? canViewOwnDirigente(user, asamblea.dirigenteId) : Boolean(user?.dirigenteId));
@@ -50,21 +47,8 @@ export default function AsambleaDetallePage() {
     void load();
   }, [load]);
 
-  async function handleSaveDirigente(values: AsambleaFormValues) {
-    const res = await apiFetch(`/api/asambleas/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string; detalles?: string[] };
-      throw new Error(data.detalles?.join(", ") ?? data.error ?? "Error al guardar");
-    }
-    setAsamblea((await res.json()) as AsambleaDTO);
-    setEditando(false);
-  }
-
   async function handleSaveAdmin(values: AsambleaAdminFormValues & { dirigenteId: string }) {
+    setGuardado(false);
     const res = await apiFetch(`/api/asambleas/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -75,7 +59,7 @@ export default function AsambleaDetallePage() {
       throw new Error(data.detalles?.join(", ") ?? data.error ?? "Error al guardar");
     }
     setAsamblea((await res.json()) as AsambleaDTO);
-    setEditando(false);
+    setGuardado(true);
   }
 
   if (loading) {
@@ -125,23 +109,17 @@ export default function AsambleaDetallePage() {
           </p>
         </div>
         <div className="page-actions">
-          {!editando ? (
-            <button
-              type="button"
-              className="btn-secondary btn-responsive"
-              onClick={() => setEditando(true)}
-            >
-              Editar
-            </button>
-          ) : null}
           <Link href={backHref} className="btn-ghost btn-responsive">
             Volver al listado
           </Link>
         </div>
       </div>
 
-      {editando ? (
-        isStaffRol(user?.rol) ? (
+      {isAdmin ? (
+        <>
+          {guardado ? (
+            <div className="alert-success">Cambios guardados.</div>
+          ) : null}
           <AsambleaAdminForm
             initialValues={asambleaToAdminFormValues(asamblea)}
             dirigentes={dirigenteOption}
@@ -149,20 +127,9 @@ export default function AsambleaDetallePage() {
             lockDirigente
             onSubmit={handleSaveAdmin}
             cancelHref={backHref}
-            onCancel={() => setEditando(false)}
             submitLabel="Guardar cambios"
           />
-        ) : (
-          <AsambleaForm
-            initialValues={asambleaToFormValues(asamblea)}
-            seccionElectoral={asamblea.seccionElectoral}
-            colonia={asamblea.dirigente?.colonia}
-            onSubmit={handleSaveDirigente}
-            cancelHref={backHref}
-            onCancel={() => setEditando(false)}
-            submitLabel="Guardar cambios"
-          />
-        )
+        </>
       ) : (
         <>
           {asamblea.descripcion ? (
@@ -225,7 +192,7 @@ export default function AsambleaDetallePage() {
 
           {asamblea.observacion ? (
             <section className="card-section space-y-4">
-              <h2 className="section-title">Observación del administrador</h2>
+              <h2 className="section-title">Comentarios de la coordinación</h2>
               <p className="rounded-pin border border-line bg-surface-muted p-4 text-sm text-ink">
                 {asamblea.observacion}
               </p>

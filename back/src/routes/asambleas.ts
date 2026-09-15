@@ -1,16 +1,14 @@
 import { Router } from "express";
 import { ValidationError } from "yup";
 import { prisma } from "../lib/prisma.js";
-import { isStaffRol, requireAuth, requireAdmin, requireStaff } from "../lib/auth.js";
+import { requireAuth, requireAdmin, requireStaff } from "../lib/auth.js";
 import { canAccessDirigentePanel } from "../lib/user-panel.js";
 import { puntoEnSeccionElectoral } from "../lib/colonias-seccion-geo.js";
 import { validarSeccionCapturaDirigente } from "../lib/dirigente-seccion-captura.js";
 import {
-  asambleaCreateSchema,
   asambleaAdminCreateSchema,
   asambleaAdminUpdateSchema,
   asambleaObservacionSchema,
-  asambleaUpdateSchema,
   MAX_FOTOS_ASAMBLEA,
 } from "../lib/validation-asambleas.js";
 import {
@@ -103,7 +101,7 @@ router.get("/", requireStaff, async (req, res) => {
         ...asambleaInclude,
         fotos: { orderBy: { orden: "asc" }, take: MAX_FOTOS_ASAMBLEA },
       },
-      orderBy: [{ fecha: "desc" }, { hora: "desc" }],
+      orderBy: [{ fecha: "desc" }, { hora: "desc" }, { createdAt: "desc" }],
       take: 500,
     });
 
@@ -148,23 +146,12 @@ router.get("/dirigentes/:dirigenteId", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requireAdmin, async (req, res) => {
   try {
-    const admin = isStaffRol(req.user?.rol);
-    const data = await (admin ? asambleaAdminCreateSchema : asambleaCreateSchema).validate(
-      req.body,
-      { abortEarly: false, stripUnknown: true },
-    );
-
-    if (!req.user || !(await canAccessDirigentePanel(req.user, data.dirigenteId))) {
-      res.status(403).json({ error: "No autorizado" });
-      return;
-    }
-
-    if (!isStaffRol(req.user.rol) && req.user.rol !== "DIRIGENTE") {
-      res.status(403).json({ error: "No autorizado" });
-      return;
-    }
+    const data = await asambleaAdminCreateSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
 
     const dirigente = await prisma.dirigente.findUnique({
       where: { id: data.dirigenteId },
@@ -191,12 +178,12 @@ router.post("/", async (req, res) => {
       return;
     }
 
-    const fotos = data.fotos.slice(0, MAX_FOTOS_ASAMBLEA);
+    const fotos = (data.fotos ?? []).slice(0, MAX_FOTOS_ASAMBLEA);
 
     const asamblea = await prisma.asamblea.create({
       data: {
         dirigenteId: data.dirigenteId,
-        ...datosAsambleaFromInput(data, admin),
+        ...datosAsambleaFromInput(data, true),
         fotos: {
           create: fotos.map((url, index) => ({ url, orden: index })),
         },
@@ -243,7 +230,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", requireAdmin, async (req, res) => {
   try {
     const id = paramId(req.params.id);
 
@@ -256,21 +243,10 @@ router.put("/:id", async (req, res) => {
       return;
     }
 
-    if (!req.user || !(await canAccessDirigentePanel(req.user, existing.dirigenteId))) {
-      res.status(403).json({ error: "No autorizado" });
-      return;
-    }
-
-    if (!isStaffRol(req.user.rol) && req.user.rol !== "DIRIGENTE") {
-      res.status(403).json({ error: "No autorizado" });
-      return;
-    }
-
-    const admin = isStaffRol(req.user.rol);
-    const data = await (admin ? asambleaAdminUpdateSchema : asambleaUpdateSchema).validate(
-      req.body,
-      { abortEarly: false, stripUnknown: true },
-    );
+    const data = await asambleaAdminUpdateSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
 
     if (existing.dirigente && existing.dirigente.activo) {
       const seccionError = validarSeccionCapturaDirigente(
@@ -290,14 +266,14 @@ router.put("/:id", async (req, res) => {
       return;
     }
 
-    const fotos = data.fotos.slice(0, MAX_FOTOS_ASAMBLEA);
+    const fotos = (data.fotos ?? []).slice(0, MAX_FOTOS_ASAMBLEA);
 
     const asamblea = await prisma.$transaction(async (tx) => {
       await tx.asambleaFoto.deleteMany({ where: { asambleaId: id } });
       return tx.asamblea.update({
         where: { id },
         data: {
-          ...datosAsambleaFromInput(data, admin),
+          ...datosAsambleaFromInput(data, true),
           fotos: {
             create: fotos.map((url, index) => ({ url, orden: index })),
           },

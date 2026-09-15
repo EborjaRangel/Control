@@ -97,7 +97,6 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
     if (pathname === `/servicios-urbanos/dirigentes/${dirigenteId}`) return true;
     if (pathname === `/servicios-urbanos/dirigentes/${dirigenteId}/nuevo`) return true;
     if (pathname === `/asambleas/dirigentes/${dirigenteId}`) return true;
-    if (pathname === `/asambleas/dirigentes/${dirigenteId}/nuevo`) return true;
     if (pathname === `/rc/por-dirigente/${dirigenteId}`) return true;
     if (pathname === `/rg/por-dirigente/${dirigenteId}`) return true;
     if (/^\/detectados\/[^/]+$/.test(pathname) && !pathname.startsWith("/detectados/dirigentes")) {
@@ -195,7 +194,6 @@ function panelOperadorNavItems(user: SessionUser): NavItem[] {
       shortLabel: "Asambleas",
       match: (p) =>
         p === `/asambleas/dirigentes/${d}` ||
-        p === `/asambleas/dirigentes/${d}/nuevo` ||
         (/^\/asambleas\/[^/]+$/.test(p) && !p.startsWith("/asambleas/dirigentes")),
     },
   ];

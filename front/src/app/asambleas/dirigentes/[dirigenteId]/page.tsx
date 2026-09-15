@@ -68,18 +68,12 @@ export default function DirigenteAsambleasPage() {
         <div>
           <h1 className="page-title">Mis Asambleas</h1>
           <p className="page-subtitle">
-            {d.nombreCompleto} ·{" "}
+            Consulta de asambleas registradas · {d.nombreCompleto} ·{" "}
             {TIPO_DIRIGENTE_LABEL[d.tipo as keyof typeof TIPO_DIRIGENTE_LABEL] ?? d.tipo} ·{" "}
             {etiquetaSeccion(d.seccionElectoral)}
           </p>
         </div>
         <div className="page-actions">
-          <Link
-            href={`/asambleas/dirigentes/${dirigenteId}/nuevo`}
-            className="btn-primary btn-responsive"
-          >
-            + Registrar asamblea
-          </Link>
           {isStaff ? (
             <Link href="/" className="btn-ghost btn-responsive">
               Volver

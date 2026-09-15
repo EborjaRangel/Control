@@ -41,9 +41,14 @@ export function AsambleaAdminForm({
   lockDirigente = false,
 }: Props) {
   const [apiError, setApiError] = useState<string | null>(null);
-  const [dirigenteId, setDirigenteId] = useState(dirigenteIdProp ?? dirigentes[0]?.id ?? "");
+  const dirigentesOrdenados = [...dirigentes].sort((a, b) =>
+    a.nombreCompleto.localeCompare(b.nombreCompleto, "es", { sensitivity: "base" }),
+  );
+  const [dirigenteId, setDirigenteId] = useState(
+    dirigenteIdProp ?? dirigentesOrdenados[0]?.id ?? "",
+  );
 
-  const dirigente = dirigentes.find((d) => d.id === dirigenteId) ?? dirigentes[0];
+  const dirigente = dirigentesOrdenados.find((d) => d.id === dirigenteId) ?? dirigentesOrdenados[0];
   const seccionElectoral = dirigente?.seccionElectoral ?? initialValues.seccionElectoral;
 
   return (
@@ -89,7 +94,7 @@ export function AsambleaAdminForm({
                     onChange={(e) => setDirigenteId(e.target.value)}
                   >
                     <option value="">Selecciona dirigente</option>
-                    {dirigentes.map((d) => (
+                    {dirigentesOrdenados.map((d) => (
                       <option key={d.id} value={d.id}>
                         {d.nombreCompleto} · Sección {d.seccionElectoral}
                       </option>
@@ -121,14 +126,13 @@ export function AsambleaAdminForm({
                   min={0}
                 />
                 <FormSelect label="Calificación (1 a 5)" name="calificacion">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <option key={n} value={n}>
-                      {n} — {n === 1 ? "Muy baja" : n === 5 ? "Excelente" : ""}
-                    </option>
-                  ))}
+                  <option value={1}>1 — Muy baja</option>
+                  <option value={2}>2 — Baja</option>
+                  <option value={3}>3 — Regular</option>
+                  <option value={4}>4 — Buena</option>
+                  <option value={5}>5 — Excelente</option>
                 </FormSelect>
               </div>
-              <FormTextarea label="Observación del administrador" name="observacion" rows={3} />
             </section>
 
             <section className="card-section space-y-4">
@@ -156,6 +160,9 @@ export function AsambleaAdminForm({
                   {fotos.length}/{MAX_FOTOS_ASAMBLEA}
                 </span>
               </div>
+              <p className="text-sm text-ink-secondary">
+                Puedes agregar más fotografías o reemplazar las existentes (máximo {MAX_FOTOS_ASAMBLEA}).
+              </p>
               <div className="grid gap-6 sm:grid-cols-2">
                 {fotos.map((url, index) => (
                   <ImageUploadStandalone
@@ -187,6 +194,14 @@ export function AsambleaAdminForm({
                   {typeof errors.fotos === "string" ? errors.fotos : "Revisa las fotografías"}
                 </p>
               ) : null}
+            </section>
+
+            <section className="card-section space-y-4">
+              <h2 className="section-title">Comentarios de la coordinación</h2>
+              <p className="text-sm text-ink-secondary">
+                Captura al final las observaciones o comentarios de la coordinación sobre esta asamblea.
+              </p>
+              <FormTextarea label="Comentarios" name="observacion" rows={4} />
             </section>
 
             {apiError ? <div className="alert-error">{apiError}</div> : null}
