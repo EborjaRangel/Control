@@ -151,6 +151,10 @@ export function isAsistenciaRol(rol: RolUsuario | undefined) {
   return rol === "ASISTENCIA";
 }
 
+export function isPaseListaRol(rol: RolUsuario | undefined) {
+  return rol === "PASE_LISTA";
+}
+
 export function isConvocatoriaRol(rol: RolUsuario | undefined) {
   return rol === "CONVOCATORIA";
 }

@@ -5,6 +5,7 @@ import { isAsistenciaRol, isConvocatoriaRol, requireAsistenciaOrStaff, requireAu
 import { nombreCompleto } from "../lib/dirigentes.js";
 import {
   cuerpoRespuestaEscaneo,
+  inhabilitarUsuariosPaseLista,
   procesarEscaneoAsistencia,
   rawCodigoDesdeEscaneo,
 } from "../lib/escanear-asistencia.js";
@@ -309,6 +310,8 @@ router.post("/eventos/:id/cerrar", requireStaff, async (req, res) => {
         _count: { select: { asistencias: true } },
       },
     });
+
+    await inhabilitarUsuariosPaseLista();
 
     await registrarAuditoria(req, {
       accion: "STATE_CHANGE",

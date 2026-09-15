@@ -58,7 +58,7 @@ export const credencialesUpdateSchema = Yup.object({
 export type SessionUser = {
   id: string;
   username: string;
-  rol: "ADMIN" | "COORDINADOR" | "SUPERVISOR" | "ASISTENCIA" | "CONVOCATORIA" | "DIRIGENTE" | "DETECTADO" | "RC" | "RG";
+  rol: "ADMIN" | "COORDINADOR" | "SUPERVISOR" | "ASISTENCIA" | "CONVOCATORIA" | "PASE_LISTA" | "DIRIGENTE" | "DETECTADO" | "RC" | "RG";
   /** Dirigente vinculado (propio o vía RC/RG). */
   dirigenteId: string | null;
   /** RC vinculado (propio o del dirigente). */

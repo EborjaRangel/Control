@@ -29,8 +29,14 @@ const createSchema = Yup.object({
     .trim()
     .matches(USERNAME_REGEX, "Usuario: 3–32 caracteres (letras, números, . _ -)")
     .required("El usuario es obligatorio"),
-  password: Yup.string().min(6, "Mínimo 6 caracteres").required("La contraseña es obligatoria"),
-  rol: Yup.string().oneOf(["ADMIN", "COORDINADOR", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA"]).required(),
+  password: Yup.string().when("rol", {
+    is: "PASE_LISTA",
+    then: (schema) => schema.min(3, "Mínimo 3 caracteres").required("La contraseña es el código del pase de lista"),
+    otherwise: (schema) => schema.min(6, "Mínimo 6 caracteres").required("La contraseña es obligatoria"),
+  }),
+  rol: Yup.string()
+    .oneOf(["ADMIN", "COORDINADOR", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA", "PASE_LISTA"])
+    .required(),
 });
 
 const editSchema = Yup.object({
@@ -40,9 +46,14 @@ const editSchema = Yup.object({
     .required("El usuario es obligatorio"),
   password: Yup.string()
     .transform((v) => (v === "" || v == null ? undefined : v))
-    .min(6, "Mínimo 6 caracteres")
-    .optional(),
-  rol: Yup.string().oneOf(["ADMIN", "COORDINADOR", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA"]).required(),
+    .when("rol", {
+      is: "PASE_LISTA",
+      then: (schema) => schema.min(3, "Mínimo 3 caracteres").optional(),
+      otherwise: (schema) => schema.min(6, "Mínimo 6 caracteres").optional(),
+    }),
+  rol: Yup.string()
+    .oneOf(["ADMIN", "COORDINADOR", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA", "PASE_LISTA"])
+    .required(),
   activo: Yup.boolean().required(),
 });
 
@@ -137,7 +148,14 @@ export default function UsuariosPage() {
 
   const actorRol = session?.rol as StaffRol | undefined;
 
-  const rolOptions: StaffRol[] = ["SUPERVISOR", "ASISTENCIA", "CONVOCATORIA", "COORDINADOR", "ADMIN"];
+  const rolOptions: StaffRol[] = [
+    "SUPERVISOR",
+    "ASISTENCIA",
+    "PASE_LISTA",
+    "CONVOCATORIA",
+    "COORDINADOR",
+    "ADMIN",
+  ];
 
   const initialValues: FormValues = editing
     ? {
@@ -264,7 +282,7 @@ export default function UsuariosPage() {
             <p className="mt-1 text-sm text-ink-secondary">
               {editing
                 ? "Actualiza credenciales o estado. Deja la contraseña vacía para no cambiarla."
-                : "Crea una cuenta de administrador, supervisor o rol operativo limitado."}
+                : "Crea una cuenta de administrador, supervisor, pase de lista o rol operativo limitado."}
             </p>
 
             <Formik
@@ -287,7 +305,11 @@ export default function UsuariosPage() {
 
                   <div>
                     <label className="label" htmlFor="password">
-                      Contraseña{editing ? " (opcional)" : ""}
+                      {values.rol === "PASE_LISTA"
+                        ? editing
+                          ? "Código de pase de lista (opcional)"
+                          : "Código de pase de lista"
+                        : `Contraseña${editing ? " (opcional)" : ""}`}
                     </label>
                     <Field
                       id="password"
@@ -295,8 +317,21 @@ export default function UsuariosPage() {
                       type="text"
                       className="input"
                       autoComplete="new-password"
-                      placeholder={editing ? "Sin cambios" : "Mínimo 6 caracteres"}
+                      placeholder={
+                        values.rol === "PASE_LISTA"
+                          ? editing
+                            ? "Sin cambios"
+                            : "Código del pase de lista"
+                          : editing
+                            ? "Sin cambios"
+                            : "Mínimo 6 caracteres"
+                      }
                     />
+                    {values.rol === "PASE_LISTA" ? (
+                      <p className="mt-1 text-xs text-ink-secondary">
+                        Este código se pide en el teléfono al pasar lista. Al cerrar el evento, estas cuentas quedan inhabilitadas.
+                      </p>
+                    ) : null}
                     {errors.password && touched.password ? (
                       <p className="field-error">{errors.password}</p>
                     ) : null}

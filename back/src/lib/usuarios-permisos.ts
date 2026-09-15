@@ -7,6 +7,7 @@ export const PANEL_USER_ROLES = [
   "SUPERVISOR",
   "ASISTENCIA",
   "CONVOCATORIA",
+  "PASE_LISTA",
 ] as const;
 
 export type PanelUserRol = (typeof PANEL_USER_ROLES)[number];

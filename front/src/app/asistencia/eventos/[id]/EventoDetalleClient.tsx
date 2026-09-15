@@ -80,7 +80,13 @@ export default function EventoDetalleClient() {
   }
 
   async function cerrarPase() {
-    if (!confirm("¿Cerrar el pase de lista? Ya no se podrán registrar más asistencias.")) return;
+    if (
+      !confirm(
+        "¿Cerrar el pase de lista? Ya no se podrán registrar más asistencias y los usuarios de pase de lista quedarán inhabilitados.",
+      )
+    ) {
+      return;
+    }
     setAccionando(true);
     setMensaje(null);
     setMensajeOk(false);
@@ -88,7 +94,7 @@ export default function EventoDetalleClient() {
       const res = await apiFetch(`/api/asistencia/eventos/${id}/cerrar`, { method: "POST" });
       const body = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(body.error ?? "No se pudo cerrar");
-      setMensaje("Pase de lista cerrado.");
+      setMensaje("Pase de lista cerrado. Los usuarios de pase de lista quedaron inhabilitados.");
       setMensajeOk(true);
       await load({ silent: true });
     } catch (err) {

@@ -67,6 +67,19 @@ router.post("/login", async (req, res) => {
       rgId: usuario.rgId,
     };
 
+    if (usuario.rol === "PASE_LISTA") {
+      await auditarInicioSesion(req, {
+        exito: false,
+        username: usuario.username,
+        usuarioId: usuario.id,
+        rol: usuario.rol,
+        motivo: "rol_pase_lista_sin_acceso",
+        usuario: authUser,
+      });
+      res.status(403).json({ error: "Esta cuenta solo se usa como código de pase de lista" });
+      return;
+    }
+
     if (usuario.rol === "DETECTADO") {
       await auditarInicioSesion(req, {
         exito: false,

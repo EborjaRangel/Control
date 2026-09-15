@@ -1,4 +1,4 @@
-export type StaffRol = "ADMIN" | "COORDINADOR" | "SUPERVISOR" | "ASISTENCIA" | "CONVOCATORIA";
+export type StaffRol = "ADMIN" | "COORDINADOR" | "SUPERVISOR" | "ASISTENCIA" | "CONVOCATORIA" | "PASE_LISTA";
 
 export type StaffUserDTO = {
   id: string;
@@ -16,6 +16,7 @@ export const STAFF_ROL_LABEL: Record<StaffRol, string> = {
   SUPERVISOR: "Supervisor",
   ASISTENCIA: "Captura de asistencia",
   CONVOCATORIA: "Convocatorias",
+  PASE_LISTA: "Pase de lista",
 };
 
 export function puedeEditarUsuarioStaff(

@@ -78,7 +78,7 @@ import {
   modoEstatusListadoDirigentes,
 } from "../lib/filtro-dirigentes.js";
 import { generarCodigoQr } from "../lib/codigo-qr.js";
-import { manejarEscaneoHttp } from "../lib/escanear-asistencia.js";
+import { manejarEscaneoHttp, manejarEstadoPaseHttp } from "../lib/escanear-asistencia.js";
 import { nominaCreateData, nominaInclude } from "../lib/nomina-db.js";
 import { recalcularResumenGlobalNomina } from "../lib/nomina-resumen.js";
 import { normalizarDirigenteParaGuardado } from "../lib/normalizar-dirigente.js";
@@ -237,6 +237,7 @@ function serializeDirigenteForUser(
 router.use("/auth", authRouter);
 
 /** Lectura de QR desde la cámara de cualquier teléfono, sin iniciar sesión. */
+router.get("/asistencia/pase-estado", manejarEstadoPaseHttp);
 router.post("/asistencia/escanear", manejarEscaneoHttp);
 
 router.use(requireAuth);
