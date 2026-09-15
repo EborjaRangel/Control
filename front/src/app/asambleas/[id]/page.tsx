@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { AsambleaAdminForm } from "@/components/AsambleaAdminForm";
@@ -20,6 +20,7 @@ import type { AsambleaAdminFormValues } from "@/lib/validation-asambleas";
 
 export default function AsambleaDetallePage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { isAdmin, isStaff, user } = useAuth();
   const [asamblea, setAsamblea] = useState<AsambleaDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +47,14 @@ export default function AsambleaDetallePage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!guardado) return;
+    const timer = window.setTimeout(() => {
+      router.push("/asambleas");
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [guardado, router]);
 
   async function handleSaveAdmin(values: AsambleaAdminFormValues & { dirigenteId: string }) {
     setGuardado(false);
@@ -116,20 +125,16 @@ export default function AsambleaDetallePage() {
       </div>
 
       {isAdmin ? (
-        <>
-          {guardado ? (
-            <div className="alert-success">Cambios guardados.</div>
-          ) : null}
-          <AsambleaAdminForm
-            initialValues={asambleaToAdminFormValues(asamblea)}
-            dirigentes={dirigenteOption}
-            dirigenteId={asamblea.dirigenteId}
-            lockDirigente
-            onSubmit={handleSaveAdmin}
-            cancelHref={backHref}
-            submitLabel="Guardar cambios"
-          />
-        </>
+        <AsambleaAdminForm
+          initialValues={asambleaToAdminFormValues(asamblea)}
+          dirigentes={dirigenteOption}
+          dirigenteId={asamblea.dirigenteId}
+          lockDirigente
+          onSubmit={handleSaveAdmin}
+          cancelHref={backHref}
+          submitLabel="Guardar cambios"
+          successMessage={guardado ? "Cambios guardados." : null}
+        />
       ) : (
         <>
           {asamblea.descripcion ? (

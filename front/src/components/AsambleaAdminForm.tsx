@@ -28,6 +28,7 @@ type Props = {
   onCancel?: () => void;
   submitLabel?: string;
   lockDirigente?: boolean;
+  successMessage?: string | null;
 };
 
 export function AsambleaAdminForm({
@@ -39,6 +40,7 @@ export function AsambleaAdminForm({
   onCancel,
   submitLabel = "Guardar asamblea",
   lockDirigente = false,
+  successMessage = null,
 }: Props) {
   const [apiError, setApiError] = useState<string | null>(null);
   const dirigentesOrdenados = [...dirigentes].sort((a, b) =>
@@ -206,19 +208,22 @@ export function AsambleaAdminForm({
 
             {apiError ? <div className="alert-error">{apiError}</div> : null}
 
-            <div className="divider flex flex-wrap justify-end gap-3 pt-2">
-              {onCancel ? (
-                <button type="button" className="btn-ghost btn-responsive" onClick={onCancel}>
-                  Cancelar
+            <div className="divider space-y-3 pt-2">
+              <div className="flex flex-wrap justify-end gap-3">
+                {onCancel ? (
+                  <button type="button" className="btn-ghost btn-responsive" onClick={onCancel}>
+                    Cancelar
+                  </button>
+                ) : (
+                  <Link href={cancelHref} className="btn-ghost btn-responsive">
+                    Cancelar
+                  </Link>
+                )}
+                <button type="submit" className="btn-primary btn-responsive" disabled={isSubmitting}>
+                  {isSubmitting ? "Guardando…" : submitLabel}
                 </button>
-              ) : (
-                <Link href={cancelHref} className="btn-ghost btn-responsive">
-                  Cancelar
-                </Link>
-              )}
-              <button type="submit" className="btn-primary btn-responsive" disabled={isSubmitting}>
-                {isSubmitting ? "Guardando…" : submitLabel}
-              </button>
+              </div>
+              {successMessage ? <div className="alert-success">{successMessage}</div> : null}
             </div>
           </Form>
         );
