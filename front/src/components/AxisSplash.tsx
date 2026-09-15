@@ -8,8 +8,12 @@ const STORAGE_KEY = "axis-intro-played";
 const HOLD_MS = 4200;
 const FADE_MS = 800;
 
+type Props = {
+  accent?: "blue" | "green";
+};
+
 /** Intro cinematográfica de marca al entrar al sitio (una vez por sesión). */
-export function AxisSplash() {
+export function AxisSplash({ accent = "blue" }: Props) {
   const [visible, setVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
@@ -51,7 +55,7 @@ export function AxisSplash() {
     >
       <div className="axis-splash-glow" />
       <div className="axis-splash-glow axis-splash-glow--alt" />
-      <AxisAnimatedMark variant="stacked" mode="splash" theme="dark" size={300} />
+      <AxisAnimatedMark variant="stacked" mode="splash" theme="dark" accent={accent} size={300} />
     </div>
   );
 }

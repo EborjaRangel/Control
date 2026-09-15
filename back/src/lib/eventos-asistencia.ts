@@ -171,7 +171,7 @@ export async function enriquecerEvento(evento: EventoConRelaciones) {
 }
 
 export async function resumenAsistenciaDirigentes() {
-  const [dirigentes, eventosCerrados, registros] = await Promise.all([
+  const [dirigentes, eventosContables, registros] = await Promise.all([
     prisma.dirigente.findMany({
       where: { activo: true },
       select: {
@@ -189,10 +189,10 @@ export async function resumenAsistenciaDirigentes() {
       orderBy: [{ primerApellido: "asc" }, { nombre: "asc" }],
     }),
     prisma.eventoAsistencia.findMany({
-      where: { estado: "CERRADO" },
+      where: { estado: { in: ["ABIERTO", "CERRADO"] } },
     }),
     prisma.registroAsistencia.findMany({
-      where: { evento: { estado: "CERRADO" } },
+      where: { evento: { estado: { in: ["ABIERTO", "CERRADO"] } } },
       select: { eventoId: true, dirigenteId: true },
     }),
   ]);
@@ -210,7 +210,7 @@ export async function resumenAsistenciaDirigentes() {
     let asistencias = 0;
     const asistidos = asistenciaPorDirigente.get(d.id) ?? new Set<string>();
 
-    for (const ev of eventosCerrados) {
+    for (const ev of eventosContables) {
       if (!dirigenteEsElegible(d, ev)) continue;
       eventosElegibles++;
       if (asistidos.has(ev.id)) asistencias++;
@@ -237,7 +237,7 @@ export async function detalleAsistenciaDirigente(dirigenteId: string) {
   if (!dirigente) return null;
 
   const eventos = await prisma.eventoAsistencia.findMany({
-    where: { estado: "CERRADO" },
+    where: { estado: { in: ["ABIERTO", "CERRADO"] } },
     orderBy: [{ fecha: "desc" }, { hora: "desc" }],
     include: {
       unidadTerritorial: true,
@@ -246,7 +246,7 @@ export async function detalleAsistenciaDirigente(dirigenteId: string) {
   });
 
   const registros = await prisma.registroAsistencia.findMany({
-    where: { dirigenteId, evento: { estado: "CERRADO" } },
+    where: { dirigenteId, evento: { estado: { in: ["ABIERTO", "CERRADO"] } } },
     select: { eventoId: true, registradoAt: true },
   });
   const registroMap = new Map(registros.map((r) => [r.eventoId, r.registradoAt]));

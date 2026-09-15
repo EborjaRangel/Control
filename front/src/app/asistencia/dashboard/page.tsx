@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import { TableWrap } from "@/components/TableWrap";
@@ -15,17 +15,41 @@ export default function AsistenciaDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [buscar, setBuscar] = useState("");
 
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!isStaff) return;
+    if (!opts?.silent) {
+      setLoading(true);
+      setError(null);
+    }
+    try {
+      const res = await apiFetch("/api/asistencia/dashboard/dirigentes");
+      if (!res.ok) throw new Error("No se pudo cargar el dashboard");
+      setDirigentes((await res.json()) as DirigenteAsistenciaResumen[]);
+    } catch (err) {
+      if (opts?.silent) return;
+      setError(err instanceof Error ? err.message : "Error");
+    } finally {
+      if (!opts?.silent) setLoading(false);
+    }
+  }, [isStaff]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
   useEffect(() => {
     if (!isStaff) return;
-    void apiFetch("/api/asistencia/dashboard/dirigentes")
-      .then(async (res) => {
-        if (!res.ok) throw new Error("No se pudo cargar el dashboard");
-        return (await res.json()) as DirigenteAsistenciaResumen[];
-      })
-      .then(setDirigentes)
-      .catch((err) => setError(err instanceof Error ? err.message : "Error"))
-      .finally(() => setLoading(false));
-  }, [isStaff]);
+    const refrescar = () => {
+      if (document.visibilityState === "hidden") return;
+      void load({ silent: true });
+    };
+    const timer = window.setInterval(refrescar, 2000);
+    document.addEventListener("visibilitychange", refrescar);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refrescar);
+    };
+  }, [isStaff, load]);
 
   const filtrados = useMemo(() => {
     const q = buscar.trim().toLowerCase();
@@ -59,7 +83,7 @@ export default function AsistenciaDashboardPage() {
         <div>
           <h1 className="page-title">Dashboard de asistencia</h1>
           <p className="page-subtitle">
-            Asistencias y faltas por dirigente en eventos cerrados (según colonia, sección o UT).
+            Asistencias y faltas por dirigente. Si hay un pase abierto, los números se actualizan al registrar cada QR.
           </p>
         </div>
         <div className="page-actions">

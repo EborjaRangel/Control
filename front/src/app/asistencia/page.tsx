@@ -33,24 +33,41 @@ export default function AsistenciaPage() {
   const [accionandoId, setAccionandoId] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
     if (!canTakeAsistencia) return;
-    setLoading(true);
-    setError(null);
+    if (!opts?.silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const res = await apiFetch(urlEventos(isAsistencia ? "activos" : filtro));
       if (!res.ok) throw new Error("No se pudieron cargar los eventos");
       setEventos((await res.json()) as EventoAsistenciaDTO[]);
     } catch (err) {
+      if (opts?.silent) return;
       setError(err instanceof Error ? err.message : "Error");
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }, [canTakeAsistencia, filtro, isAsistencia]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!canTakeAsistencia) return;
+    const refrescar = () => {
+      if (document.visibilityState === "hidden") return;
+      void load({ silent: true });
+    };
+    const timer = window.setInterval(refrescar, 2000);
+    document.addEventListener("visibilitychange", refrescar);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refrescar);
+    };
+  }, [canTakeAsistencia, load]);
 
   async function abrirPase(eventoId: string) {
     setAccionandoId(eventoId);

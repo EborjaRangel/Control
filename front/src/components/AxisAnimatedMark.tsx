@@ -8,6 +8,8 @@ type Props = {
   variant?: "full" | "icon" | "stacked";
   mode?: "intro" | "idle" | "splash";
   theme?: "light" | "dark";
+  /** Paleta del wordmark AXIS. El login usa azul; el pase de lista usa verde. */
+  accent?: "blue" | "green";
   title?: string;
   size?: number;
 };
@@ -18,6 +20,7 @@ export function AxisAnimatedMark({
   variant = "full",
   mode = "idle",
   theme = "light",
+  accent = "blue",
   title = "AXIS",
   size = 168,
 }: Props) {
@@ -72,9 +75,19 @@ export function AxisAnimatedMark({
           <stop offset="100%" stopColor="#0055a4" />
         </linearGradient>
         <linearGradient id={`axis-word-${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={theme === "dark" ? "#f4fbff" : "#3d9be8"} />
-          <stop offset="55%" stopColor={theme === "dark" ? "#8fd4ff" : "#0055a4"} />
-          <stop offset="100%" stopColor={theme === "dark" ? "#4aa3e8" : "#003366"} />
+          {accent === "green" ? (
+            <>
+              <stop offset="0%" stopColor={theme === "dark" ? "#c8e6c9" : "#81c784"} />
+              <stop offset="55%" stopColor={theme === "dark" ? "#66bb6a" : "#2e7d32"} />
+              <stop offset="100%" stopColor={theme === "dark" ? "#2e7d32" : "#1b5e20"} />
+            </>
+          ) : (
+            <>
+              <stop offset="0%" stopColor={theme === "dark" ? "#f4fbff" : "#3d9be8"} />
+              <stop offset="55%" stopColor={theme === "dark" ? "#8fd4ff" : "#0055a4"} />
+              <stop offset="100%" stopColor={theme === "dark" ? "#4aa3e8" : "#003366"} />
+            </>
+          )}
         </linearGradient>
         <radialGradient id={`axis-sphere-${uid}`} cx="32%" cy="28%" r="70%">
           <stop offset="0%" stopColor="#f7fcff" />

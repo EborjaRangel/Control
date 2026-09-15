@@ -11,6 +11,8 @@ type Props = {
   variant?: "full" | "icon";
   /** intro en login, idle en navbar y estados ya montados. */
   mode?: "intro" | "idle";
+  /** Wordmark AXIS: azul en login, verde en pase de lista. */
+  accent?: "blue" | "green";
 };
 
 /** Marca AXIS. */
@@ -21,6 +23,7 @@ export function AxisLogo({
   badge = false,
   variant = "full",
   mode,
+  accent = "blue",
 }: Props) {
   const resolvedMode = mode ?? (variant === "full" ? "intro" : "idle");
   const markSize = variant === "icon" ? size : Math.round(size * 1.45);
@@ -38,6 +41,7 @@ export function AxisLogo({
         variant={variant}
         mode={resolvedMode}
         theme="light"
+        accent={accent}
         title={title}
         size={markSize}
       />

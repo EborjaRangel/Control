@@ -337,6 +337,10 @@
     @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 bg-pin text-white hover:bg-pin-hover active:bg-pin-dark;
   }
 
+  .btn-pase {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 bg-[#2e7d32] text-white hover:bg-[#1b5e20] active:bg-[#145218];
+  }
+
   .btn-notif {
     @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 bg-notif text-white hover:bg-notif-hover active:bg-notif-hover;
   }

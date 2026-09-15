@@ -138,7 +138,7 @@ export default function RegistrarAsistenciaClient() {
     <div className="mx-auto flex w-full max-w-md flex-col justify-center py-6 sm:py-12">
       <div className="card space-y-6 p-5 sm:p-8">
         <div className="space-y-3 text-center">
-          <AxisLogo size={160} badge mode="idle" className="mx-auto" />
+          <AxisLogo size={160} badge mode="idle" accent="green" className="mx-auto" />
           <h1 className="page-title">Pase de lista</h1>
           {eventoTitulo ? <p className="text-base font-semibold text-ink">{eventoTitulo}</p> : null}
           {visual === "formulario" ? (
@@ -170,7 +170,7 @@ export default function RegistrarAsistenciaClient() {
               />
             </label>
 
-            <button type="submit" className="btn-primary btn-responsive w-full" disabled={enviando}>
+            <button type="submit" className="btn-pase btn-responsive w-full" disabled={enviando}>
               {enviando ? "Registrando…" : "Pasar lista"}
             </button>
           </form>
