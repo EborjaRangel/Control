@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { CalificacionEstrellas } from "@/components/CalificacionEstrellas";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import { formatAsambleaFecha, type DirigenteAsambleasPanelDTO } from "@/lib/asambleas";
@@ -121,6 +122,7 @@ export default function DirigenteAsambleasPage() {
                   <th>Lugar</th>
                   <th>Convocados</th>
                   <th>Real</th>
+                  <th>Calificación</th>
                   <th />
                 </tr>
               </thead>
@@ -131,6 +133,9 @@ export default function DirigenteAsambleasPage() {
                     <td className="max-w-xs truncate">{a.lugar}</td>
                     <td>{a.cantidadConvocada}</td>
                     <td>{a.cantidadReal}</td>
+                    <td>
+                      <CalificacionEstrellas value={a.calificacion} readOnly size="sm" />
+                    </td>
                     <td className="text-right">
                       <Link href={`/asambleas/${a.id}`} className="btn-ghost btn-sm">
                         Ver detalle

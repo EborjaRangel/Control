@@ -6,11 +6,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { AsambleaAdminForm } from "@/components/AsambleaAdminForm";
 import { AsambleaSeccionMapPicker } from "@/components/AsambleaSeccionMapPicker";
+import { CalificacionEstrellas } from "@/components/CalificacionEstrellas";
 import { UploadImage } from "@/components/UploadImage";
 import { apiFetch } from "@/lib/api";
 import {
   asambleaToAdminFormValues,
-  etiquetaCalificacion,
   formatAsambleaFecha,
   type AsambleaDTO,
 } from "@/lib/asambleas";
@@ -153,8 +153,8 @@ export default function AsambleaDetallePage() {
               <p className="text-2xl font-bold text-pin">{asamblea.cantidadReal}</p>
               <p className="text-xs text-ink-secondary">Personas que asistieron</p>
             </div>
-            <div className="card text-center">
-              <p className="text-2xl font-bold text-ink">{etiquetaCalificacion(asamblea.calificacion)}</p>
+            <div className="card flex flex-col items-center justify-center gap-1 py-4 text-center">
+              <CalificacionEstrellas value={asamblea.calificacion} readOnly size="lg" />
               <p className="text-xs text-ink-secondary">Calificación</p>
             </div>
             <div className="card text-center sm:col-span-2">

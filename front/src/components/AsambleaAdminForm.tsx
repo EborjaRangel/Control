@@ -4,7 +4,8 @@ import { Form, Formik } from "formik";
 import Link from "next/link";
 import { useState } from "react";
 import { AsambleaSeccionMapPicker } from "@/components/AsambleaSeccionMapPicker";
-import { FormField, FormSelect, FormTextarea } from "@/components/FormField";
+import { CalificacionEstrellas } from "@/components/CalificacionEstrellas";
+import { FormField, FormTextarea } from "@/components/FormField";
 import { ImageUploadStandalone } from "@/components/ImageUploadStandalone";
 import {
   asambleaAdminSchema,
@@ -127,13 +128,22 @@ export function AsambleaAdminForm({
                   inputMode="numeric"
                   min={0}
                 />
-                <FormSelect label="Calificación (1 a 5)" name="calificacion">
-                  <option value={1}>1 — Muy baja</option>
-                  <option value={2}>2 — Baja</option>
-                  <option value={3}>3 — Regular</option>
-                  <option value={4}>4 — Buena</option>
-                  <option value={5}>5 — Excelente</option>
-                </FormSelect>
+                <div className="sm:col-span-2">
+                  <span className="label">Calificación</span>
+                  <div className="mt-1">
+                    <CalificacionEstrellas
+                      value={values.calificacion}
+                      onChange={(n) => void setFieldValue("calificacion", n)}
+                      size="md"
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-ink-secondary">
+                    Cada estrella dorada equivale a un punto (1 a 5).
+                  </p>
+                  {errors.calificacion && submitCount > 0 ? (
+                    <p className="field-error">{String(errors.calificacion)}</p>
+                  ) : null}
+                </div>
               </div>
             </section>
 

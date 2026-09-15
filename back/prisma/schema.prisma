@@ -46,6 +46,7 @@ enum AlcanceEvento {
   UNIDAD_TERRITORIAL
   DISTRITO
   TIPO_DIRIGENTE
+  TODOS
 }
 
 /// Ciclo de vida del pase de lista

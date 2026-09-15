@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { CalificacionEstrellas } from "@/components/CalificacionEstrellas";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import {
   compararAsambleaRecientePrimero,
-  etiquetaCalificacion,
   formatAsambleaFecha,
   type AsambleaDTO,
 } from "@/lib/asambleas";
@@ -111,7 +111,9 @@ export default function AsambleasAdminListPage() {
                     <td>{formatAsambleaFecha(a.fecha, a.hora)}</td>
                     <td>{a.cantidadConvocada}</td>
                     <td>{a.cantidadReal}</td>
-                    <td>{etiquetaCalificacion(a.calificacion)}</td>
+                    <td>
+                      <CalificacionEstrellas value={a.calificacion} readOnly size="sm" />
+                    </td>
                     <td className="text-right">
                       <Link href={`/asambleas/${a.id}`} className="btn-ghost btn-sm">
                         Ver / editar

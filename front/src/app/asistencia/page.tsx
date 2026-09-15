@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import {
@@ -30,20 +30,60 @@ export default function AsistenciaPage() {
   const [filtro, setFiltro] = useState<FiltroEventosLista>("activos");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [accionandoId, setAccionandoId] = useState<string | null>(null);
+  const [mensaje, setMensaje] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!canTakeAsistencia) return;
     setLoading(true);
     setError(null);
-    void apiFetch(urlEventos(isAsistencia ? "activos" : filtro))
-      .then(async (res) => {
-        if (!res.ok) throw new Error("No se pudieron cargar los eventos");
-        return (await res.json()) as EventoAsistenciaDTO[];
-      })
-      .then(setEventos)
-      .catch((err) => setError(err instanceof Error ? err.message : "Error"))
-      .finally(() => setLoading(false));
+    try {
+      const res = await apiFetch(urlEventos(isAsistencia ? "activos" : filtro));
+      if (!res.ok) throw new Error("No se pudieron cargar los eventos");
+      setEventos((await res.json()) as EventoAsistenciaDTO[]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error");
+    } finally {
+      setLoading(false);
+    }
   }, [canTakeAsistencia, filtro, isAsistencia]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function abrirPase(eventoId: string) {
+    setAccionandoId(eventoId);
+    setMensaje(null);
+    try {
+      const res = await apiFetch(`/api/asistencia/eventos/${eventoId}/abrir`, { method: "POST" });
+      const body = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(body.error ?? "No se pudo iniciar el pase");
+      setMensaje("Pase de lista abierto.");
+      await load();
+    } catch (err) {
+      setMensaje(err instanceof Error ? err.message : "Error");
+    } finally {
+      setAccionandoId(null);
+    }
+  }
+
+  async function cerrarPase(eventoId: string) {
+    if (!confirm("¿Cerrar el evento? Ya no se podrán registrar más asistencias.")) return;
+    setAccionandoId(eventoId);
+    setMensaje(null);
+    try {
+      const res = await apiFetch(`/api/asistencia/eventos/${eventoId}/cerrar`, { method: "POST" });
+      const body = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(body.error ?? "No se pudo cerrar el evento");
+      setMensaje("Evento cerrado.");
+      await load();
+    } catch (err) {
+      setMensaje(err instanceof Error ? err.message : "Error");
+    } finally {
+      setAccionandoId(null);
+    }
+  }
 
   if (!canTakeAsistencia) return null;
 
@@ -90,6 +130,17 @@ export default function AsistenciaPage() {
       ) : null}
 
       {error ? <div className="alert-error">{error}</div> : null}
+      {mensaje ? (
+        <div
+          className={
+            mensaje.toLowerCase().includes("error") || mensaje.startsWith("No ")
+              ? "alert-error"
+              : "alert-success"
+          }
+        >
+          {mensaje}
+        </div>
+      ) : null}
 
       {loading ? (
         <div className="flex items-center gap-3 text-ink-secondary">
@@ -143,12 +194,34 @@ export default function AsistenciaPage() {
                 {ev.totalFaltas != null ? ` · Faltas: ${ev.totalFaltas}` : ""}
               </p>
             </div>
-            <Link
-              href={`/asistencia/eventos/${ev.id}`}
-              className="btn-primary btn-sm btn-responsive shrink-0"
-            >
-              {ev.estado === "ABIERTO" ? "Pase de lista" : "Ver evento"}
-            </Link>
+            <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
+              {isStaff && ev.estado === "PROGRAMADO" ? (
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm btn-responsive"
+                  disabled={accionandoId === ev.id}
+                  onClick={() => void abrirPase(ev.id)}
+                >
+                  {accionandoId === ev.id ? "Iniciando…" : "Iniciar pase"}
+                </button>
+              ) : null}
+              {isStaff && ev.estado === "ABIERTO" ? (
+                <button
+                  type="button"
+                  className="btn-danger btn-sm btn-responsive"
+                  disabled={accionandoId === ev.id}
+                  onClick={() => void cerrarPase(ev.id)}
+                >
+                  {accionandoId === ev.id ? "Cerrando…" : "Cerrar evento"}
+                </button>
+              ) : null}
+              <Link
+                href={`/asistencia/eventos/${ev.id}`}
+                className="btn-primary btn-sm btn-responsive"
+              >
+                {ev.estado === "ABIERTO" ? "Pase de lista" : "Ver evento"}
+              </Link>
+            </div>
           </article>
         ))}
       </div>

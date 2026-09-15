@@ -13,6 +13,7 @@ export const ALCANCES_EVENTO = [
   "UNIDAD_TERRITORIAL",
   "DISTRITO",
   "TIPO_DIRIGENTE",
+  "TODOS",
 ] as const satisfies readonly AlcanceEvento[];
 
 export const eventoCreateSchema = Yup.object({

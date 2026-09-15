@@ -4,7 +4,8 @@ export type AlcanceEvento =
   | "SECCION"
   | "UNIDAD_TERRITORIAL"
   | "DISTRITO"
-  | "TIPO_DIRIGENTE";
+  | "TIPO_DIRIGENTE"
+  | "TODOS";
 
 export type EventoAsistenciaDTO = {
   id: string;
@@ -96,6 +97,7 @@ export const ALCANCE_EVENTO_LABEL: Record<AlcanceEvento, string> = {
   UNIDAD_TERRITORIAL: "Por unidad territorial",
   DISTRITO: "Por distrito local",
   TIPO_DIRIGENTE: "Por tipo de dirigente (D1–D4)",
+  TODOS: "Todos los dirigentes",
 };
 
 export function badgeEstadoEvento(estado: EstadoEvento): string {

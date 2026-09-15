@@ -148,9 +148,31 @@ export default function EventoDetalleClient() {
           </p>
           <p className="mt-1 text-sm text-ink-secondary">{evento.alcanceLabel}</p>
         </div>
-        <Link href="/asistencia" className="btn-ghost btn-responsive shrink-0">
-          Volver
-        </Link>
+        <div className="page-actions">
+          {isStaff && evento.estado === "PROGRAMADO" ? (
+            <button
+              type="button"
+              className="btn-primary btn-responsive"
+              disabled={accionando}
+              onClick={() => void abrirPase()}
+            >
+              Iniciar pase de lista
+            </button>
+          ) : null}
+          {isStaff && evento.estado === "ABIERTO" ? (
+            <button
+              type="button"
+              className="btn-danger btn-responsive"
+              disabled={accionando}
+              onClick={() => void cerrarPase()}
+            >
+              Cerrar evento
+            </button>
+          ) : null}
+          <Link href="/asistencia" className="btn-ghost btn-responsive shrink-0">
+            Volver
+          </Link>
+        </div>
       </div>
 
       {eventosActivos.length > 0 ? (
@@ -193,28 +215,16 @@ export default function EventoDetalleClient() {
         </div>
       </div>
 
-      {isStaff ? (
-        <div className="page-actions">
-          {evento.estado === "PROGRAMADO" ? (
-            <button
-              type="button"
-              className="btn-primary btn-responsive"
-              disabled={accionando}
-              onClick={() => void abrirPase()}
-            >
-              Iniciar pase de lista
-            </button>
-          ) : null}
-          {evento.estado === "ABIERTO" ? (
-            <button
-              type="button"
-              className="btn-danger btn-responsive"
-              disabled={accionando}
-              onClick={() => void cerrarPase()}
-            >
-              Terminar pase de lista
-            </button>
-          ) : null}
+      {isStaff && evento.estado === "PROGRAMADO" ? (
+        <div className="alert-warning">
+          Este evento está programado. Pulsa <strong>Iniciar pase de lista</strong> arriba para
+          comenzar a registrar asistencias.
+        </div>
+      ) : null}
+
+      {isStaff && evento.estado === "ABIERTO" ? (
+        <div className="panel-pin text-sm text-pin-dark">
+          El pase está abierto. Cuando termines, pulsa <strong>Cerrar evento</strong> arriba.
         </div>
       ) : null}
 

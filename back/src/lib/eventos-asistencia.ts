@@ -6,7 +6,8 @@ import type {
   TipoDirigente,
 } from "../generated/prisma/client.js";
 import { prisma } from "./prisma.js";
-import { nombreCompleto } from "./dirigentes.js";
+import { nombreCompleto, TIPOS_DIRIGENTE } from "./dirigentes.js";
+import { filtroEstatusListado } from "./filtro-dirigentes.js";
 import { distritoLocalDeSeccion, seccionesDeDistritoLocal } from "./secciones-electorales.js";
 import { etiquetaUnidadTerritorial } from "./unidades-territoriales.js";
 
@@ -22,7 +23,7 @@ export type EventoAlcanceFields = Pick<
 
 export type DirigenteElegibleFields = Pick<
   Dirigente,
-  "activo" | "colonia" | "seccionElectoral" | "unidadTerritorialId" | "tipo"
+  "activo" | "status" | "colonia" | "seccionElectoral" | "unidadTerritorialId" | "tipo"
 >;
 
 export type EventoConRelaciones = EventoAsistencia & {
@@ -36,7 +37,7 @@ export type EventoConRelaciones = EventoAsistencia & {
 };
 
 export function filtroDirigentesElegibles(evento: EventoAlcanceFields): Prisma.DirigenteWhereInput {
-  const base: Prisma.DirigenteWhereInput = { activo: true };
+  const base: Prisma.DirigenteWhereInput = filtroEstatusListado(false);
 
   switch (evento.alcance) {
     case "COLONIA":
@@ -53,6 +54,8 @@ export function filtroDirigentesElegibles(evento: EventoAlcanceFields): Prisma.D
       };
     case "TIPO_DIRIGENTE":
       return { ...base, tipo: evento.tipoDirigente ?? undefined };
+    case "TODOS":
+      return { ...base, tipo: { in: [...TIPOS_DIRIGENTE] } };
     default:
       return base;
   }
@@ -62,7 +65,7 @@ export function dirigenteEsElegible(
   dirigente: DirigenteElegibleFields,
   evento: EventoAlcanceFields,
 ): boolean {
-  if (!dirigente.activo) return false;
+  if (!dirigente.activo || dirigente.status !== "ACTIVO") return false;
   switch (evento.alcance) {
     case "COLONIA":
       return dirigente.colonia === evento.colonia;
@@ -75,6 +78,8 @@ export function dirigenteEsElegible(
       return distritoLocalDeSeccion(dirigente.seccionElectoral) === evento.distritoLocal;
     case "TIPO_DIRIGENTE":
       return dirigente.tipo === evento.tipoDirigente;
+    case "TODOS":
+      return (TIPOS_DIRIGENTE as readonly string[]).includes(dirigente.tipo);
     default:
       return false;
   }
@@ -100,6 +105,8 @@ export function etiquetaAlcanceEvento(
         : `Distrito local ${evento.distritoLocal}`;
     case "TIPO_DIRIGENTE":
       return `Tipo dirigente: ${evento.tipoDirigente ?? "—"}`;
+    case "TODOS":
+      return "Todos los dirigentes (D1–D4, estatus alta)";
     default:
       return "—";
   }
@@ -177,6 +184,7 @@ export async function resumenAsistenciaDirigentes() {
         seccionElectoral: true,
         unidadTerritorialId: true,
         activo: true,
+        status: true,
       },
       orderBy: [{ primerApellido: "asc" }, { nombre: "asc" }],
     }),
