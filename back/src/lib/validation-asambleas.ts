@@ -48,13 +48,40 @@ export const asambleaBaseSchema = Yup.object({
     .max(MAX_FOTOS_ASAMBLEA, `Máximo ${MAX_FOTOS_ASAMBLEA} fotografías`),
 });
 
+export const asambleaAdminFieldsSchema = Yup.object({
+  titulo: Yup.string().trim().required("El título es obligatorio"),
+  descripcion: Yup.string().trim().required("La descripción es obligatoria"),
+  calificacion: Yup.number()
+    .transform((_value, originalValue) => {
+      if (originalValue === "" || originalValue == null) return undefined;
+      const n = Number(originalValue);
+      return Number.isNaN(n) ? originalValue : n;
+    })
+    .typeError("Calificación inválida")
+    .integer("Debe ser un número entero")
+    .min(1, "Mínimo 1")
+    .max(5, "Máximo 5")
+    .required("Indica la calificación (1 a 5)"),
+  observacion: Yup.string().trim().nullable(),
+});
+
 export const asambleaCreateSchema = asambleaBaseSchema.concat(
   Yup.object({
     dirigenteId: Yup.string().trim().required("Selecciona el dirigente"),
   }),
 );
 
+export const asambleaAdminCreateSchema = asambleaBaseSchema
+  .concat(asambleaAdminFieldsSchema)
+  .concat(
+    Yup.object({
+      dirigenteId: Yup.string().trim().required("Selecciona el dirigente"),
+    }),
+  );
+
 export const asambleaUpdateSchema = asambleaBaseSchema;
+
+export const asambleaAdminUpdateSchema = asambleaBaseSchema.concat(asambleaAdminFieldsSchema);
 
 export const asambleaObservacionSchema = Yup.object({
   observacion: Yup.string().trim().nullable(),

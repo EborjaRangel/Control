@@ -4,31 +4,30 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { AsambleaAdminForm } from "@/components/AsambleaAdminForm";
 import { AsambleaForm } from "@/components/AsambleaForm";
 import { AsambleaSeccionMapPicker } from "@/components/AsambleaSeccionMapPicker";
 import { UploadImage } from "@/components/UploadImage";
 import { apiFetch } from "@/lib/api";
-import { isAdminRol } from "@/lib/auth";
+import { isStaffRol } from "@/lib/auth";
 import {
+  asambleaToAdminFormValues,
   asambleaToFormValues,
+  etiquetaCalificacion,
   formatAsambleaFecha,
   type AsambleaDTO,
 } from "@/lib/asambleas";
 import { canViewOwnDirigente } from "@/lib/mi-panel";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
-import type { AsambleaFormValues } from "@/lib/validation-asambleas";
+import type { AsambleaAdminFormValues, AsambleaFormValues } from "@/lib/validation-asambleas";
 
 export default function AsambleaDetallePage() {
   const { id } = useParams<{ id: string }>();
   const { isStaff, user } = useAuth();
-  const isAdmin = isAdminRol(user?.rol);
   const [asamblea, setAsamblea] = useState<AsambleaDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editando, setEditando] = useState(false);
-  const [observacion, setObservacion] = useState("");
-  const [guardandoObs, setGuardandoObs] = useState(false);
-  const [obsError, setObsError] = useState<string | null>(null);
 
   const canAccess =
     isStaff || (asamblea ? canViewOwnDirigente(user, asamblea.dirigenteId) : Boolean(user?.dirigenteId));
@@ -39,9 +38,7 @@ export default function AsambleaDetallePage() {
     try {
       const res = await apiFetch(`/api/asambleas/${id}`);
       if (!res.ok) throw new Error("Asamblea no encontrada");
-      const data = (await res.json()) as AsambleaDTO;
-      setAsamblea(data);
-      setObservacion(data.observacion ?? "");
+      setAsamblea((await res.json()) as AsambleaDTO);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al cargar");
     } finally {
@@ -53,7 +50,7 @@ export default function AsambleaDetallePage() {
     void load();
   }, [load]);
 
-  async function handleSave(values: AsambleaFormValues) {
+  async function handleSaveDirigente(values: AsambleaFormValues) {
     const res = await apiFetch(`/api/asambleas/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -67,25 +64,18 @@ export default function AsambleaDetallePage() {
     setEditando(false);
   }
 
-  async function handleGuardarObservacion() {
-    setObsError(null);
-    setGuardandoObs(true);
-    try {
-      const res = await apiFetch(`/api/asambleas/${id}/observacion`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ observacion: observacion.trim() || null }),
-      });
-      if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        throw new Error(data.error ?? "No se pudo guardar");
-      }
-      setAsamblea((await res.json()) as AsambleaDTO);
-    } catch (err) {
-      setObsError(err instanceof Error ? err.message : "Error al guardar");
-    } finally {
-      setGuardandoObs(false);
+  async function handleSaveAdmin(values: AsambleaAdminFormValues & { dirigenteId: string }) {
+    const res = await apiFetch(`/api/asambleas/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values),
+    });
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string; detalles?: string[] };
+      throw new Error(data.detalles?.join(", ") ?? data.error ?? "Error al guardar");
     }
+    setAsamblea((await res.json()) as AsambleaDTO);
+    setEditando(false);
   }
 
   if (loading) {
@@ -108,22 +98,39 @@ export default function AsambleaDetallePage() {
     );
   }
 
-  const backHref = `/asambleas/dirigentes/${asamblea.dirigenteId}`;
+  const backHref = isStaff
+    ? "/asambleas"
+    : `/asambleas/dirigentes/${asamblea.dirigenteId}`;
   const fotos = asamblea.fotos.slice(0, 10);
+  const dirigenteOption = asamblea.dirigente
+    ? [
+        {
+          id: asamblea.dirigenteId,
+          nombreCompleto: asamblea.dirigente.nombreCompleto,
+          seccionElectoral: asamblea.dirigente.seccionElectoral,
+          colonia: asamblea.dirigente.colonia,
+        },
+      ]
+    : [];
 
   return (
     <div className="space-y-6 sm:space-y-8">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Asamblea</h1>
+          <h1 className="page-title">{asamblea.titulo || "Asamblea"}</h1>
           <p className="page-subtitle">
             {formatAsambleaFecha(asamblea.fecha, asamblea.hora)} ·{" "}
             {etiquetaSeccion(asamblea.seccionElectoral)}
+            {asamblea.dirigente ? ` · ${asamblea.dirigente.nombreCompleto}` : null}
           </p>
         </div>
         <div className="page-actions">
           {!editando ? (
-            <button type="button" className="btn-secondary btn-responsive" onClick={() => setEditando(true)}>
+            <button
+              type="button"
+              className="btn-secondary btn-responsive"
+              onClick={() => setEditando(true)}
+            >
               Editar
             </button>
           ) : null}
@@ -134,25 +141,49 @@ export default function AsambleaDetallePage() {
       </div>
 
       {editando ? (
-        <AsambleaForm
-          initialValues={asambleaToFormValues(asamblea)}
-          seccionElectoral={asamblea.seccionElectoral}
-          colonia={asamblea.dirigente?.colonia}
-          onSubmit={handleSave}
-          cancelHref={backHref}
-          onCancel={() => setEditando(false)}
-          submitLabel="Guardar cambios"
-        />
+        isStaffRol(user?.rol) ? (
+          <AsambleaAdminForm
+            initialValues={asambleaToAdminFormValues(asamblea)}
+            dirigentes={dirigenteOption}
+            dirigenteId={asamblea.dirigenteId}
+            lockDirigente
+            onSubmit={handleSaveAdmin}
+            cancelHref={backHref}
+            onCancel={() => setEditando(false)}
+            submitLabel="Guardar cambios"
+          />
+        ) : (
+          <AsambleaForm
+            initialValues={asambleaToFormValues(asamblea)}
+            seccionElectoral={asamblea.seccionElectoral}
+            colonia={asamblea.dirigente?.colonia}
+            onSubmit={handleSaveDirigente}
+            cancelHref={backHref}
+            onCancel={() => setEditando(false)}
+            submitLabel="Guardar cambios"
+          />
+        )
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {asamblea.descripcion ? (
+            <section className="card-section">
+              <h2 className="section-title">Descripción</h2>
+              <p className="text-sm text-ink">{asamblea.descripcion}</p>
+            </section>
+          ) : null}
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div className="card text-center">
               <p className="text-2xl font-bold text-ink">{asamblea.cantidadConvocada}</p>
-              <p className="text-xs text-ink-secondary">Cantidad convocada</p>
+              <p className="text-xs text-ink-secondary">Personas requeridas</p>
             </div>
             <div className="card text-center">
               <p className="text-2xl font-bold text-pin">{asamblea.cantidadReal}</p>
-              <p className="text-xs text-ink-secondary">Cantidad real</p>
+              <p className="text-xs text-ink-secondary">Personas que asistieron</p>
+            </div>
+            <div className="card text-center">
+              <p className="text-2xl font-bold text-ink">{etiquetaCalificacion(asamblea.calificacion)}</p>
+              <p className="text-xs text-ink-secondary">Calificación</p>
             </div>
             <div className="card text-center sm:col-span-2">
               <p className="text-sm font-medium text-ink">{asamblea.lugar}</p>
@@ -192,39 +223,14 @@ export default function AsambleaDetallePage() {
             )}
           </section>
 
-          <section className="card-section space-y-4">
-            <h2 className="section-title">Observación</h2>
-            <p className="text-sm text-ink-secondary">
-              Solo el administrador puede capturar la observación de esta asamblea.
-            </p>
-            {isAdmin ? (
-              <>
-                <textarea
-                  className="input-area min-h-[120px]"
-                  value={observacion}
-                  onChange={(e) => setObservacion(e.target.value)}
-                  placeholder="Observación del administrador…"
-                />
-                {obsError ? <div className="alert-error">{obsError}</div> : null}
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    className="btn-primary btn-responsive"
-                    disabled={guardandoObs}
-                    onClick={() => void handleGuardarObservacion()}
-                  >
-                    {guardandoObs ? "Guardando…" : "Guardar observación"}
-                  </button>
-                </div>
-              </>
-            ) : asamblea.observacion ? (
+          {asamblea.observacion ? (
+            <section className="card-section space-y-4">
+              <h2 className="section-title">Observación del administrador</h2>
               <p className="rounded-pin border border-line bg-surface-muted p-4 text-sm text-ink">
                 {asamblea.observacion}
               </p>
-            ) : (
-              <p className="text-sm italic text-ink-secondary">Sin observación registrada.</p>
-            )}
-          </section>
+            </section>
+          ) : null}
         </>
       )}
     </div>

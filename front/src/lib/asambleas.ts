@@ -1,4 +1,4 @@
-import type { AsambleaFormValues } from "./validation-asambleas";
+import type { AsambleaAdminFormValues, AsambleaFormValues } from "./validation-asambleas";
 
 export type AsambleaFotoDTO = {
   id: string;
@@ -17,6 +17,9 @@ export type AsambleaDTO = {
   seccionElectoral: string;
   cantidadConvocada: number;
   cantidadReal: number;
+  titulo: string;
+  descripcion: string | null;
+  calificacion: number | null;
   observacion: string | null;
   activo: boolean;
   fotos: AsambleaFotoDTO[];
@@ -76,8 +79,23 @@ export function asambleaToFormValues(a: AsambleaDTO): AsambleaFormValues {
   };
 }
 
+export function asambleaToAdminFormValues(a: AsambleaDTO): AsambleaAdminFormValues {
+  return {
+    ...asambleaToFormValues(a),
+    titulo: a.titulo,
+    descripcion: a.descripcion ?? "",
+    calificacion: a.calificacion ?? 3,
+    observacion: a.observacion ?? "",
+  };
+}
+
 export function formatAsambleaFecha(fecha: string, hora: string) {
   const [y, m, d] = fecha.split("-");
   if (!y || !m || !d) return `${fecha} ${hora}`;
   return `${d}/${m}/${y} · ${hora}`;
+}
+
+export function etiquetaCalificacion(calificacion: number | null) {
+  if (calificacion == null) return "—";
+  return `${calificacion} / 5`;
 }

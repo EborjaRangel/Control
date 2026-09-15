@@ -1,12 +1,14 @@
 import { Router } from "express";
 import { ValidationError } from "yup";
 import { prisma } from "../lib/prisma.js";
-import { isStaffRol, requireAuth, requireAdmin } from "../lib/auth.js";
+import { isStaffRol, requireAuth, requireAdmin, requireStaff } from "../lib/auth.js";
 import { canAccessDirigentePanel } from "../lib/user-panel.js";
 import { puntoEnSeccionElectoral } from "../lib/colonias-seccion-geo.js";
 import { validarSeccionCapturaDirigente } from "../lib/dirigente-seccion-captura.js";
 import {
   asambleaCreateSchema,
+  asambleaAdminCreateSchema,
+  asambleaAdminUpdateSchema,
   asambleaObservacionSchema,
   asambleaUpdateSchema,
   MAX_FOTOS_ASAMBLEA,
@@ -39,6 +41,78 @@ function validarUbicacionEnSeccion(
   }
   return null;
 }
+
+function datosAsambleaFromInput(
+  data: {
+    fecha: string;
+    hora: string;
+    lugar: string;
+    lat: number;
+    lng: number;
+    seccionElectoral: string;
+    cantidadConvocada: number;
+    cantidadReal: number;
+    titulo?: string;
+    descripcion?: string | null;
+    calificacion?: number;
+    observacion?: string | null;
+  },
+  admin: boolean,
+) {
+  return {
+    fecha: new Date(`${data.fecha}T12:00:00.000Z`),
+    hora: data.hora,
+    lugar: data.lugar,
+    lat: data.lat,
+    lng: data.lng,
+    seccionElectoral: data.seccionElectoral,
+    cantidadConvocada: data.cantidadConvocada,
+    cantidadReal: data.cantidadReal,
+    ...(admin
+      ? {
+          titulo: data.titulo ?? "Asamblea",
+          descripcion: data.descripcion ?? null,
+          calificacion: data.calificacion ?? null,
+          observacion: data.observacion ?? null,
+        }
+      : {}),
+  };
+}
+
+router.get("/", requireStaff, async (req, res) => {
+  try {
+    const buscar = typeof req.query.buscar === "string" ? req.query.buscar.trim() : "";
+    const incluirBajas = req.query.incluirBajas === "true";
+
+    const asambleas = await prisma.asamblea.findMany({
+      where: {
+        ...(incluirBajas ? {} : { activo: true }),
+        ...(buscar
+          ? {
+              OR: [
+                { titulo: { contains: buscar, mode: "insensitive" } },
+                { descripcion: { contains: buscar, mode: "insensitive" } },
+                { lugar: { contains: buscar, mode: "insensitive" } },
+                { dirigente: { nombre: { contains: buscar, mode: "insensitive" } } },
+                { dirigente: { primerApellido: { contains: buscar, mode: "insensitive" } } },
+              ],
+            }
+          : {}),
+      },
+      include: {
+        ...asambleaInclude,
+        fotos: { orderBy: { orden: "asc" }, take: MAX_FOTOS_ASAMBLEA },
+      },
+      orderBy: [{ fecha: "desc" }, { hora: "desc" }],
+      take: 500,
+    });
+
+    res.json(asambleas.map((a) => serializeAsamblea(a)));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al listar asambleas" });
+  }
+});
 
 router.get("/dirigentes/:dirigenteId", async (req, res) => {
   try {
@@ -76,10 +150,11 @@ router.get("/dirigentes/:dirigenteId", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const data = await asambleaCreateSchema.validate(req.body, {
-      abortEarly: false,
-      stripUnknown: true,
-    });
+    const admin = isStaffRol(req.user?.rol);
+    const data = await (admin ? asambleaAdminCreateSchema : asambleaCreateSchema).validate(
+      req.body,
+      { abortEarly: false, stripUnknown: true },
+    );
 
     if (!req.user || !(await canAccessDirigentePanel(req.user, data.dirigenteId))) {
       res.status(403).json({ error: "No autorizado" });
@@ -121,14 +196,7 @@ router.post("/", async (req, res) => {
     const asamblea = await prisma.asamblea.create({
       data: {
         dirigenteId: data.dirigenteId,
-        fecha: new Date(`${data.fecha}T12:00:00.000Z`),
-        hora: data.hora,
-        lugar: data.lugar,
-        lat: data.lat,
-        lng: data.lng,
-        seccionElectoral: data.seccionElectoral,
-        cantidadConvocada: data.cantidadConvocada,
-        cantidadReal: data.cantidadReal,
+        ...datosAsambleaFromInput(data, admin),
         fotos: {
           create: fotos.map((url, index) => ({ url, orden: index })),
         },
@@ -198,10 +266,11 @@ router.put("/:id", async (req, res) => {
       return;
     }
 
-    const data = await asambleaUpdateSchema.validate(req.body, {
-      abortEarly: false,
-      stripUnknown: true,
-    });
+    const admin = isStaffRol(req.user.rol);
+    const data = await (admin ? asambleaAdminUpdateSchema : asambleaUpdateSchema).validate(
+      req.body,
+      { abortEarly: false, stripUnknown: true },
+    );
 
     if (existing.dirigente && existing.dirigente.activo) {
       const seccionError = validarSeccionCapturaDirigente(
@@ -228,14 +297,7 @@ router.put("/:id", async (req, res) => {
       return tx.asamblea.update({
         where: { id },
         data: {
-          fecha: new Date(`${data.fecha}T12:00:00.000Z`),
-          hora: data.hora,
-          lugar: data.lugar,
-          lat: data.lat,
-          lng: data.lng,
-          seccionElectoral: data.seccionElectoral,
-          cantidadConvocada: data.cantidadConvocada,
-          cantidadReal: data.cantidadReal,
+          ...datosAsambleaFromInput(data, admin),
           fotos: {
             create: fotos.map((url, index) => ({ url, orden: index })),
           },

@@ -17,6 +17,9 @@ type AsambleaRow = {
   seccionElectoral: string;
   cantidadConvocada: number;
   cantidadReal: number;
+  titulo: string;
+  descripcion: string | null;
+  calificacion: number | null;
   observacion: string | null;
   activo: boolean;
   createdAt: Date;
@@ -66,6 +69,9 @@ export function serializeAsamblea(a: AsambleaRow) {
     seccionElectoral: a.seccionElectoral,
     cantidadConvocada: a.cantidadConvocada,
     cantidadReal: a.cantidadReal,
+    titulo: a.titulo,
+    descripcion: a.descripcion,
+    calificacion: a.calificacion,
     observacion: a.observacion,
     activo: a.activo,
     fotos: fotos.map(serializeFoto),

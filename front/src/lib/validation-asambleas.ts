@@ -28,24 +28,60 @@ export const asambleaBaseSchema = Yup.object({
       const n = Number(originalValue);
       return Number.isNaN(n) ? originalValue : n;
     })
-    .typeError("Cantidad convocada inválida")
+    .typeError("Personas requeridas inválidas")
     .integer("Debe ser un número entero")
     .min(0, "No puede ser negativa")
-    .required("Indica la cantidad convocada"),
+    .required("Indica el número de personas requeridas"),
   cantidadReal: Yup.number()
     .transform((_value, originalValue) => {
       if (originalValue === "" || originalValue == null) return undefined;
       const n = Number(originalValue);
       return Number.isNaN(n) ? originalValue : n;
     })
-    .typeError("Cantidad real inválida")
+    .typeError("Asistencia inválida")
     .integer("Debe ser un número entero")
     .min(0, "No puede ser negativa")
-    .required("Indica la cantidad real"),
+    .required("Indica el número de personas que asistieron"),
   fotos: Yup.array()
     .of(Yup.string().trim().required("Foto inválida"))
     .min(1, "Sube al menos una fotografía del evento")
     .max(MAX_FOTOS_ASAMBLEA, `Máximo ${MAX_FOTOS_ASAMBLEA} fotografías`),
 });
 
+export const asambleaAdminFieldsSchema = Yup.object({
+  titulo: Yup.string().trim().required("El título es obligatorio"),
+  descripcion: Yup.string().trim().required("La descripción es obligatoria"),
+  calificacion: Yup.number()
+    .transform((_value, originalValue) => {
+      if (originalValue === "" || originalValue == null) return undefined;
+      const n = Number(originalValue);
+      return Number.isNaN(n) ? originalValue : n;
+    })
+    .typeError("Calificación inválida")
+    .integer("Debe ser un número entero")
+    .min(1, "Mínimo 1")
+    .max(5, "Máximo 5")
+    .required("Indica la calificación (1 a 5)"),
+  observacion: Yup.string().trim().nullable(),
+});
+
+export const asambleaAdminSchema = asambleaBaseSchema.concat(asambleaAdminFieldsSchema);
+
 export type AsambleaFormValues = Yup.InferType<typeof asambleaBaseSchema>;
+export type AsambleaAdminFormValues = Yup.InferType<typeof asambleaAdminSchema>;
+
+export const EMPTY_ASAMBLEA_ADMIN: AsambleaAdminFormValues = {
+  titulo: "",
+  descripcion: "",
+  calificacion: 3,
+  observacion: "",
+  fecha: "",
+  hora: "",
+  lugar: "",
+  lat: 0,
+  lng: 0,
+  seccionElectoral: "",
+  cantidadConvocada: 0,
+  cantidadReal: 0,
+  fotos: [],
+};

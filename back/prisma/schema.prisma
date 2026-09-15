@@ -317,6 +317,10 @@ model Asamblea {
   cantidadConvocada Int
   cantidadReal      Int
 
+  titulo            String   @default("Asamblea")
+  descripcion       String?
+  calificacion      Int?
+
   /// Solo capturable por administrador
   observacion      String?
 
