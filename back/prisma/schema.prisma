@@ -170,6 +170,7 @@ model Dirigente {
   usuario             Usuario?
   detectados          Detectado[]
   reportesServiciosUrbanos ReporteServicioUrbano[]
+  asambleas           Asamblea[]
   asistencias         RegistroAsistencia[]
   enviosComunicacion  EnvioComunicacion[]
   estudios            DirigenteEstudio[]
@@ -298,6 +299,49 @@ model ReporteServicioUrbano {
   @@index([activo])
   @@index([createdAt])
   @@index([folio])
+}
+
+/// Asamblea registrada por un dirigente (fecha, lugar georreferenciado, asistencia y fotos)
+model Asamblea {
+  id               String   @id @default(cuid())
+  dirigenteId      String
+  dirigente        Dirigente @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+
+  fecha            DateTime @db.Date
+  hora             String
+  lugar            String
+  lat              Float
+  lng              Float
+  seccionElectoral String
+
+  cantidadConvocada Int
+  cantidadReal      Int
+
+  /// Solo capturable por administrador
+  observacion      String?
+
+  activo           Boolean  @default(true)
+  fotos            AsambleaFoto[]
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([dirigenteId])
+  @@index([fecha])
+  @@index([activo])
+  @@index([seccionElectoral])
+}
+
+model AsambleaFoto {
+  id         String   @id @default(cuid())
+  asambleaId String
+  asamblea   Asamblea @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+  url        String
+  orden      Int      @default(0)
+
+  createdAt  DateTime @default(now())
+
+  @@index([asambleaId])
 }
 
 /// Persona registrada por un detectado (datos generales INE)

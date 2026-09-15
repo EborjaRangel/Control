@@ -220,6 +220,12 @@ export function geometriaSeccionDisponible(seccion: string): boolean {
   return cargarSeccion(seccion) != null;
 }
 
+export function puntoEnSeccionElectoral(lng: number, lat: number, seccion: string): boolean {
+  const sec = cargarSeccion(seccion);
+  if (!sec) return true;
+  return puntoEnFeature(lng, lat, sec);
+}
+
 export function resetCachePesosGeoSeccion(): void {
   pesosUtCache.clear();
   pesosColoniaUtCache.clear();

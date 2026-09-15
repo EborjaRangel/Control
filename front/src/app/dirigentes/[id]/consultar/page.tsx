@@ -71,8 +71,8 @@ export default function ConsultarDirigentePage() {
           <div>
             <h2 className="section-title">Mis registros</h2>
             <p className="mt-1 text-sm text-ink-secondary">
-              Administra detectados, servicios urbanos, representantes de casilla y representantes
-              generales de tu equipo.
+              Administra detectados, servicios urbanos, asambleas, representantes de casilla y
+              representantes generales de tu equipo.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -87,6 +87,9 @@ export default function ConsultarDirigentePage() {
               className="btn-secondary btn-responsive"
             >
               Mis Servicios Urbanos
+            </Link>
+            <Link href={`/asambleas/dirigentes/${id}`} className="btn-secondary btn-responsive">
+              Mis Asambleas
             </Link>
             <Link href={enlaceRc(id, user?.rcId)} className="btn-secondary btn-responsive">
               Mis RC
