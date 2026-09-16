@@ -31,12 +31,7 @@ export function DirigenteQrCard({
 
   return (
     <section className="card-section space-y-4">
-      <div>
-        <h2 className="section-title">Código QR de asistencia</h2>
-        <p className="mt-1 text-sm text-ink-secondary">
-          Este código se lee con la cámara de cualquier teléfono durante el pase de lista.
-        </p>
-      </div>
+      <h2 className="section-title">Código QR de asistencia</h2>
 
       <div className="flex flex-col items-center gap-5 lg:flex-row lg:items-start">
         <div className="shrink-0 rounded-pin-lg border border-line bg-surface p-4 shadow-pin">
