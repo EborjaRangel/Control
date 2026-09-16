@@ -71,18 +71,8 @@ export function DirigenteQrCard({
             <dt className="label">Fecha de nacimiento</dt>
             <dd className="text-sm font-medium text-ink">{fechaFormateada}</dd>
           </div>
-          <div className="sm:col-span-2">
-            <dt className="label">Código único (base de datos)</dt>
-            <dd className="break-all font-mono text-xs text-ink-secondary">{codigoQr}</dd>
-          </div>
         </dl>
       </div>
-
-      {contenidoQr ? (
-        <p className="break-all text-xs leading-relaxed text-ink-secondary">
-          Al escanearlo, el teléfono debe abrir: {contenidoQr}
-        </p>
-      ) : null}
     </section>
   );
 }
