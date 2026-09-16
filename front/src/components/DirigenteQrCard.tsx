@@ -36,14 +36,24 @@ export function DirigenteQrCard({
       <div className="flex flex-col items-center gap-5 lg:flex-row lg:items-start">
         <div className="shrink-0 rounded-pin-lg border border-line bg-surface p-4 shadow-pin">
           {contenidoQr ? (
-            <QRCode
-              value={contenidoQr}
-              size={180}
-              level="M"
-              bgColor={theme.surface}
-              fgColor={theme.ink}
-              title={`QR: ${nombre} ${primerApellido}`}
-            />
+            <div className="relative size-[180px]">
+              <QRCode
+                value={contenidoQr}
+                size={180}
+                level="H"
+                bgColor={theme.surface}
+                fgColor={theme.ink}
+                title={`QR: ${nombre} ${primerApellido}`}
+              />
+              <span
+                className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                aria-hidden
+              >
+                <span className="rounded-[3px] bg-surface px-1.5 py-0.5 text-[9px] font-extrabold tracking-[0.18em] text-pin">
+                  AXIS
+                </span>
+              </span>
+            </div>
           ) : (
             <div className="size-[180px] bg-surface-muted" />
           )}
