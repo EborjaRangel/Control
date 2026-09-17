@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
-import type { DirigenteAsistenciaResumen } from "@/lib/asistencia";
+import type { DirigenteAsistenciaResumen, FaltaAsistenciaFecha } from "@/lib/asistencia";
+import { etiquetaFiltroFecha } from "@/lib/asistencia";
 
 function fechaArchivo() {
   const d = new Date();
@@ -47,4 +48,42 @@ export function exportarDashboardAsistenciaExcel(
   const libro = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(libro, hoja, "Asistencia");
   XLSX.writeFile(libro, `asistencia-dirigentes-${fechaArchivo()}.xlsx`);
+}
+
+export function exportarFaltasFechaExcel(fecha: string, filas: FaltaAsistenciaFecha[]) {
+  const datos = filas.map((d) => ({
+    Dirigente: d.nombreCompleto,
+    Tipo: d.tipo,
+    Colonia: d.colonia,
+    "Sección electoral": d.seccionElectoral,
+    "Eventos sin asistencia": d.eventos.join("; "),
+  }));
+
+  const hoja = XLSX.utils.json_to_sheet(datos);
+  hoja["!cols"] = [{ wch: 36 }, { wch: 6 }, { wch: 28 }, { wch: 12 }, { wch: 40 }];
+
+  const libro = XLSX.utils.book_new();
+  const nombreHoja = etiquetaFiltroFecha(fecha).slice(0, 31);
+  XLSX.utils.book_append_sheet(libro, hoja, nombreHoja);
+  XLSX.writeFile(libro, `faltas-${fecha}-${fechaArchivo()}.xlsx`);
+}
+
+export function exportarNoAsistieronEventoExcel(
+  tituloEvento: string,
+  filas: { nombreCompleto: string; tipo: string; colonia: string; seccionElectoral: string }[],
+) {
+  const datos = filas.map((d) => ({
+    Dirigente: d.nombreCompleto,
+    Tipo: d.tipo,
+    Colonia: d.colonia,
+    "Sección electoral": d.seccionElectoral,
+  }));
+
+  const hoja = XLSX.utils.json_to_sheet(datos);
+  hoja["!cols"] = [{ wch: 36 }, { wch: 6 }, { wch: 28 }, { wch: 12 }];
+
+  const libro = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(libro, hoja, "No asistieron");
+  const slug = tituloEvento.replace(/[^\wáéíóúñÁÉÍÓÚÑ]+/gi, "-").slice(0, 40);
+  XLSX.writeFile(libro, `no-asistieron-${slug}-${fechaArchivo()}.xlsx`);
 }

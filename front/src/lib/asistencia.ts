@@ -128,6 +128,45 @@ export function formatFechaEvento(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+export function etiquetaFiltroFecha(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return `Filtro ${iso}`;
+  const texto = new Date(y, m - 1, d).toLocaleDateString("es-MX", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return `Filtro ${texto}`;
+}
+
+export function fechaAyerMexico(ahora = new Date()): string {
+  const hoy = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(ahora);
+  const [y, m, d] = hoy.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() - 1);
+  return dt.toISOString().slice(0, 10);
+}
+
+export type FaltaAsistenciaFecha = {
+  id: string;
+  nombreCompleto: string;
+  tipo: string;
+  colonia: string;
+  seccionElectoral: string;
+  eventos: string[];
+};
+
+export type FaltasFechaResponse = {
+  fecha: string;
+  eventos: { id: string; titulo: string; estado: EstadoEvento; hora: string }[];
+  faltas: FaltaAsistenciaFecha[];
+};
+
 export type EventoCreateForm = import("./validation-asistencia").EventoFormValues;
 
 export { EMPTY_EVENTO } from "./validation-asistencia";

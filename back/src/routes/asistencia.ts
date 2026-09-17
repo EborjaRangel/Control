@@ -12,6 +12,8 @@ import {
 import {
   detalleAsistenciaDirigente,
   enriquecerEvento,
+  esFechaIso,
+  faltasAsistenciaPorFecha,
   filtroDirigentesElegibles,
   obtenerEvento,
   resumenAsistenciaDirigentes,
@@ -375,6 +377,21 @@ router.get("/dashboard/dirigentes", requireStaff, async (_req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al cargar dashboard" });
+  }
+});
+
+router.get("/dashboard/faltas", requireStaff, async (req, res) => {
+  try {
+    const fecha = typeof req.query.fecha === "string" ? req.query.fecha.trim() : "";
+    if (!esFechaIso(fecha)) {
+      res.status(400).json({ error: "Fecha inválida. Usa AAAA-MM-DD." });
+      return;
+    }
+    const faltas = await faltasAsistenciaPorFecha(fecha);
+    res.json(faltas);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al cargar faltas" });
   }
 });
 

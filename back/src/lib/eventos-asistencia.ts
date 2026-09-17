@@ -6,7 +6,7 @@ import type {
   TipoDirigente,
 } from "../generated/prisma/client.js";
 import { prisma } from "./prisma.js";
-import { nombreCompleto, TIPOS_DIRIGENTE } from "./dirigentes.js";
+import { compararDirigentePorApellidosNombre, nombreCompleto, TIPOS_DIRIGENTE } from "./dirigentes.js";
 import { filtroEstatusListado } from "./filtro-dirigentes.js";
 import { distritoLocalDeSeccion, seccionesDeDistritoLocal } from "./secciones-electorales.js";
 import { etiquetaUnidadTerritorial } from "./unidades-territoriales.js";
@@ -279,5 +279,98 @@ export async function detalleAsistenciaDirigente(dirigenteId: string) {
       faltas: eventosElegibles - asistencias,
     },
     historial,
+  };
+}
+
+const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+export function esFechaIso(valor: string) {
+  return FECHA_ISO.test(valor);
+}
+
+/** Dirigentes elegibles de los eventos de una fecha que no tienen registro de asistencia. */
+export async function faltasAsistenciaPorFecha(fechaIso: string) {
+  const fecha = new Date(`${fechaIso}T12:00:00.000Z`);
+  const eventos = await prisma.eventoAsistencia.findMany({
+    where: { fecha },
+    include: { unidadTerritorial: true },
+    orderBy: [{ hora: "asc" }, { titulo: "asc" }],
+  });
+
+  type Falta = {
+    id: string;
+    nombreCompleto: string;
+    tipo: string;
+    colonia: string;
+    seccionElectoral: string;
+    eventos: string[];
+    primerApellido: string;
+    segundoApellido: string | null;
+    nombre: string;
+  };
+
+  const faltasMap = new Map<string, Falta>();
+
+  for (const ev of eventos) {
+    const [elegibles, registros] = await Promise.all([
+      prisma.dirigente.findMany({
+        where: filtroDirigentesElegibles(ev),
+        select: {
+          id: true,
+          nombre: true,
+          primerApellido: true,
+          segundoApellido: true,
+          tipo: true,
+          colonia: true,
+          seccionElectoral: true,
+        },
+      }),
+      prisma.registroAsistencia.findMany({
+        where: { eventoId: ev.id },
+        select: { dirigenteId: true },
+      }),
+    ]);
+    const asistieron = new Set(registros.map((r) => r.dirigenteId));
+    for (const d of elegibles) {
+      if (asistieron.has(d.id)) continue;
+      const existente = faltasMap.get(d.id);
+      if (existente) {
+        existente.eventos.push(ev.titulo);
+        continue;
+      }
+      faltasMap.set(d.id, {
+        id: d.id,
+        nombreCompleto: nombreCompleto(d),
+        tipo: d.tipo,
+        colonia: d.colonia,
+        seccionElectoral: d.seccionElectoral,
+        eventos: [ev.titulo],
+        primerApellido: d.primerApellido,
+        segundoApellido: d.segundoApellido,
+        nombre: d.nombre,
+      });
+    }
+  }
+
+  const faltas = [...faltasMap.values()]
+    .sort((a, b) => compararDirigentePorApellidosNombre(a, b))
+    .map((fila) => ({
+      id: fila.id,
+      nombreCompleto: fila.nombreCompleto,
+      tipo: fila.tipo,
+      colonia: fila.colonia,
+      seccionElectoral: fila.seccionElectoral,
+      eventos: fila.eventos,
+    }));
+
+  return {
+    fecha: fechaIso,
+    eventos: eventos.map((e) => ({
+      id: e.id,
+      titulo: e.titulo,
+      estado: e.estado,
+      hora: e.hora,
+    })),
+    faltas,
   };
 }

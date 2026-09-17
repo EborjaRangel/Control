@@ -8,6 +8,7 @@ import { ConvocatoriaEventoPanel } from "@/components/ConvocatoriaEventoPanel";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/cn";
+import { exportarNoAsistieronEventoExcel } from "@/lib/export-asistencia-excel";
 import {
   ESTADO_EVENTO_LABEL,
   badgeEstadoEvento,
@@ -193,6 +194,21 @@ export default function EventoDetalleClient() {
               onClick={() => void cerrarPase()}
             >
               Cerrar evento
+            </button>
+          ) : null}
+          {isStaff ? (
+            <button
+              type="button"
+              className="btn-secondary btn-responsive"
+              disabled={lista.filter((d) => !d.asistio).length === 0}
+              onClick={() =>
+                exportarNoAsistieronEventoExcel(
+                  evento.titulo,
+                  lista.filter((d) => !d.asistio),
+                )
+              }
+            >
+              Excel de no asistieron
             </button>
           ) : null}
           <Link href="/asistencia" className="btn-ghost btn-responsive shrink-0">
