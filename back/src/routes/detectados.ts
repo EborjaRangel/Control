@@ -32,7 +32,6 @@ import {
   MENSAJE_CURP_DUPLICADA,
   validarCurpPersonaDetectadaDisponible,
 } from "../lib/persona-detectada-curp.js";
-import { validarSeccionCapturaDirigente } from "../lib/dirigente-seccion-captura.js";
 
 const router = Router();
 
@@ -53,7 +52,6 @@ async function validarCapturaPersonaDetectada(detectadoId: string, seccionElecto
     select: {
       seccionElectoral: true,
       activo: true,
-      dirigente: { select: { tipo: true, seccionElectoral: true } },
     },
   });
   if (!detectado || !detectado.activo) {
@@ -61,16 +59,6 @@ async function validarCapturaPersonaDetectada(detectadoId: string, seccionElecto
   }
   if (!esSeccionValida(seccionElectoral)) {
     return "Sección electoral inválida para Coyoacán";
-  }
-  if (detectado.dirigente) {
-    const capturaDetectadoError = validarSeccionCapturaDirigente(
-      detectado.dirigente.tipo,
-      detectado.dirigente.seccionElectoral,
-      detectado.seccionElectoral,
-    );
-    if (capturaDetectadoError) {
-      return capturaDetectadoError;
-    }
   }
   if (seccionElectoral !== detectado.seccionElectoral) {
     return `Solo puedes registrar personas de la sección ${detectado.seccionElectoral}`;
@@ -289,13 +277,8 @@ router.post("/", requireAuth, async (req, res) => {
       res.status(400).json({ error: "Dirigente no encontrado o inactivo" });
       return;
     }
-    const seccionDetectadoError = validarSeccionCapturaDirigente(
-      dirigente.tipo,
-      dirigente.seccionElectoral,
-      data.seccionElectoral,
-    );
-    if (seccionDetectadoError) {
-      res.status(400).json({ error: seccionDetectadoError });
+    if (!esSeccionValida(data.seccionElectoral)) {
+      res.status(400).json({ error: "Sección electoral no válida para Coyoacán" });
       return;
     }
 
@@ -449,16 +432,9 @@ router.put("/:id", requireAuth, async (req, res) => {
 
     const antes = snapshotDetectado(existing);
 
-    if (existing.dirigente && existing.dirigente.activo) {
-      const seccionDetectadoError = validarSeccionCapturaDirigente(
-        existing.dirigente.tipo,
-        existing.dirigente.seccionElectoral,
-        data.seccionElectoral,
-      );
-      if (seccionDetectadoError) {
-        res.status(400).json({ error: seccionDetectadoError });
-        return;
-      }
+    if (!esSeccionValida(data.seccionElectoral)) {
+      res.status(400).json({ error: "Sección electoral no válida para Coyoacán" });
+      return;
     }
 
     const curpCheck = await validarCurpDetectadoDisponible(data.curp, id);

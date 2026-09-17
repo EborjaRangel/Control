@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { Form, Formik } from "formik";
-import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState, Suspense } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { TableWrap } from "@/components/TableWrap";
 import { FormField } from "@/components/FormField";
 import { apiFetch } from "@/lib/api";
+import { cn } from "@/lib/cn";
 import { canManageDetectadosDirigente, canViewOwnDirigente } from "@/lib/mi-panel";
 import { TIPO_DIRIGENTE_LABEL } from "@/lib/dirigentes";
-import type { DirigenteDetectadosPanelDTO } from "@/lib/detectados";
+import type { DetectadoDTO, DirigenteDetectadosPanelDTO } from "@/lib/detectados";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
 import * as Yup from "yup";
 
@@ -27,8 +28,108 @@ const metaSchema = Yup.object({
     .required("Indica la meta de detectados"),
 });
 
-export default function DirigenteDetectadosPage() {
+type PestanaDetectados = "mi-seccion" | "otras";
+
+function DetectadosLista({
+  detectados,
+  dirigenteId,
+  canCreate,
+  ambito,
+  vacio,
+}: {
+  detectados: DetectadoDTO[];
+  dirigenteId: string;
+  canCreate: boolean;
+  ambito: PestanaDetectados;
+  vacio: string;
+}) {
+  const nuevoHref = `/detectados/dirigentes/${dirigenteId}/nuevo?ambito=${ambito}`;
+
+  if (detectados.length === 0) {
+    return (
+      <p className="text-sm text-ink-secondary">
+        {canCreate ? (
+          <>
+            {vacio}{" "}
+            <Link href={nuevoHref} className="font-medium text-pin hover:underline">
+              Crear el primero
+            </Link>
+          </>
+        ) : (
+          vacio
+        )}
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <ul className="mobile-only-list">
+        {detectados.map((det) => (
+          <li key={det.id} className="list-card">
+            <div className="list-card-header">
+              <div className="min-w-0">
+                <Link
+                  href={`/detectados/${det.id}`}
+                  className="break-words font-bold text-pin hover:underline"
+                >
+                  {det.nombreCompleto}
+                </Link>
+                <p className="mt-1 text-xs text-ink-secondary">
+                  {etiquetaSeccion(det.seccionElectoral)}
+                </p>
+              </div>
+            </div>
+            <Link href={`/detectados/${det.id}`} className="btn-ghost btn-sm btn-responsive">
+              Ver detalle
+            </Link>
+          </li>
+        ))}
+      </ul>
+
+      <div className="desktop-only-table">
+        <TableWrap>
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-line text-xs text-ink-secondary">
+                <th className="py-2 pr-3">Detectado</th>
+                <th className="py-2 pr-3">Sección</th>
+                <th className="py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {detectados.map((det) => (
+                <tr key={det.id} className="border-b border-line/60">
+                  <td className="py-2.5 pr-3">
+                    <Link
+                      href={`/detectados/${det.id}`}
+                      className="font-medium text-pin hover:underline"
+                    >
+                      {det.nombreCompleto}
+                    </Link>
+                  </td>
+                  <td className="py-2.5 pr-3 text-ink-secondary">
+                    {etiquetaSeccion(det.seccionElectoral)}
+                  </td>
+                  <td className="py-2.5 text-right">
+                    <Link href={`/detectados/${det.id}`} className="btn-ghost btn-sm">
+                      Ver detalle
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableWrap>
+      </div>
+    </>
+  );
+}
+
+function DirigenteDetectadosPage() {
   const { dirigenteId } = useParams<{ dirigenteId: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { isStaff, user } = useAuth();
   const canAccess = isStaff || canViewOwnDirigente(user, dirigenteId);
   const canCreate = isStaff || canManageDetectadosDirigente(user, dirigenteId);
@@ -97,6 +198,23 @@ export default function DirigenteDetectadosPage() {
   }
 
   const d = panel.dirigente;
+  const pestana: PestanaDetectados =
+    searchParams.get("pestana") === "otras" ? "otras" : "mi-seccion";
+  const deMiSeccion = panel.detectados.filter(
+    (det) => det.seccionElectoral === d.seccionElectoral,
+  );
+  const deOtras = panel.detectados.filter(
+    (det) => det.seccionElectoral !== d.seccionElectoral,
+  );
+  const nuevoHref = `/detectados/dirigentes/${dirigenteId}/nuevo?ambito=${pestana}`;
+
+  function cambiarPestana(siguiente: PestanaDetectados) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("pestana", siguiente);
+    router.replace(`/detectados/dirigentes/${dirigenteId}?${params.toString()}`, {
+      scroll: false,
+    });
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -111,7 +229,7 @@ export default function DirigenteDetectadosPage() {
         <div className="page-actions">
           {canCreate ? (
             <Link
-              href={`/detectados/dirigentes/${dirigenteId}/nuevo`}
+              href={nuevoHref}
               className="btn-primary btn-responsive"
             >
               + Nuevo detectado
@@ -207,86 +325,80 @@ export default function DirigenteDetectadosPage() {
       )}
 
       <section className="card-section space-y-4">
-        <h2 className="section-title">Detectados</h2>
-        {panel.detectados.length === 0 ? (
-          <p className="text-sm text-ink-secondary">
-            {canCreate ? (
-              <>
-                {isStaff ? "Este dirigente" : "Aún no tienes"} detectados asignados.{" "}
-                <Link
-                  href={`/detectados/dirigentes/${dirigenteId}/nuevo`}
-                  className="font-medium text-pin hover:underline"
-                >
-                  Crear el primero
-                </Link>
-              </>
-            ) : (
-              "Aún no tienes detectados asignados."
-            )}
-          </p>
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Detectados por sección">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={pestana === "mi-seccion"}
+            className={cn("btn-responsive", pestana === "mi-seccion" ? "btn-primary" : "btn-secondary")}
+            onClick={() => cambiarPestana("mi-seccion")}
+          >
+            Mi sección ({deMiSeccion.length})
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={pestana === "otras"}
+            className={cn("btn-responsive", pestana === "otras" ? "btn-primary" : "btn-secondary")}
+            onClick={() => cambiarPestana("otras")}
+          >
+            Otras secciones ({deOtras.length})
+          </button>
+        </div>
+
+        {pestana === "mi-seccion" ? (
+          <>
+            <h2 className="section-title">Mi sección</h2>
+            <p className="text-sm text-ink-secondary">
+              Detectados de {etiquetaSeccion(d.seccionElectoral)}, la sección asignada del dirigente.
+            </p>
+            <DetectadosLista
+              detectados={deMiSeccion}
+              dirigenteId={dirigenteId}
+              canCreate={canCreate}
+              ambito="mi-seccion"
+              vacio={
+                isStaff
+                  ? "Este dirigente aún no tiene detectados en su sección."
+                  : "Aún no tienes detectados en tu sección."
+              }
+            />
+          </>
         ) : (
           <>
-            <ul className="mobile-only-list">
-              {panel.detectados.map((det) => (
-                <li key={det.id} className="list-card">
-                  <div className="list-card-header">
-                    <div className="min-w-0">
-                      <Link
-                        href={`/detectados/${det.id}`}
-                        className="break-words font-bold text-pin hover:underline"
-                      >
-                        {det.nombreCompleto}
-                      </Link>
-                      <p className="mt-1 text-xs text-ink-secondary">
-                        {etiquetaSeccion(det.seccionElectoral)}
-                      </p>
-                    </div>
-                  </div>
-                  <Link href={`/detectados/${det.id}`} className="btn-ghost btn-sm btn-responsive">
-                    Ver detalle
-                  </Link>
-                </li>
-              ))}
-            </ul>
-
-            <div className="desktop-only-table">
-              <TableWrap>
-                <table className="w-full min-w-[640px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-line text-xs text-ink-secondary">
-                  <th className="py-2 pr-3">Detectado</th>
-                  <th className="py-2 pr-3">Sección</th>
-                  <th className="py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {panel.detectados.map((det) => (
-                  <tr key={det.id} className="border-b border-line/60">
-                    <td className="py-2.5 pr-3">
-                      <Link
-                        href={`/detectados/${det.id}`}
-                        className="font-medium text-pin hover:underline"
-                      >
-                        {det.nombreCompleto}
-                      </Link>
-                    </td>
-                    <td className="py-2.5 pr-3 text-ink-secondary">
-                      {etiquetaSeccion(det.seccionElectoral)}
-                    </td>
-                    <td className="py-2.5 text-right">
-                      <Link href={`/detectados/${det.id}`} className="btn-ghost btn-sm">
-                        Ver detalle
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-              </TableWrap>
-            </div>
+            <h2 className="section-title">Otras secciones</h2>
+            <p className="text-sm text-ink-secondary">
+              Detectados en cualquiera de las demás secciones electorales de Coyoacán.
+            </p>
+            <DetectadosLista
+              detectados={deOtras}
+              dirigenteId={dirigenteId}
+              canCreate={canCreate}
+              ambito="otras"
+              vacio={
+                isStaff
+                  ? "Este dirigente aún no tiene detectados en otras secciones."
+                  : "Aún no tienes detectados en otras secciones."
+              }
+            />
           </>
         )}
       </section>
     </div>
+  );
+}
+
+export default function DirigenteDetectadosPageSuspense() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center gap-3 text-ink-secondary">
+          <span className="size-5 animate-pulse rounded-full bg-pin-light" />
+          Cargando…
+        </div>
+      }
+    >
+      <DirigenteDetectadosPage />
+    </Suspense>
   );
 }

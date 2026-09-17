@@ -10,10 +10,7 @@ import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import { detectadoToFormValues, type DetectadoDTO } from "@/lib/detectados";
 import { canManageDetectadosDirigente } from "@/lib/mi-panel";
-import {
-  detectadoSeccionPermitidaParaDirigente,
-  dirigenteCapturaSoloSuSeccion,
-} from "@/lib/dirigente-seccion-captura";
+import { detectadoSeccionPermitidaParaDirigente } from "@/lib/dirigente-seccion-captura";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
 import type { DetectadoFormValues } from "@/lib/validation-detectado";
 
@@ -33,9 +30,11 @@ export default function DetectadoDetallePage() {
       : Boolean(user?.dirigenteId));
 
   const backHref = detectado?.dirigenteId
-    ? isStaff
-      ? `/detectados/dirigentes/${detectado.dirigenteId}`
-      : `/detectados/dirigentes/${detectado.dirigenteId}`
+    ? `/detectados/dirigentes/${detectado.dirigenteId}?pestana=${
+        detectado.dirigente && detectado.seccionElectoral !== detectado.dirigente.seccionElectoral
+          ? "otras"
+          : "mi-seccion"
+      }`
     : isStaff
       ? "/detectados"
       : user?.dirigenteId
@@ -136,7 +135,11 @@ export default function DetectadoDetallePage() {
                 {" "}
                 · Dirigente:{" "}
                 <Link
-                  href={`/detectados/dirigentes/${detectado.dirigenteId}`}
+                  href={`/detectados/dirigentes/${detectado.dirigenteId}?pestana=${
+                    detectado.seccionElectoral !== detectado.dirigente.seccionElectoral
+                      ? "otras"
+                      : "mi-seccion"
+                  }`}
                   className="font-medium text-pin hover:underline"
                 >
                   {detectado.dirigente.nombreCompleto}
@@ -162,15 +165,6 @@ export default function DetectadoDetallePage() {
 
       {!detectado.activo ? (
         <p className="alert-warning">Este detectado está dado de baja.</p>
-      ) : null}
-
-      {!seccionDetectadoPermitida && detectado.dirigente ? (
-        <p className="alert-error">
-          Este detectado opera en {etiquetaSeccion(detectado.seccionElectoral)}, pero como
-          dirigente {detectado.dirigente.tipo} solo puedes registrar detectados en{" "}
-          {etiquetaSeccion(detectado.dirigente.seccionElectoral)}. No se pueden agregar personas
-          aquí hasta corregir la sección del detectado.
-        </p>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -310,7 +304,8 @@ export default function DetectadoDetallePage() {
             excludeDetectadoId={id}
             requiereVerificacionCurp={!detectado.curp}
             seccionFija={
-              detectado.dirigente && dirigenteCapturaSoloSuSeccion(detectado.dirigente.tipo)
+              detectado.dirigente &&
+              detectado.seccionElectoral === detectado.dirigente.seccionElectoral
                 ? detectado.dirigente.seccionElectoral
                 : undefined
             }

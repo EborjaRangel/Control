@@ -6,7 +6,7 @@ import { useState } from "react";
 import { FormField, FormSelect } from "@/components/FormField";
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { apiFetch } from "@/lib/api";
-import { seccionesParaSelect, etiquetaSeccion } from "@/lib/secciones-electorales";
+import { seccionesParaSelect, etiquetaSeccion, TOTAL_SECCIONES_COYOACAN } from "@/lib/secciones-electorales";
 import {
   detectadoCreateSchema,
   detectadoUpdateSchema,
@@ -194,7 +194,7 @@ export function DetectadoForm({
                 </label>
               ) : (
                 <FormSelect label="Sección electoral asignada" name="seccionElectoral">
-                  <option value="">Selecciona sección</option>
+                  <option value="">Selecciona sección ({TOTAL_SECCIONES_COYOACAN} de Coyoacán)</option>
                   {seccionesParaSelect(values.seccionElectoral).map((s) => (
                     <option key={s} value={s}>
                       {etiquetaSeccion(s)}
