@@ -69,6 +69,8 @@ function NuevoDetectadoDirigentePage() {
     );
   }
 
+  const seccionDirigente = dirigente.seccionElectoral;
+
   async function handleSubmit(values: DetectadoFormValues) {
     const res = await apiFetch("/api/detectados", {
       method: "POST",
@@ -87,7 +89,7 @@ function NuevoDetectadoDirigentePage() {
     }
     await res.json();
     const destino =
-      values.seccionElectoral === dirigente.seccionElectoral ? "mi-seccion" : "otras";
+      values.seccionElectoral === seccionDirigente ? "mi-seccion" : "otras";
     router.push(`/detectados/dirigentes/${dirigenteId}?pestana=${destino}`);
     router.refresh();
   }
