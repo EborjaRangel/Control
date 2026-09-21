@@ -38,7 +38,17 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
-app.use("/uploads", express.static(uploadDir));
+app.use(
+  "/uploads",
+  express.static(uploadDir, {
+    maxAge: "7d",
+    etag: true,
+    lastModified: true,
+    setHeaders(res) {
+      res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+    },
+  }),
+);
 app.use("/api", routes);
 app.get("/health", (_req, res) => {
   const resend = resendConfigurado();

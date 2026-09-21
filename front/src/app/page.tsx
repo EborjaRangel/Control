@@ -4,18 +4,38 @@ import { UploadImage } from "@/components/UploadImage";
 import { DirigenteEstatusAltaIcon } from "@/components/DirigenteEstatusAltaIcon";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import { esAbortError, mensajeErrorRed } from "@/lib/api-response";
 import { cn } from "@/lib/cn";
-import { NOMBRES_COLONIAS_COYOACAN } from "@/lib/colonias";
+import { NOMBRES_COLONIAS_COYOACAN, variantesColoniaParaBusqueda } from "@/lib/colonias";
 import {
   TIPO_DIRIGENTE_LABEL,
   TIPOS_DIRIGENTE,
 } from "@/lib/dirigentes";
 import { esDirigenteBaja, STATUS_DIRIGENTE_LABEL } from "@/lib/dirigente-spec";
+import { normalizarTextoGuardado } from "@/lib/normalizar-texto";
 import type { DirigenteDTO } from "@/lib/types";
+
+const TAMANO_PAGINA = 24;
+
+function claveListadoDirigentes(incluirBajas: boolean, buscar: string, tipo: string) {
+  return `${incluirBajas ? "baja" : "alta"}|${buscar.trim().toLowerCase()}|${tipo || "todos"}`;
+}
+
+function coincideTipoFiltro(tipoDirigente: string, tipoFiltro: string) {
+  if (!tipoFiltro) return true;
+  return tipoDirigente.trim().toUpperCase() === tipoFiltro.trim().toUpperCase();
+}
+
+function coincideColoniaFiltro(coloniaDirigente: string, coloniaFiltro: string) {
+  if (!coloniaFiltro) return true;
+  const variantes = variantesColoniaParaBusqueda(coloniaFiltro).map((v) =>
+    normalizarTextoGuardado(v),
+  );
+  return variantes.includes(normalizarTextoGuardado(coloniaDirigente));
+}
 
 export default function DirigentesPage() {
   const pathname = usePathname();
@@ -25,10 +45,23 @@ export default function DirigentesPage() {
   const [tipo, setTipo] = useState("");
   const [colonia, setColonia] = useState("");
   const [incluirBajas, setIncluirBajas] = useState(false);
+  const [mostrar, setMostrar] = useState(TAMANO_PAGINA);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const cargaId = useRef(0);
+  const cacheListado = useRef(new Map<string, DirigenteDTO[]>());
 
   const load = useCallback(async (signal?: AbortSignal) => {
+    const id = ++cargaId.current;
+    const clave = claveListadoDirigentes(incluirBajas, buscar, tipo);
+    const cached = cacheListado.current.get(clave);
+    if (cached) {
+      setDirigentes(cached);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -40,36 +73,47 @@ export default function DirigentesPage() {
       }
       if (buscar.trim()) params.set("buscar", buscar.trim());
       if (tipo) params.set("tipo", tipo);
-      if (colonia) params.set("colonia", colonia);
       const res = await apiFetch(`/api/dirigentes?${params.toString()}`, { signal });
-      if (signal?.aborted) return;
+      if (id !== cargaId.current || signal?.aborted) return;
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
         throw new Error(data.error ?? "Error al cargar dirigentes");
       }
-      setDirigentes((await res.json()) as DirigenteDTO[]);
+      const data = (await res.json()) as DirigenteDTO[];
+      cacheListado.current.set(clave, data);
+      setDirigentes(data);
     } catch (err) {
-      if (esAbortError(err) || signal?.aborted) return;
+      if (id !== cargaId.current || esAbortError(err) || signal?.aborted) return;
       setError(mensajeErrorRed(err, "Error al cargar dirigentes"));
+      setDirigentes([]);
     } finally {
-      if (!signal?.aborted) setLoading(false);
+      if (id === cargaId.current) setLoading(false);
     }
-  }, [buscar, incluirBajas, tipo, colonia]);
+  }, [buscar, incluirBajas, tipo]);
 
   useEffect(() => {
     setIncluirBajas(false);
   }, [pathname]);
 
   useEffect(() => {
+    if (!isStaff) return;
     const controller = new AbortController();
-    const timer = setTimeout(() => {
+    if (!buscar.trim()) {
       void load(controller.signal);
-    }, buscar ? 300 : 0);
+      return () => controller.abort();
+    }
+    const timer = window.setTimeout(() => {
+      void load(controller.signal);
+    }, 300);
     return () => {
-      clearTimeout(timer);
+      window.clearTimeout(timer);
       controller.abort();
     };
-  }, [load, buscar, incluirBajas, tipo, colonia, pathname]);
+  }, [load, buscar, incluirBajas, tipo, pathname, isStaff]);
+
+  useEffect(() => {
+    setMostrar(TAMANO_PAGINA);
+  }, [tipo, colonia, buscar, incluirBajas, pathname]);
 
   const hayFiltros = Boolean(buscar.trim() || tipo || colonia || incluirBajas);
 
@@ -84,7 +128,16 @@ export default function DirigentesPage() {
 
   const esBaja = esDirigenteBaja;
 
-  const dirigentesVisibles = dirigentes;
+  const dirigentesFiltrados = useMemo(
+    () =>
+      dirigentes.filter(
+        (d) =>
+          coincideTipoFiltro(d.tipo, tipo) && coincideColoniaFiltro(d.colonia, colonia),
+      ),
+    [dirigentes, tipo, colonia],
+  );
+
+  const dirigentesVisibles = dirigentesFiltrados.slice(0, mostrar);
 
   async function toggleActivo(id: string, activo: boolean) {
     const url = activo
@@ -95,6 +148,7 @@ export default function DirigentesPage() {
       alert("No se pudo actualizar el estado");
       return;
     }
+    cacheListado.current.clear();
     await load();
   }
 
@@ -110,7 +164,7 @@ export default function DirigentesPage() {
           <p className="page-subtitle">
             {loading
               ? "Cargando…"
-              : `${dirigentesVisibles.length} registro(s) · ${resumenFiltros}`}
+              : `${dirigentesFiltrados.length} registro(s) · ${resumenFiltros}`}
           </p>
         </div>
         <div className="page-actions">
@@ -133,20 +187,27 @@ export default function DirigentesPage() {
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="block">
+          <label className="block sm:col-span-2 lg:col-span-3">
             <span className="label">Tipo de dirigente</span>
-            <select
-              value={tipo}
-              onChange={(e) => setTipo(e.target.value)}
-              className="input mt-1"
-            >
-              <option value="">Todos (D1–D4)</option>
+            <div className="mt-1.5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={!tipo ? "btn-primary btn-sm btn-responsive" : "btn-secondary btn-sm btn-responsive"}
+                onClick={() => setTipo("")}
+              >
+                Todos
+              </button>
               {TIPOS_DIRIGENTE.map((t) => (
-                <option key={t} value={t}>
-                  {TIPO_DIRIGENTE_LABEL[t]}
-                </option>
+                <button
+                  key={t}
+                  type="button"
+                  className={tipo === t ? "btn-primary btn-sm btn-responsive" : "btn-secondary btn-sm btn-responsive"}
+                  onClick={() => setTipo(t)}
+                >
+                  {t}
+                </button>
               ))}
-            </select>
+            </div>
           </label>
 
           <label className="block">
@@ -179,14 +240,14 @@ export default function DirigentesPage() {
 
       {error ? <div className="alert-error">{error}</div> : null}
 
-      {loading ? (
+      {loading && dirigentes.length === 0 ? (
         <div className="flex items-center gap-3 text-ink-secondary">
           <span className="size-5 animate-pulse rounded-full bg-pin-light" />
           Cargando dirigentes…
         </div>
       ) : null}
 
-      {!loading && dirigentesVisibles.length === 0 ? (
+      {!loading && dirigentesFiltrados.length === 0 ? (
         <div className="card py-16 text-center">
           <p className="font-semibold text-ink">
             {hayFiltros ? "Sin resultados" : "No hay dirigentes registrados"}
@@ -206,7 +267,7 @@ export default function DirigentesPage() {
         </div>
       ) : null}
 
-      {!loading && dirigentesVisibles.length > 0 ? (
+      {dirigentesVisibles.length > 0 ? (
       <div className="card-grid">
         {dirigentesVisibles.map((d) => (
           <article
@@ -224,6 +285,7 @@ export default function DirigentesPage() {
                   width={64}
                   height={64}
                   className="avatar"
+                  loading="lazy"
                 />
               ) : (
                 <div className="avatar-placeholder">Sin foto</div>
@@ -313,6 +375,18 @@ export default function DirigentesPage() {
           </article>
         ))}
       </div>
+      ) : null}
+
+      {!loading && dirigentesFiltrados.length > dirigentesVisibles.length ? (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            className="btn-secondary btn-responsive"
+            onClick={() => setMostrar((n) => n + TAMANO_PAGINA)}
+          >
+            Cargar más ({dirigentesFiltrados.length - dirigentesVisibles.length} restantes)
+          </button>
+        </div>
       ) : null}
     </div>
   );

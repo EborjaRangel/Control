@@ -296,6 +296,11 @@
     @apply grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3;
   }
 
+  .card-grid > * {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 280px;
+  }
+
   .card-actions {
     @apply grid grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex sm:flex-row sm:flex-wrap;
   }

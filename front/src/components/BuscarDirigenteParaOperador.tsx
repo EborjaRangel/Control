@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { apiJson, esAbortError, mensajeErrorRed } from "@/lib/api-response";
 import { NOMBRES_COLONIAS_COYOACAN } from "@/lib/colonias";
@@ -37,6 +37,7 @@ export function BuscarDirigenteParaOperador({ modo, selectedId, onSelect }: Prop
   const [dirigentes, setDirigentes] = useState<DirigenteParaOperador[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const cargaId = useRef(0);
 
   useEffect(() => {
     void apiFetch("/api/unidades-territoriales/catalogo")
@@ -48,40 +49,53 @@ export function BuscarDirigenteParaOperador({ modo, selectedId, onSelect }: Prop
   }, []);
 
   const load = useCallback(async (signal?: AbortSignal) => {
+    const id = ++cargaId.current;
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
       if (buscar.trim()) params.set("buscar", buscar.trim());
-      if (tipo) params.set("tipo", tipo);
       if (colonia) params.set("colonia", colonia);
       if (seccionElectoral) params.set("seccionElectoral", seccionElectoral);
       if (unidadTerritorialId) params.set("unidadTerritorialId", unidadTerritorialId);
       params.set(modo === "rc" ? "disponibleParaRc" : "disponibleParaRg", "true");
 
       const res = await apiFetch(`/api/dirigentes?${params.toString()}`, { signal });
-      if (signal?.aborted) return;
+      if (id !== cargaId.current || signal?.aborted) return;
       const data = await apiJson<DirigenteParaOperador[]>(res);
       setDirigentes(data);
     } catch (err) {
-      if (esAbortError(err) || signal?.aborted) return;
+      if (id !== cargaId.current || esAbortError(err) || signal?.aborted) return;
       setError(mensajeErrorRed(err, "Error al buscar"));
       setDirigentes([]);
     } finally {
-      if (!signal?.aborted) setLoading(false);
+      if (id === cargaId.current) setLoading(false);
     }
-  }, [buscar, tipo, colonia, seccionElectoral, unidadTerritorialId, modo]);
+  }, [buscar, colonia, seccionElectoral, unidadTerritorialId, modo]);
 
   useEffect(() => {
     const controller = new AbortController();
-    const timer = setTimeout(() => {
+    if (!buscar.trim()) {
       void load(controller.signal);
-    }, buscar ? 300 : 0);
+      return () => controller.abort();
+    }
+    const timer = window.setTimeout(() => {
+      void load(controller.signal);
+    }, 300);
     return () => {
-      clearTimeout(timer);
+      window.clearTimeout(timer);
       controller.abort();
     };
-  }, [load, buscar, tipo, colonia, seccionElectoral, unidadTerritorialId]);
+  }, [load, buscar, colonia, seccionElectoral, unidadTerritorialId]);
+
+  const dirigentesVisibles = useMemo(
+    () =>
+      dirigentes.filter((d) => {
+        if (!tipo) return true;
+        return d.tipo.trim().toUpperCase() === tipo.trim().toUpperCase();
+      }),
+    [dirigentes, tipo],
+  );
 
   return (
     <section className="card-section space-y-4">
@@ -105,14 +119,25 @@ export function BuscarDirigenteParaOperador({ modo, selectedId, onSelect }: Prop
         </label>
         <label className="block">
           <span className="label">Tipo</span>
-          <select className="input mt-1" value={tipo} onChange={(e) => setTipo(e.target.value)}>
-            <option value="">Todos (D1–D4)</option>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={!tipo ? "btn-primary btn-sm btn-responsive" : "btn-secondary btn-sm btn-responsive"}
+              onClick={() => setTipo("")}
+            >
+              Todos
+            </button>
             {TIPOS_DIRIGENTE.map((t) => (
-              <option key={t} value={t}>
-                {TIPO_DIRIGENTE_LABEL[t]}
-              </option>
+              <button
+                key={t}
+                type="button"
+                className={tipo === t ? "btn-primary btn-sm btn-responsive" : "btn-secondary btn-sm btn-responsive"}
+                onClick={() => setTipo(t)}
+              >
+                {t}
+              </button>
             ))}
-          </select>
+          </div>
         </label>
         <label className="block">
           <span className="label">Colonia</span>
@@ -159,19 +184,19 @@ export function BuscarDirigenteParaOperador({ modo, selectedId, onSelect }: Prop
 
       {error ? <div className="alert-error">{error}</div> : null}
 
-      {loading ? (
+      {loading && dirigentes.length === 0 ? (
         <p className="text-sm text-ink-secondary">Buscando dirigentes…</p>
       ) : null}
 
-      {!loading && dirigentes.length === 0 ? (
+      {!loading && dirigentesVisibles.length === 0 ? (
         <p className="text-sm text-ink-secondary">
           No hay dirigentes activos que coincidan con la búsqueda.
         </p>
       ) : null}
 
-      {!loading && dirigentes.length > 0 ? (
+      {dirigentesVisibles.length > 0 ? (
         <ul className="space-y-2">
-          {dirigentes.map((d) => {
+          {dirigentesVisibles.map((d) => {
             const selected = selectedId === d.id;
             return (
               <li key={d.id}>

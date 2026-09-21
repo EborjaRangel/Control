@@ -188,6 +188,7 @@ model Dirigente {
   @@index([activo])
   @@index([status])
   @@index([tipo])
+  @@index([status, activo, tipo])
   @@index([seccionElectoral])
   @@index([colonia])
   @@index([unidadTerritorialId])
