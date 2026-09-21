@@ -114,6 +114,7 @@ export async function usuariosParaDirigentes(dirigenteIds: string[]): Promise<st
 
 export type EnviarNotificacionInput = NotificacionAlcanceFields & {
   mensaje: string;
+  imagenesUrl?: string[];
   creadoPorId?: string | null;
 };
 
@@ -124,6 +125,7 @@ export function normalizarMensajeNotificacion(mensaje: string): string {
 export async function notificarUsuariosDirectos(input: {
   dirigenteIds: string[];
   mensaje: string;
+  imagenesUrl?: string[];
   creadoPorId?: string | null;
 }) {
   const usuarioIds = await usuariosParaDirigentes(input.dirigenteIds);
@@ -134,6 +136,7 @@ export async function notificarUsuariosDirectos(input: {
   const notificacion = await prisma.notificacion.create({
     data: {
       mensaje: normalizarMensajeNotificacion(input.mensaje),
+      imagenesUrl: input.imagenesUrl ?? [],
       alcance: "TODOS",
       creadoPorId: input.creadoPorId ?? null,
       destinatarios: {
@@ -171,6 +174,7 @@ export async function enviarNotificacion(input: EnviarNotificacionInput) {
   const notificacion = await prisma.notificacion.create({
     data: {
       mensaje: normalizarMensajeNotificacion(input.mensaje),
+      imagenesUrl: input.imagenesUrl ?? [],
       alcance: input.alcance,
       colonia: input.colonia ? normalizarTextoGuardado(input.colonia) : null,
       seccionElectoral: input.seccionElectoral ?? null,
@@ -207,6 +211,7 @@ export function serializeNotificacionUsuario(row: {
   notificacion: {
     id: string;
     mensaje: string;
+    imagenesUrl: string[];
     alcance: AlcanceNotificacion;
     colonia: string | null;
     seccionElectoral: string | null;
@@ -222,6 +227,7 @@ export function serializeNotificacionUsuario(row: {
     id: row.id,
     notificacionId: n.id,
     mensaje: n.mensaje,
+    imagenesUrl: n.imagenesUrl ?? [],
     alcance: n.alcance,
     alcanceLabel: etiquetaAlcanceNotificacion(n),
     enviadoAt: n.enviadoAt.toISOString(),

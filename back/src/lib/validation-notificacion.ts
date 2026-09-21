@@ -7,6 +7,26 @@ import {
   SECCIONES_ELECTORALES_COYOACAN,
 } from "./secciones-electorales.js";
 
+export const MAX_IMAGENES_NOTIFICACION = 5;
+
+/** Rutas persistidas por /api/upload. */
+export const IMAGEN_NOTIFICACION_URL =
+  /^\/uploads\/[a-f0-9-]+\.(jpg|jpeg|png|webp|gif)$/i;
+
+export function normalizarImagenesNotificacion(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const unicas: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string") continue;
+    const url = item.trim();
+    if (!IMAGEN_NOTIFICACION_URL.test(url)) continue;
+    if (unicas.includes(url)) continue;
+    unicas.push(url);
+    if (unicas.length >= MAX_IMAGENES_NOTIFICACION) break;
+  }
+  return unicas;
+}
+
 export const ALCANCES_NOTIFICACION = [
   "TODOS",
   "TIPO_DIRIGENTE",
@@ -89,4 +109,14 @@ export const notificacionEnviarSchema = Yup.object({
           .oneOf([...TIPOS_DIRIGENTE], "Tipo de dirigente inválido")
           .required("Selecciona el tipo de dirigente"),
     }),
+  imagenesUrl: Yup.array()
+    .transform((v) => normalizarImagenesNotificacion(v))
+    .of(
+      Yup.string().matches(
+        IMAGEN_NOTIFICACION_URL,
+        "La imagen debe ser un archivo subido al sistema",
+      ),
+    )
+    .max(MAX_IMAGENES_NOTIFICACION, `Máximo ${MAX_IMAGENES_NOTIFICACION} imágenes`)
+    .default([]),
 });

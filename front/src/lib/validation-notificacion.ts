@@ -8,6 +8,11 @@ import {
 } from "./secciones-electorales";
 import type { AlcanceNotificacion } from "./notificaciones";
 
+export const MAX_IMAGENES_NOTIFICACION = 5;
+
+const IMAGEN_NOTIFICACION_URL =
+  /^\/uploads\/[a-f0-9-]+\.(jpg|jpeg|png|webp|gif)$/i;
+
 export const ALCANCES_NOTIFICACION = [
   "TODOS",
   "TIPO_DIRIGENTE",
@@ -27,6 +32,7 @@ export type NotificacionFormValues = {
   distritoLocal: string;
   distritoFederal: string;
   tipoDirigente: string;
+  imagenesUrl: string[];
 };
 
 export const EMPTY_NOTIFICACION: NotificacionFormValues = {
@@ -38,6 +44,7 @@ export const EMPTY_NOTIFICACION: NotificacionFormValues = {
   distritoLocal: "",
   distritoFederal: "",
   tipoDirigente: "",
+  imagenesUrl: [],
 };
 
 export const notificacionEnviarSchema = Yup.object({
@@ -92,6 +99,15 @@ export const notificacionEnviarSchema = Yup.object({
       s.oneOf([...TIPOS_DIRIGENTE], "Tipo inválido").required("Selecciona tipo"),
     otherwise: (s) => s.optional(),
   }),
+  imagenesUrl: Yup.array()
+    .of(
+      Yup.string().matches(
+        IMAGEN_NOTIFICACION_URL,
+        "La imagen debe ser un archivo subido al sistema",
+      ),
+    )
+    .max(MAX_IMAGENES_NOTIFICACION, `Máximo ${MAX_IMAGENES_NOTIFICACION} imágenes`)
+    .default([]),
 });
 
 export function payloadFromNotificacionForm(values: NotificacionFormValues) {
@@ -111,5 +127,6 @@ export function payloadFromNotificacionForm(values: NotificacionFormValues) {
         ? Number(values.distritoFederal)
         : null,
     tipoDirigente: values.alcance === "TIPO_DIRIGENTE" ? values.tipoDirigente : null,
+    imagenesUrl: values.imagenesUrl.filter((url) => IMAGEN_NOTIFICACION_URL.test(url)),
   };
 }

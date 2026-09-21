@@ -669,6 +669,7 @@ model EnvioComunicacion {
 model Notificacion {
   id                  String              @id @default(cuid())
   mensaje             String
+  imagenesUrl         String[]            @default([])
   alcance             AlcanceNotificacion
   colonia             String?
   seccionElectoral    String?

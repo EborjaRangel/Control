@@ -8,19 +8,22 @@ const GALLERY_ACCEPT =
   "image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,image/*";
 
 type Props = {
-  onFile: (file: File) => void;
+  onFile: (file: File) => void | Promise<void>;
   disabled?: boolean;
+  multiple?: boolean;
 };
 
 /** Selector de imagen: cámara vía getUserMedia + galería (Samsung A55 / Chrome). */
-export function ImageCapturePicker({ onFile, disabled = false }: Props) {
+export function ImageCapturePicker({ onFile, disabled = false, multiple = false }: Props) {
   const galleryRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
 
-  function handleGalleryChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) onFile(file);
+  async function handleGalleryChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files ? Array.from(e.target.files) : [];
     e.target.value = "";
+    for (const file of files) {
+      await onFile(file);
+    }
   }
 
   return (
@@ -30,6 +33,7 @@ export function ImageCapturePicker({ onFile, disabled = false }: Props) {
           ref={galleryRef}
           type="file"
           accept={GALLERY_ACCEPT}
+          multiple={multiple}
           className="sr-only"
           disabled={disabled}
           onChange={handleGalleryChange}

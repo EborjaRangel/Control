@@ -9,7 +9,7 @@ import {
   etiquetaAlcanceNotificacion,
   serializeNotificacionUsuario,
 } from "../lib/notificaciones.js";
-import { notificacionEnviarSchema } from "../lib/validation-notificacion.js";
+import { notificacionEnviarSchema, normalizarImagenesNotificacion } from "../lib/validation-notificacion.js";
 import { registrarAuditoria } from "../lib/audit.js";
 
 const router = Router();
@@ -138,8 +138,10 @@ router.post("/enviar", requireStaff, async (req, res) => {
       stripUnknown: true,
     });
 
+    const imagenesUrl = normalizarImagenesNotificacion(data.imagenesUrl);
     const resultado = await enviarNotificacion({
       ...data,
+      imagenesUrl,
       tipoDirigente: (data.tipoDirigente as TipoDirigente | null | undefined) ?? null,
       creadoPorId: req.user!.sub,
     });
@@ -156,6 +158,7 @@ router.post("/enviar", requireStaff, async (req, res) => {
       entidadLabel: resultado.alcanceLabel,
       despues: {
         mensaje: data.mensaje.trim().toUpperCase(),
+        imagenesUrl,
         alcance: data.alcance,
         destinatarios: resultado.destinatarios,
         dirigentes: resultado.dirigentes,
@@ -189,6 +192,7 @@ router.get("/historial", requireStaff, async (_req, res) => {
       rows.map((n) => ({
         id: n.id,
         mensaje: n.mensaje,
+        imagenesUrl: n.imagenesUrl ?? [],
         alcance: n.alcance,
         alcanceLabel: etiquetaAlcanceNotificacion(n),
         enviadoAt: n.enviadoAt.toISOString(),

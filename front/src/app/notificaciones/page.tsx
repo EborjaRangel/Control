@@ -12,6 +12,7 @@ import {
   formatRelativaNotificacion,
   type NotificacionUsuarioDTO,
 } from "@/lib/notificaciones";
+import { NotificacionImagenes } from "@/components/NotificacionImagenes";
 import { NotificacionMensaje } from "@/components/NotificacionMensaje";
 
 export default function NotificacionesPage() {
@@ -128,6 +129,7 @@ export default function NotificacionesPage() {
             <p className="notif-mensaje">
               <NotificacionMensaje mensaje={n.mensaje} />
             </p>
+            <NotificacionImagenes imagenesUrl={n.imagenesUrl} />
 
             {!n.leida ? (
               <div className="notif-item-foot">

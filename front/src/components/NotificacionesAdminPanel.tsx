@@ -20,6 +20,8 @@ import {
   etiquetaSeccion,
 } from "@/lib/secciones-electorales";
 import { etiquetaUnidadTerritorial, type UnidadTerritorialResumen } from "@/lib/unidades-territoriales";
+import { NotificacionImagenes } from "@/components/NotificacionImagenes";
+import { NotificacionImagenesField } from "@/components/NotificacionImagenesField";
 import {
   ALCANCES_NOTIFICACION,
   EMPTY_NOTIFICACION,
@@ -164,8 +166,8 @@ export function NotificacionesAdminPanel() {
       <div>
         <h2 className="section-title">Notificaciones en la web</h2>
         <p className="mt-1 text-sm text-ink-secondary">
-          El mensaje aparecerá en el panel web de cada usuario destinatario. Queda guardado hasta
-          que lo marquen como visto.
+          El mensaje y las imágenes aparecerán en el panel web de cada usuario destinatario.
+          Queda guardado hasta que lo marquen como visto.
         </p>
       </div>
 
@@ -200,7 +202,7 @@ export function NotificacionesAdminPanel() {
           }
         }}
       >
-        {({ values, isSubmitting, validateForm, setTouched, setFieldValue }) => (
+        {({ values, isSubmitting, validateForm, setTouched, setFieldValue, status }) => (
           <Form className="space-y-4">
             <FormTextarea
               label="Mensaje de notificación"
@@ -215,6 +217,8 @@ export function NotificacionesAdminPanel() {
             <p className="-mt-2 text-xs text-ink-secondary">
               El mensaje se guarda automáticamente en MAYÚSCULAS.
             </p>
+
+            <NotificacionImagenesField />
 
             <div className="form-grid">
               <AlcanceSelect />
@@ -263,7 +267,11 @@ export function NotificacionesAdminPanel() {
               >
                 Calcular destinatarios
               </button>
-              <button type="submit" className="btn-primary btn-responsive" disabled={isSubmitting}>
+              <button
+                type="submit"
+                className="btn-primary btn-responsive"
+                disabled={isSubmitting || Boolean(status?.uploadingImages)}
+              >
                 {isSubmitting ? "Enviando…" : "Enviar notificación"}
               </button>
             </div>
@@ -293,6 +301,7 @@ export function NotificacionesAdminPanel() {
               <li key={h.id} className="panel-soft text-sm">
                 <p className="font-medium text-ink">{h.alcanceLabel}</p>
                 <p className="mt-1 line-clamp-2 text-ink-secondary">{h.mensaje}</p>
+                <NotificacionImagenes imagenesUrl={h.imagenesUrl} compact />
                 <p className="mt-1 text-xs text-ink-secondary">
                   {formatFechaNotificacion(h.enviadoAt)} · {h.destinatarios} destinatario(s)
                 </p>

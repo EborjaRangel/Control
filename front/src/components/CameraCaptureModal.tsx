@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 type Props = {
   open: boolean;
   onClose: () => void;
-  onCapture: (file: File) => void;
+  onCapture: (file: File) => void | Promise<void>;
 };
 
 async function openCameraStream(): Promise<MediaStream> {

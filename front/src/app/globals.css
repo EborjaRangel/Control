@@ -456,6 +456,31 @@
     @apply whitespace-pre-wrap text-sm leading-snug text-ink;
   }
 
+  .notif-imagenes {
+    @apply mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2;
+  }
+
+  .notif-imagenes-compact,
+  .notif-imagenes-editor {
+    @apply mt-2 flex flex-wrap gap-2;
+  }
+
+  .notif-imagen-editor-item {
+    @apply flex w-24 flex-col items-start gap-1;
+  }
+
+  .notif-imagen-link {
+    @apply block overflow-hidden rounded-pin bg-surface-muted ring-1 ring-line;
+  }
+
+  .notif-imagen {
+    @apply h-auto max-h-72 w-full object-contain;
+  }
+
+  .notif-imagen-thumb {
+    @apply size-24 rounded-pin object-cover ring-1 ring-line;
+  }
+
   .notif-item-foot {
     @apply mt-1.5 flex flex-wrap items-center gap-2;
   }

@@ -21,6 +21,7 @@ export type NotificacionUsuarioDTO = {
   id: string;
   notificacionId: string;
   mensaje: string;
+  imagenesUrl: string[];
   alcance: AlcanceNotificacion;
   alcanceLabel: string;
   enviadoAt: string;
@@ -57,6 +58,7 @@ export type NotificacionEnviarResultado = {
 export type NotificacionHistorialItem = {
   id: string;
   mensaje: string;
+  imagenesUrl: string[];
   alcance: AlcanceNotificacion;
   alcanceLabel: string;
   enviadoAt: string;
