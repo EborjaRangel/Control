@@ -1,4 +1,4 @@
-export const TIPOS_DIRIGENTE = ["D1", "D2", "D3", "D4"] as const;
+export const TIPOS_DIRIGENTE = ["D1", "D2", "D3", "D4", "TRANSVERSAL"] as const;
 export type TipoDirigente = (typeof TIPOS_DIRIGENTE)[number];
 
 export const TIPO_DIRIGENTE_LABEL: Record<TipoDirigente, string> = {
@@ -6,7 +6,20 @@ export const TIPO_DIRIGENTE_LABEL: Record<TipoDirigente, string> = {
   D2: "D2 — Avanzado",
   D3: "D3 — Intermedio",
   D4: "D4 — Principiante",
+  TRANSVERSAL: "Transversales",
 };
+
+export const TIPO_DIRIGENTE_CORTO: Record<TipoDirigente, string> = {
+  D1: "D1",
+  D2: "D2",
+  D3: "D3",
+  D4: "D4",
+  TRANSVERSAL: "Transversales",
+};
+
+export function etiquetaTipoDirigenteCorto(tipo: string): string {
+  return TIPO_DIRIGENTE_CORTO[tipo as TipoDirigente] ?? tipo;
+}
 
 export {
   CONCEPTOS_SUELDO_CATALOGO,

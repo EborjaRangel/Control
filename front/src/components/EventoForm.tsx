@@ -133,7 +133,7 @@ function AlcanceCampos({ uts }: { uts: UnidadTerritorialResumen[] }) {
   if (values.alcance === "TODOS") {
     return (
       <p className="panel-pin text-sm text-pin-dark">
-        Incluye a todos los dirigentes D1, D2, D3 y D4 con estatus alta.
+        Incluye a todos los dirigentes D1, D2, D3, D4 y Transversales con estatus alta.
       </p>
     );
   }

@@ -36,7 +36,7 @@ const DEFAULT_FILE = path.resolve(
 );
 const DEFAULT_SHEETS = ["REGISTROS", "Carga Dirigentes", "Carga", "Dirigentes", "Hoja1"];
 
-type TipoDirigente = "D1" | "D2" | "D3" | "D4";
+type TipoDirigente = "D1" | "D2" | "D3" | "D4" | "TRANSVERSAL";
 type StatusImport = "ACTIVO" | "BAJA";
 
 type CargaDirigente = {
@@ -115,8 +115,9 @@ function parseText(value: unknown): string {
 }
 
 function parseTipo(value: unknown): TipoDirigente {
-  const tipo = parseText(value).toUpperCase();
+  const tipo = parseText(value).toUpperCase().replace(/\s+/g, "_");
   if (tipo === "D1" || tipo === "D2" || tipo === "D3" || tipo === "D4") return tipo;
+  if (tipo === "TRANSVERSAL" || tipo === "TRANSVERSALES") return "TRANSVERSAL";
   return "D4";
 }
 

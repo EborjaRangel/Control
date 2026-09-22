@@ -57,7 +57,7 @@ export function etiquetaAlcanceNotificacion(
 ): string {
   switch (n.alcance) {
     case "TODOS":
-      return "Todos los dirigentes (D1–D4)";
+      return "Todos los dirigentes (D1–D4 y Transversales)";
     case "TIPO_DIRIGENTE":
       return `Tipo dirigente: ${n.tipoDirigente ?? "—"}`;
     case "DISTRITO_FEDERAL":

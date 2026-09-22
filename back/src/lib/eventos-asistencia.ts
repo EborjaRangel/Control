@@ -106,7 +106,7 @@ export function etiquetaAlcanceEvento(
     case "TIPO_DIRIGENTE":
       return `Tipo dirigente: ${evento.tipoDirigente ?? "—"}`;
     case "TODOS":
-      return "Todos los dirigentes (D1–D4, estatus alta)";
+      return "Todos los dirigentes (D1–D4 y Transversales, estatus alta)";
     default:
       return "—";
   }

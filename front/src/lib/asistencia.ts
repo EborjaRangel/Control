@@ -107,7 +107,7 @@ export const ALCANCE_EVENTO_LABEL: Record<AlcanceEvento, string> = {
   SECCION: "Por sección electoral",
   UNIDAD_TERRITORIAL: "Por unidad territorial",
   DISTRITO: "Por distrito local",
-  TIPO_DIRIGENTE: "Por tipo de dirigente (D1–D4)",
+  TIPO_DIRIGENTE: "Por tipo de dirigente (D1–D4 y Transversales)",
   TODOS: "Todos los dirigentes",
 };
 

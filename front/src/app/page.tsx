@@ -13,6 +13,7 @@ import { NOMBRES_COLONIAS_COYOACAN, variantesColoniaParaBusqueda } from "@/lib/c
 import {
   TIPO_DIRIGENTE_LABEL,
   TIPOS_DIRIGENTE,
+  etiquetaTipoDirigenteCorto,
 } from "@/lib/dirigentes";
 import { esDirigenteBaja, STATUS_DIRIGENTE_LABEL } from "@/lib/dirigente-spec";
 import { normalizarTextoGuardado } from "@/lib/normalizar-texto";
@@ -204,7 +205,7 @@ export default function DirigentesPage() {
                   className={tipo === t ? "btn-primary btn-sm btn-responsive" : "btn-secondary btn-sm btn-responsive"}
                   onClick={() => setTipo(t)}
                 >
-                  {t}
+                  {etiquetaTipoDirigenteCorto(t)}
                 </button>
               ))}
             </div>
@@ -325,7 +326,7 @@ export default function DirigentesPage() {
                   </div>
                 </dl>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <span className="badge-pin shrink-0">{d.tipo}</span>
+                  <span className="badge-pin shrink-0">{etiquetaTipoDirigenteCorto(d.tipo)}</span>
                   <span className="break-anywhere text-sm text-ink-secondary">{d.colonia}</span>
                 </div>
                 {d.usuario || d.password ? (

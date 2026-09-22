@@ -24,12 +24,13 @@ enum RolUsuario {
   RG
 }
 
-/// Nivel de capacidad del dirigente: D1 (más experiencia) a D4 (principiante)
+/// Clasificación del dirigente: D1–D4 por nivel y Transversales
 enum TipoDirigente {
   D1
   D2
   D3
   D4
+  TRANSVERSAL
 }
 
 /// Estado operativo del dirigente (spec Excel)
@@ -606,7 +607,7 @@ model EventoAsistencia {
   unidadTerritorial   UnidadTerritorial? @relation(fields: [unidadTerritorialId], references: [id], onDelete: SetNull)
   /// Distrito local 26 o 30; null = ambos distritos (Coyoacán)
   distritoLocal       Int?
-  /// D1–D4 cuando alcance = TIPO_DIRIGENTE
+  /// D1–D4 o Transversales cuando alcance = TIPO_DIRIGENTE
   tipoDirigente       TipoDirigente?
   estado              EstadoEvento   @default(PROGRAMADO)
   abiertoAt           DateTime?

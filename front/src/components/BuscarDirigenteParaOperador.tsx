@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { apiJson, esAbortError, mensajeErrorRed } from "@/lib/api-response";
 import { NOMBRES_COLONIAS_COYOACAN } from "@/lib/colonias";
-import { nombreCompleto, TIPO_DIRIGENTE_LABEL, TIPOS_DIRIGENTE } from "@/lib/dirigentes";
+import { nombreCompleto, TIPO_DIRIGENTE_LABEL, TIPOS_DIRIGENTE, etiquetaTipoDirigenteCorto } from "@/lib/dirigentes";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
 import { etiquetaUnidadTerritorial, type UnidadTerritorialResumen } from "@/lib/unidades-territoriales";
 import { SECCIONES_ELECTORALES_COYOACAN } from "@/lib/secciones-electorales";
@@ -134,7 +134,7 @@ export function BuscarDirigenteParaOperador({ modo, selectedId, onSelect }: Prop
                 className={tipo === t ? "btn-primary btn-sm btn-responsive" : "btn-secondary btn-sm btn-responsive"}
                 onClick={() => setTipo(t)}
               >
-                {t}
+                {etiquetaTipoDirigenteCorto(t)}
               </button>
             ))}
           </div>

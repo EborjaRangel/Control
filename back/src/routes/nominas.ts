@@ -7,6 +7,7 @@ import { nominaInclude, upsertNomina } from "../lib/nomina-db.js";
 import { serializeResumenGlobal, recalcularResumenGlobalNomina } from "../lib/nomina-resumen.js";
 import { serializeNomina } from "../lib/serialize-nomina.js";
 import { nominaSchema } from "../lib/validation-nomina.js";
+import { TIPOS_DIRIGENTE } from "../lib/dirigentes.js";
 import { normalizarNominaParaGuardado } from "../lib/normalizar-dirigente.js";
 import { normalizarTextoGuardado } from "../lib/normalizar-texto.js";
 import { registrarAuditoria, snapshotNomina } from "../lib/audit.js";
@@ -54,7 +55,13 @@ router.get("/", requireAdminPrivileges, async (req, res) => {
       where: {
         dirigente: {
           ...(incluirBajas ? {} : { activo: true }),
-          ...(tipo ? { tipo: tipo as "D1" | "D2" | "D3" | "D4" } : {}),
+          ...(tipo
+            ? {
+                tipo: (TIPOS_DIRIGENTE as readonly string[]).includes(tipo)
+                  ? (tipo as (typeof TIPOS_DIRIGENTE)[number])
+                  : undefined,
+              }
+            : {}),
           ...(colonia ? { colonia: normalizarTextoGuardado(colonia) } : {}),
           ...(buscar
             ? {
