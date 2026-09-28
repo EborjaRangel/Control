@@ -182,7 +182,7 @@ export default function DirigentesPage() {
             type="search"
             value={buscar}
             onChange={(e) => setBuscar(e.target.value)}
-            placeholder="Buscar por nombre, ID, sección o colonia…"
+            placeholder="Buscar por nombre, colonia o sección (ej. 457)…"
             className="input-search"
           />
         </label>

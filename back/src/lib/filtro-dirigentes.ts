@@ -18,6 +18,13 @@ export function parseSeccionDeBusqueda(query: string): string | null {
   return null;
 }
 
+/** Búsqueda que debe filtrar solo por sección electoral asignada (no por ID de dirigente). */
+export function esBusquedaSoloSeccionElectoral(query: string): boolean {
+  const trimmed = query.trim();
+  if (/^\d{3,4}$/.test(trimmed)) return parseSeccionDeBusqueda(trimmed) != null;
+  return /^(?:secci[oó]n|sec\.?)\s*#?\s*\d+$/i.test(trimmed);
+}
+
 /** Colonias del catálogo cuyo nombre contiene el texto buscado. */
 export function coloniasCatalogoCoincidentes(query: string): string[] {
   const normalizado = normalizarTextoGuardado(query);
@@ -56,6 +63,11 @@ export async function buildFiltroBuscarDirigentes(
   const texto = buscar.trim();
   if (!texto) return undefined;
 
+  if (esBusquedaSoloSeccionElectoral(texto)) {
+    const seccion = parseSeccionDeBusqueda(texto);
+    if (seccion) return { seccionElectoral: seccion };
+  }
+
   const terminos = texto.split(/\s+/).filter(Boolean);
   const or: Prisma.DirigenteWhereInput[] = [
     { id: { contains: texto, mode: modo } },
@@ -65,7 +77,7 @@ export async function buildFiltroBuscarDirigentes(
   ];
 
   const seccion = parseSeccionDeBusqueda(texto);
-  if (seccion) {
+  if (seccion && !esBusquedaSoloSeccionElectoral(texto)) {
     or.push({ seccionElectoral: seccion });
   }
 
