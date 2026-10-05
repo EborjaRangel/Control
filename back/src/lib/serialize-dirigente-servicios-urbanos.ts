@@ -1,3 +1,4 @@
+import { cupoReportesServicioUrbano } from "./cupo-servicios-urbanos.js";
 import { nombreCompleto } from "./dirigentes.js";
 
 type DirigenteResumen = {
@@ -24,8 +25,9 @@ export const dirigenteResumenServiciosUrbanosSelect = {
 
 export function serializeDirigenteServiciosUrbanos(
   dirigente: DirigenteResumen,
-  reportesActivos: number,
+  reportesEnCurso: number,
 ) {
+  const cupoReportes = cupoReportesServicioUrbano(dirigente.tipo);
   return {
     id: dirigente.id,
     nombre: dirigente.nombre,
@@ -36,7 +38,10 @@ export function serializeDirigenteServiciosUrbanos(
     colonia: dirigente.colonia,
     seccionElectoral: dirigente.seccionElectoral,
     activo: dirigente.activo,
-    reportesActivos,
+    reportesActivos: reportesEnCurso,
+    reportesEnCurso,
+    cupoReportes,
+    puedeRegistrar: dirigente.activo && reportesEnCurso < cupoReportes,
   };
 }
 

@@ -3,7 +3,8 @@ export type TipoServicioUrbano =
   | "BACHE"
   | "DESASOLVE_COLADERA"
   | "PODA_ARBOL"
-  | "LUMINARIAS_FUNDIDAS";
+  | "LUMINARIAS_FUNDIDAS"
+  | "PIPA_AGUA";
 
 export type EstatusServicioUrbano = "ENVIADO" | "RECIBIDO" | "ATENDIDO" | "DESECHADO";
 
@@ -13,6 +14,7 @@ export const TIPO_SERVICIO_URBANO_LABEL: Record<TipoServicioUrbano, string> = {
   DESASOLVE_COLADERA: "Desazolve de coladera",
   PODA_ARBOL: "Poda de árbol",
   LUMINARIAS_FUNDIDAS: "Luminarias fundidas",
+  PIPA_AGUA: "Pipa de agua",
 };
 
 export const ESTATUS_SERVICIO_URBANO_LABEL: Record<EstatusServicioUrbano, string> = {
@@ -73,7 +75,21 @@ export type DirigenteServiciosUrbanosDTO = {
   seccionElectoral: string;
   activo: boolean;
   reportesActivos: number;
+  reportesEnCurso: number;
+  cupoReportes: number;
+  puedeRegistrar: boolean;
 };
+
+export function mensajeCupoServiciosUrbanos(d: {
+  reportesEnCurso: number;
+  cupoReportes: number;
+}) {
+  const ocupacion = `${d.reportesEnCurso} de ${d.cupoReportes}`;
+  if (d.reportesEnCurso >= d.cupoReportes) {
+    return `Cupo lleno (${ocupacion}). Se libera un espacio cuando un reporte se marca como atendido o desechado.`;
+  }
+  return `${ocupacion} reportes en trámite. Se libera un espacio cuando un reporte se marca como atendido o desechado.`;
+}
 
 export type DirigenteServiciosUrbanosPanelDTO = {
   dirigente: DirigenteServiciosUrbanosDTO;

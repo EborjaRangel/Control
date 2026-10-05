@@ -11,6 +11,7 @@ import { canViewOwnDirigente } from "@/lib/mi-panel";
 import {
   estatusBadgeClass,
   formatReporteFecha,
+  mensajeCupoServiciosUrbanos,
   type DirigenteServiciosUrbanosPanelDTO,
 } from "@/lib/servicios-urbanos";
 import { SemaforoLeyenda, SemaforoTiempoReporte, semaforoInputFromReporte } from "@/components/SemaforoTiempoReporte";
@@ -20,7 +21,6 @@ export default function DirigenteServiciosUrbanosPage() {
   const { dirigenteId } = useParams<{ dirigenteId: string }>();
   const { isStaff, user } = useAuth();
   const canAccess = isStaff || canViewOwnDirigente(user, dirigenteId);
-  const canCreate = canAccess;
   const [panel, setPanel] = useState<DirigenteServiciosUrbanosPanelDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +67,7 @@ export default function DirigenteServiciosUrbanosPage() {
   }
 
   const d = panel.dirigente;
+  const canCreate = canAccess && d.puedeRegistrar;
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -106,9 +107,19 @@ export default function DirigenteServiciosUrbanosPage() {
         <p className="alert-warning">Este dirigente está dado de baja.</p>
       ) : null}
 
+      {d.activo && !d.puedeRegistrar ? (
+        <p className="alert-warning">{mensajeCupoServiciosUrbanos(d)}</p>
+      ) : null}
+
       <div className="card text-center">
-        <p className="text-2xl font-bold text-pin">{d.reportesActivos}</p>
-        <p className="text-xs text-ink-secondary">Reportes de servicios urbanos</p>
+        <p className="text-2xl font-bold text-pin">
+          {d.reportesEnCurso}
+          <span className="text-base font-semibold text-ink-secondary"> / {d.cupoReportes}</span>
+        </p>
+        <p className="text-xs text-ink-secondary">Reportes en trámite</p>
+        {d.activo && d.puedeRegistrar ? (
+          <p className="mt-1 text-xs text-ink-secondary">{mensajeCupoServiciosUrbanos(d)}</p>
+        ) : null}
       </div>
 
       <section className="card-section space-y-4">
@@ -162,6 +173,7 @@ export default function DirigenteServiciosUrbanosPage() {
                       <span className={`${estatusBadgeClass(rep.estatus)} shrink-0`}>
                         {rep.estatusLabel}
                       </span>
+                      {!rep.activo ? <span className="badge-muted shrink-0">Baja</span> : null}
                     </div>
                   </div>
                   <Link href={`/servicios-urbanos/${rep.id}`} className="btn-ghost btn-sm btn-responsive">
@@ -201,6 +213,7 @@ export default function DirigenteServiciosUrbanosPage() {
                         <td className="py-2.5 pr-3">{rep.tipoLabel}</td>
                         <td className="py-2.5 pr-3">
                           <span className={estatusBadgeClass(rep.estatus)}>{rep.estatusLabel}</span>
+                          {!rep.activo ? <span className="badge-muted ml-2">Baja</span> : null}
                         </td>
                         <td className="py-2.5 pr-3 text-ink-secondary">
                           {formatReporteFecha(rep.createdAt)}

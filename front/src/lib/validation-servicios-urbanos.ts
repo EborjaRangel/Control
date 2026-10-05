@@ -6,6 +6,7 @@ const TIPOS = [
   "DESASOLVE_COLADERA",
   "PODA_ARBOL",
   "LUMINARIAS_FUNDIDAS",
+  "PIPA_AGUA",
 ] as const;
 
 export type ServicioUrbanoFormValues = {

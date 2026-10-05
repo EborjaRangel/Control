@@ -101,6 +101,7 @@ enum TipoServicioUrbano {
   DESASOLVE_COLADERA
   PODA_ARBOL
   LUMINARIAS_FUNDIDAS
+  PIPA_AGUA
 }
 
 /// Estatus del trámite de un reporte de servicios urbanos

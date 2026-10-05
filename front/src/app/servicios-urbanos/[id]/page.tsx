@@ -129,7 +129,8 @@ export default function ServicioUrbanoDetallePage() {
       : `/api/servicios-urbanos/${id}`;
     const res = await apiFetch(url, { method: "DELETE" });
     if (!res.ok) {
-      alert("No se pudo actualizar el estado");
+      const data = (await res.json().catch(() => null)) as { error?: string } | null;
+      alert(data?.error ?? "No se pudo actualizar el estado");
       return;
     }
     await load();

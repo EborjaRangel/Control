@@ -26,6 +26,12 @@ import {
   dirigenteResumenServiciosUrbanosSelect,
   serializeDirigenteServiciosUrbanos,
 } from "../lib/serialize-dirigente-servicios-urbanos.js";
+import {
+  assertCupoDisponible,
+  CupoServicioUrbanoError,
+  estatusOcupaCupo,
+  reportesEnCursoWhere,
+} from "../lib/cupo-servicios-urbanos.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -153,7 +159,7 @@ router.get("/dirigentes", requireStaff, async (req, res) => {
       },
       select: {
         ...dirigenteResumenServiciosUrbanosSelect,
-        _count: { select: { reportesServiciosUrbanos: { where: { activo: true } } } },
+        _count: { select: { reportesServiciosUrbanos: { where: reportesEnCursoWhere } } },
       },
       orderBy: [{ activo: "desc" }, { primerApellido: "asc" }],
     });
@@ -181,7 +187,7 @@ router.get("/dirigentes/:dirigenteId", async (req, res) => {
       where: { id: dirigenteId },
       select: {
         ...dirigenteResumenServiciosUrbanosSelect,
-        _count: { select: { reportesServiciosUrbanos: { where: { activo: true } } } },
+        _count: { select: { reportesServiciosUrbanos: { where: reportesEnCursoWhere } } },
       },
     });
 
@@ -191,7 +197,10 @@ router.get("/dirigentes/:dirigenteId", async (req, res) => {
     }
 
     const reportes = await prisma.reporteServicioUrbano.findMany({
-      where: { dirigenteId, activo: true },
+      where: {
+        dirigenteId,
+        OR: [{ activo: true }, reportesEnCursoWhere],
+      },
       include: reporteInclude,
       orderBy: { createdAt: "desc" },
     });
@@ -230,6 +239,7 @@ router.post("/", requireAuth, async (req, res) => {
       where: { id: data.dirigenteId },
       select: {
         id: true,
+        tipo: true,
         activo: true,
         colonia: true,
         seccionElectoral: true,
@@ -241,6 +251,8 @@ router.post("/", requireAuth, async (req, res) => {
     }
 
     const reporte = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT id FROM "Dirigente" WHERE id = ${dirigente.id} FOR UPDATE`;
+      await assertCupoDisponible(tx, dirigente);
       const folio = await generarFolioServicioUrbano(tx);
       return tx.reporteServicioUrbano.create({
         data: {
@@ -277,6 +289,10 @@ router.post("/", requireAuth, async (req, res) => {
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
+      return;
+    }
+    if (error instanceof CupoServicioUrbanoError) {
+      res.status(409).json({ error: error.message });
       return;
     }
     console.error(error);
@@ -389,21 +405,37 @@ router.patch("/:id/estatus", requireStaff, async (req, res) => {
     const antes = snapshotServicioUrbano(existing);
     const now = new Date();
     const esAtendido = data.estatus === "ATENDIDO";
+    const nuevoEstatus = data.estatus as EstatusReporteServicioUrbano;
+    const pasaAOcuparCupo = !estatusOcupaCupo(existing.estatus) && estatusOcupaCupo(nuevoEstatus);
 
-    const reporte = await prisma.reporteServicioUrbano.update({
-      where: { id },
-      data: {
-        estatus: data.estatus as EstatusReporteServicioUrbano,
-        estatusAt: now,
-        ...(esAtendido
-          ? {
-              atendidoAt: now,
-              fotoAtencionUrl: data.fotoAtencionUrl!.trim(),
-              anotacionAtencion: data.anotacionAtencion?.trim() || null,
-            }
-          : {}),
-      },
-      include: reporteInclude,
+    const reporte = await prisma.$transaction(async (tx) => {
+      if (pasaAOcuparCupo) {
+        const dirigente = await tx.dirigente.findUnique({
+          where: { id: existing.dirigenteId },
+          select: { id: true, tipo: true },
+        });
+        if (!dirigente) {
+          throw new Error("Dirigente no encontrado");
+        }
+        await tx.$executeRaw`SELECT id FROM "Dirigente" WHERE id = ${dirigente.id} FOR UPDATE`;
+        await assertCupoDisponible(tx, dirigente, existing.id);
+      }
+
+      return tx.reporteServicioUrbano.update({
+        where: { id },
+        data: {
+          estatus: nuevoEstatus,
+          estatusAt: now,
+          ...(esAtendido
+            ? {
+                atendidoAt: now,
+                fotoAtencionUrl: data.fotoAtencionUrl!.trim(),
+                anotacionAtencion: data.anotacionAtencion?.trim() || null,
+              }
+            : {}),
+        },
+        include: reporteInclude,
+      });
     });
 
     await registrarAuditoria(req, {
@@ -432,6 +464,10 @@ router.patch("/:id/estatus", requireStaff, async (req, res) => {
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
+      return;
+    }
+    if (error instanceof CupoServicioUrbanoError) {
+      res.status(409).json({ error: error.message });
       return;
     }
     console.error(error);

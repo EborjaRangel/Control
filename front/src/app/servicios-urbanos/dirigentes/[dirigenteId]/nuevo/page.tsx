@@ -8,7 +8,11 @@ import { ServicioUrbanoForm } from "@/components/ServicioUrbanoForm";
 import { apiFetch } from "@/lib/api";
 import { TIPO_DIRIGENTE_LABEL } from "@/lib/dirigentes";
 import { canViewOwnDirigente } from "@/lib/mi-panel";
-import { EMPTY_SERVICIO_URBANO, type DirigenteServiciosUrbanosDTO } from "@/lib/servicios-urbanos";
+import {
+  EMPTY_SERVICIO_URBANO,
+  mensajeCupoServiciosUrbanos,
+  type DirigenteServiciosUrbanosDTO,
+} from "@/lib/servicios-urbanos";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
 import type { ServicioUrbanoFormValues } from "@/lib/validation-servicios-urbanos";
 
@@ -91,6 +95,20 @@ export default function NuevoServicioUrbanoPage() {
     router.refresh();
   }
 
+  if (!dirigente.puedeRegistrar) {
+    return (
+      <div className="space-y-4">
+        <div className="alert-warning">{mensajeCupoServiciosUrbanos(dirigente)}</div>
+        <Link
+          href={`/servicios-urbanos/dirigentes/${dirigenteId}`}
+          className="btn-secondary btn-responsive"
+        >
+          Volver
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="page-header">
@@ -102,6 +120,8 @@ export default function NuevoServicioUrbanoPage() {
             {TIPO_DIRIGENTE_LABEL[dirigente.tipo as keyof typeof TIPO_DIRIGENTE_LABEL] ??
               dirigente.tipo}{" "}
             · {etiquetaSeccion(dirigente.seccionElectoral)}
+            {" · "}
+            {mensajeCupoServiciosUrbanos(dirigente)}
           </p>
         </div>
         <Link

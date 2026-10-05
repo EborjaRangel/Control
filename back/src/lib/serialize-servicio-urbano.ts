@@ -7,6 +7,7 @@ export const TIPO_SERVICIO_URBANO_LABEL: Record<TipoServicioUrbano, string> = {
   DESASOLVE_COLADERA: "Desazolve de coladera",
   PODA_ARBOL: "Poda de árbol",
   LUMINARIAS_FUNDIDAS: "Luminarias fundidas",
+  PIPA_AGUA: "Pipa de agua",
 };
 
 export const ESTATUS_SERVICIO_URBANO_LABEL: Record<EstatusReporteServicioUrbano, string> = {
