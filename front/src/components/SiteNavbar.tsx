@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { AppIcon, iconForNavHref } from "@/components/AppIcon";
 import { BellIcon } from "@/components/BellIcon";
 import { AxisLogo } from "@/components/AxisLogo";
 import { apiFetch } from "@/lib/api";
@@ -191,7 +192,9 @@ function NavLink({
       >
         {isNotificaciones ? (
           <BellIcon className="nav-bell size-4 shrink-0" filled={showBadge || active} />
-        ) : null}
+        ) : (
+          <AppIcon name={iconForNavHref(href)} className="size-4 shrink-0" />
+        )}
         <span className="nav-link-label">{text}</span>
         {showBadge ? (
           <span
@@ -381,6 +384,7 @@ export function SiteNavbar() {
           <div className="navbar-user">
             <span className="navbar-username">{user.username}</span>
             <button type="button" className="btn-ghost btn-sm" onClick={() => void logout()}>
+              <AppIcon name="logout" className="size-4 shrink-0" />
               Salir
             </button>
           </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
@@ -74,7 +75,10 @@ export default function AuditoriaPage() {
     <div className="space-y-6 sm:space-y-8">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Auditoría</h1>
+          <h1 className="page-title">
+            <AppIcon name="scroll" className="size-[1.15em] shrink-0 text-pin" />
+            Auditoría
+          </h1>
           <p className="page-subtitle">
             {loading
               ? "Cargando…"

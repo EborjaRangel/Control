@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -53,7 +54,10 @@ export default function DetectadosPage() {
     <div className="space-y-6 sm:space-y-8">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Detectados</h1>
+          <h1 className="page-title">
+            <AppIcon name="userPlus" className="size-[1.15em] shrink-0 text-pin" />
+            Detectados
+          </h1>
           <p className="page-subtitle">
             {loading
               ? "Cargando…"

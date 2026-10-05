@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Form, Formik } from "formik";
 import { useAuth } from "@/components/AuthProvider";
 import { AxisLogo } from "@/components/AxisLogo";
+import { AppIcon } from "@/components/AppIcon";
 import { FormField } from "@/components/FormField";
 import { loginSchema } from "@/lib/auth";
 
@@ -52,6 +53,7 @@ export default function LoginPage() {
               />
 
               <button type="submit" className="btn-primary btn-responsive w-full" disabled={isSubmitting}>
+                <AppIcon name="lock" className="size-4 shrink-0" />
                 {isSubmitting ? "Entrando…" : "Iniciar sesión"}
               </button>
 

@@ -2,6 +2,7 @@
 
 import { useField, useFormikContext } from "formik";
 import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { FieldLabel } from "@/components/AppIcon";
 import { cn } from "@/lib/cn";
 import { normalizarNombrePersonaEnVivo } from "@/lib/normalizar-texto";
 import { formatearFechaNacimientoEnVivo } from "@/lib/fecha-nacimiento";
@@ -53,7 +54,9 @@ export function FormField({
 
   return (
     <label className="label">
-      {label}
+      <FieldLabel name={name} type={resolvedType}>
+        {label}
+      </FieldLabel>
       <input
         {...field}
         {...props}
@@ -105,7 +108,7 @@ export function FormSelect({
 
   return (
     <label className="label">
-      {label}
+      <FieldLabel name={name}>{label}</FieldLabel>
       <select
         {...field}
         {...props}
@@ -135,7 +138,7 @@ export function FormTextarea({ label, name, className, ...props }: FormTextareaP
 
   return (
     <label className="label">
-      {label}
+      <FieldLabel name={name}>{label}</FieldLabel>
       <textarea
         {...field}
         {...props}

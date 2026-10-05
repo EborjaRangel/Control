@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { Form, Formik, useFormikContext } from "formik";
 import { UploadImage } from "@/components/UploadImage";
 import { useEffect, useState } from "react";
+import { AppIcon } from "@/components/AppIcon";
 import { FormField, FormSelect } from "@/components/FormField";
 import {
   CODIGOS_POSTALES_COYOACAN,
@@ -618,10 +619,12 @@ export function DirigenteForm({
 
           <div className="page-actions">
             <button type="submit" className="btn-primary btn-responsive" disabled={isSubmitting}>
+              <AppIcon name="check" className="size-4 shrink-0" />
               {isSubmitting ? "Guardando…" : submitLabel}
             </button>
             {cancelHref ? (
               <a href={cancelHref} className="btn-ghost btn-responsive">
+                <AppIcon name="x" className="size-4 shrink-0" />
                 Cancelar
               </a>
             ) : null}

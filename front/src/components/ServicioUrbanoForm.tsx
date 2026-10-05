@@ -3,6 +3,7 @@
 import { Form, Formik } from "formik";
 import Link from "next/link";
 import { useState } from "react";
+import { AppIcon } from "@/components/AppIcon";
 import { FormField, FormSelect, FormTextarea } from "@/components/FormField";
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { ServicioUrbanoMapPicker } from "@/components/ServicioUrbanoMapPicker";
@@ -129,14 +130,17 @@ export function ServicioUrbanoForm({
             <div className="divider flex flex-wrap justify-end gap-3 pt-2">
               {onCancel ? (
                 <button type="button" className="btn-ghost btn-responsive" onClick={onCancel}>
+                  <AppIcon name="x" className="size-4 shrink-0" />
                   Cancelar
                 </button>
               ) : (
                 <Link href={cancelHref} className="btn-ghost btn-responsive">
+                  <AppIcon name="x" className="size-4 shrink-0" />
                   Cancelar
                 </Link>
               )}
               <button type="submit" className="btn-primary btn-responsive" disabled={isSubmitting}>
+                <AppIcon name="check" className="size-4 shrink-0" />
                 {isSubmitting ? "Guardando…" : submitLabel}
               </button>
             </div>

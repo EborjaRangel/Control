@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
@@ -81,7 +82,10 @@ export default function OperacionPage() {
     <div className="min-w-0 max-w-full space-y-6 sm:space-y-8">
       <div className="page-header">
         <div className="min-w-0">
-          <h1 className="page-title">Operación</h1>
+          <h1 className="page-title">
+            <AppIcon name="layers" className="size-[1.15em] shrink-0 text-pin" />
+            Operación
+          </h1>
           <p className="page-subtitle">
             Meta PAN: {META_OPERACION_PCT}% de la votación estimada por sección. Proyección 2027 con
             regresión solo en elecciones intermedias ({ANIOS_OPERACION.join(" y ")}, sin presidente ni

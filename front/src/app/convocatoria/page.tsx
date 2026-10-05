@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
@@ -47,7 +48,10 @@ export default function ConvocatoriaPage() {
     <div className="space-y-6 sm:space-y-8">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Convocatoria</h1>
+          <h1 className="page-title">
+            <AppIcon name="megaphone" className="size-[1.15em] shrink-0 text-pin" />
+            Convocatoria
+          </h1>
           <p className="page-subtitle">
             Captura un mensaje y envíalo por correo, SMS, WhatsApp o notificaciones en la web.
           </p>

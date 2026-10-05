@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
@@ -143,7 +144,10 @@ export default function AnalisisPage() {
     >
       <div className="page-header">
         <div className="min-w-0">
-          <h1 className="page-title">Análisis</h1>
+          <h1 className="page-title">
+            <AppIcon name="chart" className="size-[1.15em] shrink-0 text-pin" />
+            Análisis
+          </h1>
           <p className="page-subtitle">
             {loading
               ? "Cargando…"

@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
@@ -114,7 +115,10 @@ export default function AsistenciaPage() {
     <div className="space-y-6 sm:space-y-8">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Pase de asistencia</h1>
+          <h1 className="page-title">
+            <AppIcon name="clipboard" className="size-[1.15em] shrink-0 text-pin" />
+            Pase de asistencia
+          </h1>
           <p className="page-subtitle">
             {isAsistencia
               ? "Selecciona un evento activo para registrar asistencias con QR."
@@ -127,7 +131,8 @@ export default function AsistenciaPage() {
               Dashboard
             </Link>
             <Link href="/asistencia/eventos/nuevo" className="btn-primary btn-responsive">
-              + Nuevo evento
+              <AppIcon name="plus" className="size-4 shrink-0" />
+              Nuevo evento
             </Link>
           </div>
         ) : null}

@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
@@ -108,7 +109,10 @@ export default function ServiciosUrbanosPanelPage() {
     <div className="space-y-6 sm:space-y-8">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Panel de control</h1>
+          <h1 className="page-title">
+            <AppIcon name="layers" className="size-[1.15em] shrink-0 text-pin" />
+            Panel de control
+          </h1>
           <p className="page-subtitle">
             Todos los reportes de servicios urbanos · Mapa, semáforo de tiempo y gestión de estatus
           </p>

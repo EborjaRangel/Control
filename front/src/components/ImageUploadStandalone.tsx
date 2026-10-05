@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import { UploadImage } from "@/components/UploadImage";
 import { ImageCapturePicker } from "@/components/ImageCapturePicker";
 import { useState } from "react";
@@ -38,7 +39,10 @@ export function ImageUploadStandalone({
 
   return (
     <div>
-      <span className="label">{label}</span>
+      <span className="label inline-flex items-center gap-1.5">
+        <AppIcon name="camera" className="size-3.5 shrink-0 text-pin" />
+        {label}
+      </span>
       <div className="mt-2 flex flex-wrap items-start gap-4">
         {value ? (
           <UploadImage

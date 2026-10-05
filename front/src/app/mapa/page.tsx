@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
@@ -35,7 +36,10 @@ export default function MapaPage() {
     <div className="space-y-6">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Mapa de secciones</h1>
+          <h1 className="page-title">
+            <AppIcon name="map" className="size-[1.15em] shrink-0 text-pin" />
+            Mapa de secciones
+          </h1>
           <p className="page-subtitle">{SUBTITULOS[vista]}</p>
         </div>
       </div>

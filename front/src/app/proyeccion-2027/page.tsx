@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
@@ -144,7 +145,10 @@ export default function Proyeccion2027Page() {
     <div className="min-w-0 max-w-full space-y-6 sm:space-y-8">
       <div className="page-header">
         <div className="min-w-0">
-          <h1 className="page-title">Proyección 2027</h1>
+          <h1 className="page-title">
+            <AppIcon name="trend" className="size-[1.15em] shrink-0 text-pin" />
+            Proyección 2027
+          </h1>
           <p className="page-subtitle">
             {loading
               ? "Cargando…"

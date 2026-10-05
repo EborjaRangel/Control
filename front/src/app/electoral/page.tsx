@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
@@ -20,7 +21,10 @@ export default function ElectoralPage() {
     <div className="space-y-6">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Mapa electoral</h1>
+          <h1 className="page-title">
+            <AppIcon name="ballot" className="size-[1.15em] shrink-0 text-pin" />
+            Mapa electoral
+          </h1>
           <p className="page-subtitle">
             Casillas básicas y contiguas en las {TOTAL_SECCIONES_COYOACAN} secciones de Coyoacán.
           </p>

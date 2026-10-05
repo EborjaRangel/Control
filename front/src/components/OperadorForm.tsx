@@ -3,6 +3,7 @@
 import { Form, Formik } from "formik";
 import Link from "next/link";
 import { useState } from "react";
+import { AppIcon } from "@/components/AppIcon";
 import { FormField, FormSelect } from "@/components/FormField";
 import { NOMBRES_COLONIAS_COYOACAN } from "@/lib/colonias";
 import {
@@ -101,9 +102,11 @@ export function OperadorForm(props: RcProps | RgProps) {
 
           <div className="divider flex flex-wrap justify-end gap-3 pt-2">
             <Link href={props.cancelHref} className="btn-ghost btn-responsive">
+              <AppIcon name="x" className="size-4 shrink-0" />
               Cancelar
             </Link>
             <button type="submit" className="btn-primary btn-responsive" disabled={isSubmitting}>
+              <AppIcon name="check" className="size-4 shrink-0" />
               {isSubmitting ? "Guardando…" : props.submitLabel ?? "Guardar"}
             </button>
           </div>

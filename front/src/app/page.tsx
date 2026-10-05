@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import { UploadImage } from "@/components/UploadImage";
 import { DirigenteEstatusAltaIcon } from "@/components/DirigenteEstatusAltaIcon";
 import { usePathname } from "next/navigation";
@@ -161,7 +162,10 @@ export default function DirigentesPage() {
     <div className="space-y-6 sm:space-y-8">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Dirigentes</h1>
+          <h1 className="page-title">
+            <AppIcon name="users" className="size-[1.15em] shrink-0 text-pin" />
+            Dirigentes
+          </h1>
           <p className="page-subtitle">
             {loading
               ? "Cargando…"
@@ -170,7 +174,8 @@ export default function DirigentesPage() {
         </div>
         <div className="page-actions">
           <Link href="/dirigentes/nuevo" className="btn-primary btn-responsive">
-            + Nuevo dirigente
+            <AppIcon name="plus" className="size-4 shrink-0" />
+            Nuevo dirigente
           </Link>
         </div>
       </div>
@@ -262,6 +267,7 @@ export default function DirigentesPage() {
           </p>
           {!hayFiltros ? (
             <Link href="/dirigentes/nuevo" className="btn-primary mt-6 inline-flex">
+              <AppIcon name="plus" className="size-4 shrink-0" />
               Crear dirigente
             </Link>
           ) : null}

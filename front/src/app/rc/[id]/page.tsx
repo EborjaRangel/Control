@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import { UploadImage } from "@/components/UploadImage";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -66,7 +67,8 @@ export default function RcDetallePage() {
         <div className="page-actions">
           {canEdit ? (
             <Link href={`/rc/${id}/representantes/nueva`} className="btn-primary btn-responsive">
-              + Registrar representante
+              <AppIcon name="plus" className="size-4 shrink-0" />
+              Registrar representante
             </Link>
           ) : null}
           {isStaff ? <Link href="/rc" className="btn-ghost btn-responsive">Volver</Link> : null}

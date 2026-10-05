@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -57,11 +58,15 @@ export default function RgPage() {
     <div className="space-y-6 sm:space-y-8">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Rep. General</h1>
+          <h1 className="page-title">
+            <AppIcon name="shield" className="size-[1.15em] shrink-0 text-pin" />
+            Rep. General
+          </h1>
           <p className="page-subtitle">Registro de representantes de casilla</p>
         </div>
         <Link href="/rg/nuevo" className="btn-primary btn-responsive">
-          + Nuevo Rep. General
+          <AppIcon name="plus" className="size-4 shrink-0" />
+          Nuevo Rep. General
         </Link>
       </div>
 

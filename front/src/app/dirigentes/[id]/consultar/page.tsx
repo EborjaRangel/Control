@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AppIcon } from "@/components/AppIcon";
 import { DirigenteDetalle } from "@/components/DirigenteDetalle";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
@@ -69,7 +70,10 @@ export default function ConsultarDirigentePage() {
       {esPropio && dirigente.activo ? (
         <section className="card-section space-y-4">
           <div>
-            <h2 className="section-title">Mis registros</h2>
+            <h2 className="section-title inline-flex items-center gap-2">
+              <AppIcon name="layers" className="size-5 shrink-0 text-pin" />
+              Mis registros
+            </h2>
             <p className="mt-1 text-sm text-ink-secondary">
               Administra detectados, servicios urbanos, asambleas, representantes de casilla y
               representantes generales de tu equipo.
@@ -80,21 +84,26 @@ export default function ConsultarDirigentePage() {
               href={`/detectados/dirigentes/${id}`}
               className="btn-primary btn-responsive"
             >
+              <AppIcon name="userPlus" className="size-4 shrink-0" />
               Mis Detectados
             </Link>
             <Link
               href={`/servicios-urbanos/dirigentes/${id}`}
               className="btn-secondary btn-responsive"
             >
+              <AppIcon name="wrench" className="size-4 shrink-0" />
               Mis Servicios Urbanos
             </Link>
             <Link href={`/asambleas/dirigentes/${id}`} className="btn-secondary btn-responsive">
+              <AppIcon name="group" className="size-4 shrink-0" />
               Mis Asambleas
             </Link>
             <Link href={enlaceRc(id, user?.rcId)} className="btn-secondary btn-responsive">
+              <AppIcon name="flag" className="size-4 shrink-0" />
               Mis RC
             </Link>
             <Link href={enlaceRg(id, user?.rgId)} className="btn-secondary btn-responsive">
+              <AppIcon name="shield" className="size-4 shrink-0" />
               Mis RG
             </Link>
           </div>

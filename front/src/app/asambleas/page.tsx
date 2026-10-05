@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -61,13 +62,17 @@ export default function AsambleasAdminListPage() {
     <div className="space-y-6 sm:space-y-8">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Asambleas</h1>
+          <h1 className="page-title">
+            <AppIcon name="group" className="size-[1.15em] shrink-0 text-pin" />
+            Asambleas
+          </h1>
           <p className="page-subtitle">
             Registro y calificación de asambleas con ubicación en mapa y evidencia fotográfica.
           </p>
         </div>
         <Link href="/asambleas/nuevo" className="btn-primary btn-responsive">
-          + Registrar asamblea
+          <AppIcon name="plus" className="size-4 shrink-0" />
+          Registrar asamblea
         </Link>
       </div>
 

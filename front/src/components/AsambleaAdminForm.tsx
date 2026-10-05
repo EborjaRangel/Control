@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { AsambleaSeccionMapPicker } from "@/components/AsambleaSeccionMapPicker";
 import { CalificacionEstrellas } from "@/components/CalificacionEstrellas";
+import { AppIcon } from "@/components/AppIcon";
 import { FormField, FormTextarea } from "@/components/FormField";
 import { ImageUploadStandalone } from "@/components/ImageUploadStandalone";
 import {
@@ -222,14 +223,17 @@ export function AsambleaAdminForm({
               <div className="flex flex-wrap justify-end gap-3">
                 {onCancel ? (
                   <button type="button" className="btn-ghost btn-responsive" onClick={onCancel}>
+                    <AppIcon name="x" className="size-4 shrink-0" />
                     Cancelar
                   </button>
                 ) : (
                   <Link href={cancelHref} className="btn-ghost btn-responsive">
+                    <AppIcon name="x" className="size-4 shrink-0" />
                     Cancelar
                   </Link>
                 )}
                 <button type="submit" className="btn-primary btn-responsive" disabled={isSubmitting}>
+                  <AppIcon name="check" className="size-4 shrink-0" />
                   {isSubmitting ? "Guardando…" : submitLabel}
                 </button>
               </div>

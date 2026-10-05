@@ -3,6 +3,7 @@
 import { Form, Formik, useFormikContext } from "formik";
 import Link from "next/link";
 import { useState } from "react";
+import { AppIcon } from "@/components/AppIcon";
 import { FormField, FormSelect } from "@/components/FormField";
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { apiFetch } from "@/lib/api";
@@ -150,6 +151,7 @@ export function PersonaDetectadaForm({
 
         <div className="flex flex-wrap justify-end gap-3">
           <Link href={cancelHref} className="btn-ghost btn-responsive">
+            <AppIcon name="x" className="size-4 shrink-0" />
             Cancelar
           </Link>
           <button
@@ -269,9 +271,11 @@ export function PersonaDetectadaForm({
 
           <div className="flex flex-wrap justify-end gap-3">
             <Link href={cancelHref} className="btn-ghost btn-responsive">
-              Cancelar
+              <AppIcon name="x" className="size-4 shrink-0" />
+            Cancelar
             </Link>
             <button type="submit" className="btn-primary btn-responsive" disabled={isSubmitting}>
+              <AppIcon name="check" className="size-4 shrink-0" />
               {isSubmitting ? "Guardando…" : submitLabel}
             </button>
           </div>

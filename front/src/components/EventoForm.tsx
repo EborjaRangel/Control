@@ -3,6 +3,7 @@
 import { Form, Formik, useField, useFormikContext } from "formik";
 import Link from "next/link";
 import { useState } from "react";
+import { AppIcon } from "@/components/AppIcon";
 import { FormField, FormSelect } from "@/components/FormField";
 import { cn } from "@/lib/cn";
 import { ALCANCE_EVENTO_LABEL } from "@/lib/asistencia";
@@ -188,9 +189,11 @@ export function EventoForm({
 
           <div className="page-actions">
             <button type="submit" className="btn-primary btn-responsive" disabled={isSubmitting}>
+              <AppIcon name="check" className="size-4 shrink-0" />
               {isSubmitting ? "Guardando…" : submitLabel}
             </button>
             <Link href={cancelHref} className="btn-ghost btn-responsive">
+              <AppIcon name="x" className="size-4 shrink-0" />
               Cancelar
             </Link>
           </div>

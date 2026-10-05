@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import { useRouter } from "next/navigation";
 import { DirigenteForm } from "@/components/DirigenteForm";
 import { apiFetch } from "@/lib/api";
@@ -24,7 +25,10 @@ export default function NuevoDirigentePage() {
   return (
     <div className="space-y-6 sm:space-y-8">
       <div>
-        <h1 className="page-title">Nuevo dirigente</h1>
+        <h1 className="page-title">
+          <AppIcon name="userPlus" className="size-[1.15em] shrink-0 text-pin" />
+          Nuevo dirigente
+        </h1>
         <p className="page-subtitle">Registra un nuevo dirigente en el sistema.</p>
       </div>
       <DirigenteForm

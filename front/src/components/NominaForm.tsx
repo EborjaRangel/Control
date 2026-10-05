@@ -4,6 +4,7 @@ import { Form, Formik } from "formik";
 import { calcularSueldo } from "@/lib/dirigentes";
 import { montoANumero } from "@/lib/monto";
 import { nominaSchema, type NominaFormValues } from "@/lib/validation";
+import { AppIcon } from "@/components/AppIcon";
 import { ComposicionSueldoFields } from "@/components/ComposicionSueldoFields";
 import { SueldoDesglose } from "@/components/SueldoDesglose";
 
@@ -55,6 +56,7 @@ export function NominaForm({ initialValues, saving = false, onSubmit }: Props) {
                 className="btn-primary btn-responsive"
                 disabled={isSubmitting || saving}
               >
+                <AppIcon name="check" className="size-4 shrink-0" />
                 {isSubmitting || saving ? "Guardando…" : "Guardar nómina"}
               </button>
             </div>

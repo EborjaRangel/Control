@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -85,7 +86,8 @@ export default function DirigenteServiciosUrbanosPage() {
               href={`/servicios-urbanos/dirigentes/${dirigenteId}/nuevo`}
               className="btn-primary btn-responsive"
             >
-              + Nuevo reporte
+              <AppIcon name="plus" className="size-4 shrink-0" />
+              Nuevo reporte
             </Link>
           ) : null}
           {isStaff ? (

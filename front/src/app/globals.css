@@ -33,7 +33,7 @@
   --radius-pin: 1rem;
   --radius-pin-lg: 1.5rem;
   --navbar-h: 3.5rem;
-  --navbar-nav-h: 8.25rem;
+  --navbar-nav-h: 11.5rem;
   --progress: 0%;
 }
 
@@ -186,7 +186,7 @@
   }
 
   .nav-link-compact {
-    @apply min-h-[2.75rem] shrink-0 sm:min-h-[2.5rem] sm:px-2 lg:min-h-11 lg:px-3 lg:text-sm;
+    @apply min-h-[3.35rem] shrink-0 sm:min-h-14 sm:px-2 lg:min-h-14 lg:px-3 lg:text-sm;
   }
 
   .nav-link-label {
@@ -256,7 +256,7 @@
     }
 
     :root {
-      --navbar-nav-h: 5.5rem;
+      --navbar-nav-h: 6.25rem;
     }
   }
 
@@ -265,7 +265,7 @@
   }
 
   .page-title {
-    @apply text-xl font-bold tracking-tight text-ink sm:text-2xl lg:text-3xl;
+    @apply flex flex-wrap items-center gap-2 text-xl font-bold tracking-tight text-ink sm:text-2xl lg:text-3xl;
   }
 
   .page-subtitle {
@@ -310,7 +310,12 @@
   }
 
   .input-search {
-    @apply mt-0 w-full min-h-11 rounded-full border border-transparent bg-surface-muted px-4 py-3 text-base text-ink outline-none transition placeholder:text-ink-secondary focus:border-line-strong focus:bg-surface focus:ring-2 focus:ring-pin-light sm:px-5;
+    @apply mt-0 w-full min-h-11 rounded-full border border-transparent bg-surface-muted px-4 py-3 text-base text-ink outline-none transition placeholder:text-ink-secondary focus:border-line-strong focus:bg-surface focus:ring-2 focus:ring-pin-light sm:pr-5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%23767676' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 0.95rem center;
+    background-size: 1rem 1rem;
+    padding-left: 2.6rem;
   }
 
   .input-error {

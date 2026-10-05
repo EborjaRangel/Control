@@ -1,5 +1,6 @@
 "use client";
 
+import { AppIcon } from "@/components/AppIcon";
 import { Formik, Form, Field } from "formik";
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -184,7 +185,10 @@ export default function UsuariosPage() {
     <div className="space-y-6 sm:space-y-8">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Usuarios</h1>
+          <h1 className="page-title">
+            <AppIcon name="key" className="size-[1.15em] shrink-0 text-pin" />
+            Usuarios
+          </h1>
           <p className="page-subtitle">
             {loading
               ? "Cargando…"
@@ -192,6 +196,7 @@ export default function UsuariosPage() {
           </p>
         </div>
         <button type="button" className="btn-primary btn-responsive" onClick={openCreate}>
+          <AppIcon name="plus" className="size-4 shrink-0" />
           Nuevo usuario
         </button>
       </div>
