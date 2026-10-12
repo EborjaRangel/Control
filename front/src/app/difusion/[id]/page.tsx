@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { CampanaDifusionAdminForm } from "@/components/CampanaDifusionAdminForm";
-import { DifusionMapaAcciones } from "@/components/DifusionMapaAcciones";
+import { DifusionAdminMapaSection } from "@/components/DifusionAdminMapaSection";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import type { CampanaDifusionDTO, RegistroDifusionDTO } from "@/lib/difusion";
@@ -95,13 +95,11 @@ export default function CampanaDifusionDetallePage() {
         />
       ) : null}
 
-      <section className="card-section space-y-3">
-        <h2 className="section-title">Acciones en mapa</h2>
-        <DifusionMapaAcciones
-          registros={registros}
-          detalleHref={(r) => `/difusion/registros/${r.id}`}
-        />
-      </section>
+      <DifusionAdminMapaSection
+        registros={registros}
+        titulo="Acciones en mapa"
+        subtitulo={`Registros de la campaña «${campana.titulo}».`}
+      />
     </div>
   );
 }

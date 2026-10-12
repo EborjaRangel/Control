@@ -15,6 +15,7 @@ import {
   formatRegistroDifusionFecha,
   type DirigenteDifusionPanelDTO,
 } from "@/lib/difusion";
+import { numerosAccionPorRegistro } from "@/lib/difusion-numeracion";
 import { etiquetaSeccion } from "@/lib/secciones-electorales";
 
 export default function DirigenteDifusionPage() {
@@ -61,6 +62,7 @@ export default function DirigenteDifusionPage() {
 
   const d = panel.dirigente;
   const puedeRegistrar = !isStaff && panel.campanasActivas.length > 0 && d.activo;
+  const numerosAccion = numerosAccionPorRegistro(panel.registros);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -105,6 +107,7 @@ export default function DirigenteDifusionPage() {
         <h2 className="section-title">Mis acciones en el mapa</h2>
         <DifusionMapaAcciones
           registros={panel.registros}
+          mostrarNumerosGlobo
           detalleHref={(r) => `/difusion/registros/${r.id}`}
         />
       </section>
@@ -118,6 +121,7 @@ export default function DirigenteDifusionPage() {
             <table className="table-dense">
               <thead>
                 <tr>
+                  <th>#</th>
                   <th>Foto</th>
                   <th>Campaña</th>
                   <th>Fecha y hora</th>
@@ -127,6 +131,9 @@ export default function DirigenteDifusionPage() {
               <tbody>
                 {panel.registros.map((r) => (
                   <tr key={r.id}>
+                    <td className="font-semibold tabular-nums text-pin">
+                      {numerosAccion.get(r.id) ?? "—"}
+                    </td>
                     <td>
                       <UploadImage
                         src={r.fotoUrl}

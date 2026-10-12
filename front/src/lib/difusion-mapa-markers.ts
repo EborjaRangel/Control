@@ -5,7 +5,12 @@ export function createDifusionGloboElement(options: {
   selected: boolean;
   animateDrop: boolean;
   staggerIndex: number;
-}): HTMLButtonElement {
+  numero?: number | null;
+}): HTMLDivElement {
+  /** Contenedor raíz: Mapbox mueve este nodo; la animación va en el hijo. */
+  const root = document.createElement("div");
+  root.className = "difusion-globo-marker-root";
+
   const el = document.createElement("button");
   el.type = "button";
   el.className = "difusion-globo-marker";
@@ -20,6 +25,13 @@ export function createDifusionGloboElement(options: {
   inner.className = "difusion-globo-marker-bubble";
   inner.style.backgroundColor = theme.pin;
 
+  if (options.numero != null && options.numero > 0) {
+    const num = document.createElement("span");
+    num.className = "difusion-globo-marker-num";
+    num.textContent = String(options.numero);
+    inner.appendChild(num);
+  }
+
   const shine = document.createElement("span");
   shine.className = "difusion-globo-marker-shine";
   inner.appendChild(shine);
@@ -29,7 +41,8 @@ export function createDifusionGloboElement(options: {
   tail.style.borderTopColor = theme.pin;
 
   el.append(inner, tail);
-  return el;
+  root.appendChild(el);
+  return root;
 }
 
 /** Popup al hover sin parpadeo (cursor puede pasar al globo ↔ tooltip). */

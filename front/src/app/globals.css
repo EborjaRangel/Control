@@ -795,6 +795,10 @@
 }
 
 /* Globos — mapa de difusión (dirigentes / admin) */
+.difusion-globo-marker-root {
+  /* Mapbox aplica transform aquí; no animar este nodo. */
+}
+
 .difusion-globo-marker {
   position: relative;
   display: flex;
@@ -815,13 +819,32 @@
 
 .difusion-globo-marker-bubble {
   position: relative;
-  display: block;
-  width: 1.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
   height: 1.35rem;
+  padding: 0 0.2rem;
   border-radius: 9999px;
   border: 2px solid #fff;
   box-shadow: 0 3px 10px rgb(0 0 0 / 0.22);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.difusion-globo-marker-num {
+  position: relative;
+  z-index: 1;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 0.35);
+  pointer-events: none;
+}
+
+.difusion-globo-marker-bubble:has(.difusion-globo-marker-num) {
+  min-width: 1.55rem;
+  height: 1.55rem;
 }
 
 .difusion-globo-marker-shine {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppIcon } from "@/components/AppIcon";
-import { DifusionMapaAcciones } from "@/components/DifusionMapaAcciones";
+import { DifusionAdminMapaSection } from "@/components/DifusionAdminMapaSection";
 import { TableWrap } from "@/components/TableWrap";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
@@ -78,12 +78,9 @@ export default function DifusionAdminPage() {
 
       {error ? <div className="alert-error">{error}</div> : null}
 
-      <section className="card-section space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="section-title">Mapa global de acciones</h2>
-            <p className="text-sm text-ink-secondary">Globos de todas las fotografías registradas por dirigentes.</p>
-          </div>
+      <DifusionAdminMapaSection
+        registros={registros}
+        campanaFiltroExtra={
           <label className="block min-w-[12rem]">
             <span className="label">Filtrar campaña</span>
             <select
@@ -99,12 +96,8 @@ export default function DifusionAdminPage() {
               ))}
             </select>
           </label>
-        </div>
-        <DifusionMapaAcciones
-          registros={registros}
-          detalleHref={(r) => `/difusion/registros/${r.id}`}
-        />
-      </section>
+        }
+      />
 
       <section className="card-section space-y-4">
         <h2 className="section-title">Campañas</h2>
