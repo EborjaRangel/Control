@@ -1,6 +1,5 @@
 "use client";
 
-import { AppIcon } from "@/components/AppIcon";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -72,10 +71,7 @@ export default function RcPage() {
     <div className="space-y-6 sm:space-y-8">
       <div className="page-header">
         <div>
-          <h1 className="page-title">
-            <AppIcon name="flag" className="size-[1.15em] shrink-0 text-pin" />
-            Representantes de casilla
-          </h1>
+          <h1 className="page-title">Representantes de casilla</h1>
           <p className="page-subtitle">
             {loading
               ? "Cargando…"
@@ -85,8 +81,7 @@ export default function RcPage() {
           </p>
         </div>
         <Link href="/rc/nuevo" className="btn-primary btn-responsive">
-          <AppIcon name="plus" className="size-4 shrink-0" />
-          Nuevo Rep. Casilla
+          + Nuevo Rep. Casilla
         </Link>
       </div>
 
