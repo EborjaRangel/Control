@@ -23,10 +23,11 @@ import * as Yup from "yup";
 const router = Router();
 
 const convocarDirigentesSchema = Yup.object({
-  buscar: Yup.array()
-    .of(Yup.string().trim().min(2).required())
-    .min(1, "Indica al menos un nombre")
-    .required(),
+  buscar: Yup.array().of(Yup.string().trim().min(2).required()).default([]),
+  dirigenteIds: Yup.array().of(Yup.string().trim().min(8).required()).default([]),
+}).test("buscar-o-ids", "Indica al menos un nombre o un ID de dirigente", (value) => {
+  const n = (value?.buscar?.length ?? 0) + (value?.dirigenteIds?.length ?? 0);
+  return n > 0;
 });
 
 router.use(requireAuth);
@@ -345,7 +346,10 @@ router.post("/eventos/:id/convocar", requireStaff, async (req, res) => {
       abortEarly: false,
       stripUnknown: true,
     });
-    const resultado = await convocarDirigentesAEventoMaterial(id, data.buscar);
+    const resultado = await convocarDirigentesAEventoMaterial(id, {
+      buscar: data.buscar,
+      dirigenteIds: data.dirigenteIds,
+    });
     res.json(resultado);
   } catch (error) {
     if (error instanceof ValidationError) {

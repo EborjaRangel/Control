@@ -102,12 +102,18 @@ export default function EntregaMaterialDetalleClient() {
   }
 
   async function convocarDirigentes() {
-    const buscar = convocarTexto
+    const lineas = convocarTexto
       .split(/[\n,;]+/)
       .map((s) => s.trim())
       .filter(Boolean);
-    if (!buscar.length) {
-      setConvocarMensaje("Escribe uno o más nombres (separados por coma o renglón).");
+    const buscar: string[] = [];
+    const dirigenteIds: string[] = [];
+    for (const linea of lineas) {
+      if (/^c[a-z0-9]{20,}$/i.test(linea)) dirigenteIds.push(linea);
+      else buscar.push(linea);
+    }
+    if (!buscar.length && !dirigenteIds.length) {
+      setConvocarMensaje("Escribe uno o más nombres (separados por coma o renglón) o un ID de dirigente.");
       return;
     }
     setConvocando(true);
@@ -116,18 +122,27 @@ export default function EntregaMaterialDetalleClient() {
       const res = await apiFetch(`/api/material/eventos/${id}/convocar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ buscar }),
+        body: JSON.stringify({ buscar, dirigenteIds }),
       });
       const body = (await res.json()) as {
         error?: string;
-        resultados?: Array<{ buscar: string; estado: string; nombreCompleto?: string; mensaje?: string }>;
+        resultados?: Array<{
+          buscar?: string;
+          estado: string;
+          nombreCompleto?: string;
+          mensaje?: string;
+          candidatos?: string[];
+        }>;
       };
       if (!res.ok) throw new Error(body.error ?? "No se pudo convocar");
       const lineas = (body.resultados ?? []).map((r) => {
         if (r.estado === "agregado") return `${r.nombreCompleto}: agregado al evento.`;
         if (r.estado === "ya_convocado") return `${r.nombreCompleto}: ya estaba convocado.`;
-        if (r.estado === "no_encontrado") return `${r.buscar}: no encontrado.`;
-        return `${r.buscar}: ${r.mensaje ?? r.estado}`;
+        if (r.estado === "no_encontrado") return `${r.buscar ?? "?"}: no encontrado.`;
+        if (r.estado === "ambiguo") {
+          return `${r.buscar ?? "?"}: varios candidatos — ${(r.candidatos ?? []).join("; ")}`;
+        }
+        return `${r.buscar ?? "?"}: ${r.mensaje ?? r.estado}`;
       });
       setConvocarMensaje(lineas.join(" "));
       await load({ silent: true });
@@ -233,8 +248,8 @@ export default function EntregaMaterialDetalleClient() {
         <section className="card-section space-y-3">
           <h2 className="section-title text-base">Convocar dirigentes faltantes</h2>
           <p className="text-sm text-ink-secondary">
-            Si alguien no aparece en la lista, escribe nombre y apellidos (uno por línea). Se copia el mismo material
-            del evento.
+            Si alguien no aparece en la lista, escribe nombre y apellidos completos (uno por línea) o el ID del
+            dirigente. Así no se confunde con homónimos (p. ej. Eduardo Arias vs Eduardo Arias Martínez).
           </p>
           <textarea
             className="input-area min-h-[72px]"
