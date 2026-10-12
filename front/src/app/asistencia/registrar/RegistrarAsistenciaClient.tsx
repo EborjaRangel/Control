@@ -4,19 +4,29 @@ import { AxisLogo } from "@/components/AxisLogo";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
-type CodigoEscaneo =
+type ModoPase = "asistencia" | "material";
+
+type CodigoEscaneoAsistencia =
   | "ASISTENCIA_TOMADA"
   | "ASISTENCIA_DUPLICADA"
   | "QR_INVALIDO"
   | "PASE_CERRADO"
   | "CLAVE_INCORRECTA";
 
+type CodigoEscaneoMaterial =
+  | "MATERIAL_ENTREGADO"
+  | "MATERIAL_DUPLICADO"
+  | "QR_INVALIDO"
+  | "ENTREGA_CERRADA"
+  | "CLAVE_INCORRECTA"
+  | "NO_CONVOCADO";
+
 type EventoPase = { id?: string; titulo?: string };
 
 type RespuestaEscaneo = {
   mensaje?: string;
   error?: string;
-  codigo?: CodigoEscaneo;
+  codigo?: CodigoEscaneoAsistencia | CodigoEscaneoMaterial;
   dirigente?: { nombreCompleto?: string };
   evento?: EventoPase;
 };
@@ -29,8 +39,15 @@ type EstadoPase = {
 
 type Visual = "cargando" | "formulario" | "ok" | "aviso" | "error" | "cerrado";
 
-function visualDeCodigo(codigo: CodigoEscaneo | undefined, ok: boolean): Visual {
-  if (ok || codigo === "ASISTENCIA_TOMADA") return "ok";
+function visualDeCodigo(modo: ModoPase, codigo: string | undefined, ok: boolean): Visual {
+  if (ok) return "ok";
+  if (modo === "material") {
+    if (codigo === "MATERIAL_ENTREGADO") return "ok";
+    if (codigo === "ENTREGA_CERRADA") return "cerrado";
+    if (codigo === "MATERIAL_DUPLICADO") return "aviso";
+    return "error";
+  }
+  if (codigo === "ASISTENCIA_TOMADA") return "ok";
   if (codigo === "PASE_CERRADO") return "cerrado";
   if (codigo === "ASISTENCIA_DUPLICADA") return "aviso";
   return "error";
@@ -47,7 +64,7 @@ function cerrarPestanaTrasLectura() {
       window.open("", "_self");
       window.close();
     } catch {
-      /* algunos navegadores bloquean close() */
+      /* ignore */
     }
     try {
       if (!window.closed) window.location.replace("about:blank");
@@ -60,6 +77,7 @@ function cerrarPestanaTrasLectura() {
 export default function RegistrarAsistenciaClient() {
   const searchParams = useSearchParams();
   const codigoQr = searchParams.get("c")?.trim() ?? "";
+  const [modo, setModo] = useState<ModoPase>("asistencia");
   const [clave, setClave] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [visual, setVisual] = useState<Visual>("cargando");
@@ -69,37 +87,53 @@ export default function RegistrarAsistenciaClient() {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch("/api/asistencia/pase-estado")
-      .then(async (res) => (await res.json()) as EstadoPase)
-      .then((data) => {
+    void Promise.all([
+      fetch("/api/asistencia/pase-estado").then(async (res) => (await res.json()) as EstadoPase),
+      fetch("/api/material/entrega-estado").then(async (res) => (await res.json()) as EstadoPase),
+    ])
+      .then(([asistencia, material]) => {
         if (cancelled) return;
-        const titulo = data.evento?.titulo?.trim() || null;
-        setEventoTitulo(titulo);
-        if (!data.abierto) {
-          setVisual("cerrado");
-          setMensaje(data.mensaje ?? "No hay un pase de lista abierto");
-          if (codigoQr) cerrarPestanaTrasLectura();
+
+        if (asistencia.abierto) {
+          setModo("asistencia");
+          setEventoTitulo(asistencia.evento?.titulo?.trim() || null);
+          setVisual("formulario");
           return;
         }
-        setVisual("formulario");
+
+        if (material.abierto) {
+          setModo("material");
+          setEventoTitulo(material.evento?.titulo?.trim() || null);
+          setVisual("formulario");
+          return;
+        }
+
+        setModo("asistencia");
+        setVisual("cerrado");
+        setMensaje(asistencia.mensaje ?? material.mensaje ?? "No hay pase de lista ni entrega de material abierta");
+        setEventoTitulo(asistencia.evento?.titulo ?? material.evento?.titulo ?? null);
+        if (codigoQr) cerrarPestanaTrasLectura();
       })
       .catch(() => {
         if (cancelled) return;
         setVisual("formulario");
       });
+
     return () => {
       cancelled = true;
     };
   }, [codigoQr]);
 
-  async function pasarLista(event: FormEvent) {
+  async function enviar(event: FormEvent) {
     event.preventDefault();
     setEnviando(true);
     setMensaje(null);
     setDetalle(null);
 
+    const endpoint = modo === "material" ? "/api/material/escanear" : "/api/asistencia/escanear";
+
     try {
-      const res = await fetch("/api/asistencia/escanear", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ raw: codigoQr, clave: clave.trim() }),
@@ -114,7 +148,7 @@ export default function RegistrarAsistenciaClient() {
         setVisual("formulario");
         return;
       }
-      const siguiente = visualDeCodigo(data.codigo, res.ok);
+      const siguiente = visualDeCodigo(modo, data.codigo, res.ok);
       setVisual(siguiente);
       if (siguiente !== "formulario") cerrarPestanaTrasLectura();
     } catch {
@@ -134,16 +168,21 @@ export default function RegistrarAsistenciaClient() {
         ? "alert-warning"
         : "alert-error";
 
+  const titulo = modo === "material" ? "Entrega de material" : "Pase de lista";
+  const instruccion =
+    modo === "material"
+      ? "Ingresa el código para registrar la entrega de material"
+      : "Ingresa el código para registrar la asistencia";
+  const boton = modo === "material" ? "Registrar entrega" : "Pasar lista";
+
   return (
     <div className="mx-auto flex w-full max-w-md flex-col justify-center py-6 sm:py-12">
       <div className="card space-y-6 p-5 sm:p-8">
         <div className="space-y-3 text-center">
           <AxisLogo size={160} badge mode="idle" accent="green" className="mx-auto" />
-          <h1 className="page-title">Pase de lista</h1>
+          <h1 className="page-title">{titulo}</h1>
           {eventoTitulo ? <p className="text-base font-semibold text-ink">{eventoTitulo}</p> : null}
-          {visual === "formulario" ? (
-            <p className="text-sm text-ink-secondary">Ingresa el código para registrar la asistencia</p>
-          ) : null}
+          {visual === "formulario" ? <p className="text-sm text-ink-secondary">{instruccion}</p> : null}
         </div>
 
         {visual === "cargando" ? (
@@ -154,7 +193,7 @@ export default function RegistrarAsistenciaClient() {
         ) : null}
 
         {visual === "formulario" ? (
-          <form className="space-y-4" onSubmit={(event) => void pasarLista(event)}>
+          <form className="space-y-4" onSubmit={(event) => void enviar(event)}>
             {mensaje ? <div className="alert-error text-center font-semibold">{mensaje}</div> : null}
 
             <label className="label">
@@ -171,7 +210,7 @@ export default function RegistrarAsistenciaClient() {
             </label>
 
             <button type="submit" className="btn-pase btn-responsive w-full" disabled={enviando}>
-              {enviando ? "Registrando…" : "Pasar lista"}
+              {enviando ? "Registrando…" : boton}
             </button>
           </form>
         ) : null}

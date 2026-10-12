@@ -63,6 +63,15 @@ const ADMIN_NAV = [
       (p.startsWith("/difusion/") && !p.startsWith("/difusion/dirigentes")),
   },
   {
+    href: "/material",
+    label: "Material",
+    shortLabel: "Material",
+    match: (p: string) =>
+      p === "/material" ||
+      p.startsWith("/material/nuevo") ||
+      (p.startsWith("/material/") && !p.startsWith("/material/dirigentes")),
+  },
+  {
     href: "/detectados",
     label: "Detectados",
     shortLabel: "Detectados",
@@ -134,6 +143,7 @@ const ADMIN_ONLY_NAV_HREFS = new Set<string>([
   "/operacion",
   "/asambleas",
   "/difusion",
+  "/material",
 ]);
 
 function staffMainNavForRol(rol: Parameters<typeof canAccessPrivilegedStaffNav>[0]) {

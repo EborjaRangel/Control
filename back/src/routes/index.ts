@@ -63,6 +63,11 @@ import auditoriaRouter from "./auditoria.js";
 import serviciosUrbanosRouter from "./servicios-urbanos.js";
 import asambleasRouter from "./asambleas.js";
 import difusionRouter from "./difusion.js";
+import materialRouter from "./material.js";
+import {
+  manejarEscaneoMaterialHttp,
+  manejarEstadoEntregaMaterialHttp,
+} from "../lib/escanear-material.js";
 import {
   registrarAuditoria,
   snapshotDirigenteBasico,
@@ -240,6 +245,8 @@ router.use("/auth", authRouter);
 /** Lectura de QR desde la cámara de cualquier teléfono, sin iniciar sesión. */
 router.get("/asistencia/pase-estado", manejarEstadoPaseHttp);
 router.post("/asistencia/escanear", manejarEscaneoHttp);
+router.get("/material/entrega-estado", manejarEstadoEntregaMaterialHttp);
+router.post("/material/escanear", manejarEscaneoMaterialHttp);
 
 router.use(requireAuth);
 
@@ -250,6 +257,7 @@ router.use("/detectados", detectadosRouter);
 router.use("/servicios-urbanos", serviciosUrbanosRouter);
 router.use("/asambleas", asambleasRouter);
 router.use("/difusion", difusionRouter);
+router.use("/material", materialRouter);
 router.use("/rc", rcRouter);
 router.use("/rg", rgRouter);
 router.use("/notificaciones", notificacionesRouter);

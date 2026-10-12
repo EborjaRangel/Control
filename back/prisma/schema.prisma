@@ -176,6 +176,9 @@ model Dirigente {
   reportesServiciosUrbanos ReporteServicioUrbano[]
   asambleas           Asamblea[]
   registrosDifusion   RegistroDifusion[]
+  participacionesEntregaMaterial EventoEntregaMaterialDirigente[]
+  asignacionesMaterialEntrega   AsignacionMaterialEntrega[]
+  entregasMaterial                RegistroEntregaMaterial[]
   asistencias         RegistroAsistencia[]
   enviosComunicacion  EnvioComunicacion[]
   estudios            DirigenteEstudio[]
@@ -398,6 +401,87 @@ model RegistroDifusion {
   @@index([registradoAt])
 }
 
+/// Evento de entrega de material a dirigentes (ventana de vigencia + pase QR)
+model EventoEntregaMaterial {
+  id          String       @id @default(cuid())
+  titulo      String
+  fechaInicio DateTime     @db.Date
+  fechaFin    DateTime     @db.Date
+  estado      EstadoEvento @default(PROGRAMADO)
+  abiertoAt   DateTime?
+  cerradoAt   DateTime?
+  creadoPorId String?
+  participantes EventoEntregaMaterialDirigente[]
+  asignaciones  AsignacionMaterialEntrega[]
+  entregas      RegistroEntregaMaterial[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([estado])
+  @@index([fechaInicio])
+  @@index([fechaFin])
+}
+
+/// Dirigente convocado a recoger material en un evento
+model EventoEntregaMaterialDirigente {
+  id          String                @id @default(cuid())
+  eventoId    String
+  evento      EventoEntregaMaterial @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  dirigenteId String
+  dirigente   Dirigente             @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+
+  @@unique([eventoId, dirigenteId])
+  @@index([eventoId])
+  @@index([dirigenteId])
+}
+
+/// Material asignado a un dirigente dentro de un evento (descripción, foto, cantidad)
+model AsignacionMaterialEntrega {
+  id          String                @id @default(cuid())
+  eventoId    String
+  evento      EventoEntregaMaterial @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  dirigenteId String
+  dirigente   Dirigente             @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  descripcion String
+  fotoUrl     String
+  cantidad    Int
+
+  @@index([eventoId, dirigenteId])
+  @@index([dirigenteId])
+}
+
+/// Entrega confirmada por escaneo de QR
+model RegistroEntregaMaterial {
+  id              String                @id @default(cuid())
+  eventoId        String
+  evento          EventoEntregaMaterial @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  dirigenteId     String
+  dirigente       Dirigente             @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  registradoAt    DateTime              @default(now())
+  registradoPorId String?
+  registradoPor   Usuario?              @relation(fields: [registradoPorId], references: [id], onDelete: SetNull)
+  lineas          RegistroEntregaMaterialLinea[]
+
+  @@unique([eventoId, dirigenteId])
+  @@index([eventoId])
+  @@index([dirigenteId])
+  @@index([registradoAt])
+  @@index([registradoPorId])
+}
+
+/// Detalle entregado (copia de asignación al momento del escaneo)
+model RegistroEntregaMaterialLinea {
+  id          String                  @id @default(cuid())
+  registroId  String
+  registro    RegistroEntregaMaterial @relation(fields: [registroId], references: [id], onDelete: Cascade)
+  descripcion String
+  fotoUrl     String
+  cantidad    Int
+
+  @@index([registroId])
+}
+
 /// Persona registrada por un detectado (datos generales INE)
 model PersonaDetectada {
   id               String    @id @default(cuid())
@@ -556,6 +640,7 @@ model Usuario {
   notificacionesRecibidas NotificacionDestinatario[]
   passwordResetTokens     PasswordResetToken[]
   asistenciasRegistradas  RegistroAsistencia[]
+  entregasMaterialRegistradas RegistroEntregaMaterial[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 

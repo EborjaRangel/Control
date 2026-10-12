@@ -69,6 +69,9 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
     if (!isAdminRol(user.rol) && pathname.startsWith("/operacion")) {
       return false;
     }
+    if (!isAdminRol(user.rol) && pathname.startsWith("/material")) {
+      return false;
+    }
     return true;
   }
 
@@ -119,6 +122,7 @@ export function pathAllowedForUser(user: SessionUser, pathname: string) {
       return true;
     }
     if (/^\/difusion\/registros\/[^/]+$/.test(pathname)) return true;
+    if (pathname === `/material/dirigentes/${dirigenteId}`) return true;
   }
 
   if (rcId) {
@@ -209,6 +213,12 @@ function panelOperadorNavItems(user: SessionUser): NavItem[] {
         p === `/difusion/dirigentes/${d}` ||
         p === `/difusion/dirigentes/${d}/nuevo` ||
         /^\/difusion\/registros\/[^/]+$/.test(p),
+    },
+    {
+      href: `/material/dirigentes/${d}`,
+      label: "Material entregado",
+      shortLabel: "Material",
+      match: (p) => p === `/material/dirigentes/${d}`,
     },
   ];
 }
