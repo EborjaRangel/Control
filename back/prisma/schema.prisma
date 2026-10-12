@@ -175,6 +175,7 @@ model Dirigente {
   detectados          Detectado[]
   reportesServiciosUrbanos ReporteServicioUrbano[]
   asambleas           Asamblea[]
+  registrosDifusion   RegistroDifusion[]
   asistencias         RegistroAsistencia[]
   enviosComunicacion  EnvioComunicacion[]
   estudios            DirigenteEstudio[]
@@ -351,6 +352,50 @@ model AsambleaFoto {
   createdAt  DateTime @default(now())
 
   @@index([asambleaId])
+}
+
+enum EstadoCampanaDifusion {
+  ACTIVA
+  CERRADA
+}
+
+/// Campaña de difusión (eventos con foto y georreferencia)
+model CampanaDifusion {
+  id          String                 @id @default(cuid())
+  titulo      String
+  fechaInicio DateTime               @db.Date
+  fechaFin    DateTime               @db.Date
+  estado      EstadoCampanaDifusion  @default(ACTIVA)
+  cerradaAt   DateTime?
+  creadoPorId String?
+  registros   RegistroDifusion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([estado])
+  @@index([fechaInicio])
+  @@index([fechaFin])
+}
+
+/// Acción de difusión registrada por un dirigente durante campaña activa
+model RegistroDifusion {
+  id           String          @id @default(cuid())
+  campanaId    String
+  campana      CampanaDifusion @relation(fields: [campanaId], references: [id], onDelete: Cascade)
+  dirigenteId  String
+  dirigente    Dirigente       @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  fotoUrl      String
+  lat          Float
+  lng          Float
+  registradoAt DateTime        @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([campanaId])
+  @@index([dirigenteId])
+  @@index([registradoAt])
 }
 
 /// Persona registrada por un detectado (datos generales INE)

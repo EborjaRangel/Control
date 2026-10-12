@@ -62,6 +62,7 @@ import usuariosRouter from "./usuarios.js";
 import auditoriaRouter from "./auditoria.js";
 import serviciosUrbanosRouter from "./servicios-urbanos.js";
 import asambleasRouter from "./asambleas.js";
+import difusionRouter from "./difusion.js";
 import {
   registrarAuditoria,
   snapshotDirigenteBasico,
@@ -248,6 +249,7 @@ router.use("/nominas", nominasRouter);
 router.use("/detectados", detectadosRouter);
 router.use("/servicios-urbanos", serviciosUrbanosRouter);
 router.use("/asambleas", asambleasRouter);
+router.use("/difusion", difusionRouter);
 router.use("/rc", rcRouter);
 router.use("/rg", rgRouter);
 router.use("/notificaciones", notificacionesRouter);

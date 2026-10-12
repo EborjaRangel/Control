@@ -98,6 +98,10 @@ export default function ConsultarDirigentePage() {
               <AppIcon name="group" className="size-4 shrink-0" />
               Mis Asambleas
             </Link>
+            <Link href={`/difusion/dirigentes/${id}`} className="btn-secondary btn-responsive">
+              <AppIcon name="megaphone" className="size-4 shrink-0" />
+              Difusión
+            </Link>
             <Link href={enlaceRc(id, user?.rcId)} className="btn-secondary btn-responsive">
               <AppIcon name="flag" className="size-4 shrink-0" />
               Mis RC

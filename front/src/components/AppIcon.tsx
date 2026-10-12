@@ -312,6 +312,7 @@ export function iconForNavHref(href: string): IconName {
   if (href.startsWith("/electoral")) return "ballot";
   if (href.startsWith("/asistencia")) return "clipboard";
   if (href.startsWith("/convocatoria")) return "megaphone";
+  if (href.startsWith("/difusion")) return "megaphone";
   if (href.startsWith("/detectados")) return "userPlus";
   if (href.startsWith("/servicios-urbanos")) return "wrench";
   if (href.startsWith("/rc")) return "flag";
