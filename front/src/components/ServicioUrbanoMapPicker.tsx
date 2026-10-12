@@ -38,6 +38,39 @@ export function ServicioUrbanoMapPicker({
 
   onChangeRef.current = onChange;
 
+  function mensajeErrorGeolocalizacion(error: GeolocationPositionError): string {
+    if (error.code === error.PERMISSION_DENIED) {
+      return "Permite el acceso a la ubicación en tu navegador o dispositivo.";
+    }
+    if (error.code === error.POSITION_UNAVAILABLE) {
+      return "No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.";
+    }
+    if (error.code === error.TIMEOUT) {
+      return "La ubicación tardó demasiado. Intenta de nuevo.";
+    }
+    return "No se pudo usar la ubicación del dispositivo.";
+  }
+
+  function usarMiUbicacionActual() {
+    if (readOnly) return;
+    if (!navigator.geolocation) {
+      setGeoError("Tu navegador no soporta geolocalización.");
+      return;
+    }
+    setGeoError(null);
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        void actualizarPin(pos.coords.longitude, pos.coords.latitude);
+      },
+      (err) => {
+        setGeoLoading(false);
+        setGeoError(mensajeErrorGeolocalizacion(err));
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+    );
+  }
+
   async function actualizarPin(nuevoLng: number, nuevoLat: number, moverMapa = true) {
     setGeoLoading(true);
     setGeoError(null);
@@ -179,10 +212,19 @@ export function ServicioUrbanoMapPicker({
   return (
     <div className="space-y-3">
       {!readOnly ? (
-        <p className="text-sm text-ink-secondary">
-          Arrastra el pin o toca el mapa para marcar la ubicación. El mapa sugiere la
-          dirección; puedes corregirla.
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="min-w-0 flex-1 text-sm text-ink-secondary">
+            Arrastra el pin o toca el mapa. También puedes centrar en donde estás registrando.
+          </p>
+          <button
+            type="button"
+            className="btn-secondary btn-responsive shrink-0"
+            disabled={geoLoading}
+            onClick={() => usarMiUbicacionActual()}
+          >
+            {geoLoading ? "Ubicando…" : "Usar mi ubicación actual"}
+          </button>
+        </div>
       ) : null}
       <div
         ref={containerRef}

@@ -6,6 +6,7 @@ import { ServicioUrbanoMapPicker } from "@/components/ServicioUrbanoMapPicker";
 import { UploadImage } from "@/components/UploadImage";
 import { apiFetch } from "@/lib/api";
 import type { CampanaDifusionDTO, RegistroDifusionDTO } from "@/lib/difusion";
+import { etiquetaEstadoSubida, uploadImageFile, type UploadImageStatus } from "@/lib/upload-image";
 import { reverseGeocodeMapbox } from "@/lib/mapbox-geocode";
 import {
   registroDifusionEditFormSchema,
@@ -36,22 +37,18 @@ function valoresIniciales(
 
 export function RegistroDifusionForm({ campanas, registro, onSuccess, onCancel }: Props) {
   const editando = Boolean(registro);
-  const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<UploadImageStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cargandoDireccion, setCargandoDireccion] = useState(false);
+  const uploading = uploadStatus !== null;
 
   async function subirFoto(file: File) {
-    setUploading(true);
+    setUploadStatus({ phase: "compress" });
     setError(null);
     try {
-      const body = new FormData();
-      body.append("file", file);
-      const res = await apiFetch("/api/upload", { method: "POST", body });
-      if (!res.ok) throw new Error("No se pudo subir la foto");
-      const data = (await res.json()) as { url: string };
-      return data.url;
+      return await uploadImageFile(file, setUploadStatus);
     } finally {
-      setUploading(false);
+      setUploadStatus(null);
     }
   }
 
@@ -99,11 +96,13 @@ export function RegistroDifusionForm({ campanas, registro, onSuccess, onCancel }
           errors={errors}
           submitCount={submitCount}
           uploading={uploading}
+          uploadStatus={uploadStatus}
           isSubmitting={isSubmitting}
           error={error}
           cargandoDireccion={cargandoDireccion}
           setCargandoDireccion={setCargandoDireccion}
           subirFoto={subirFoto}
+          setError={setError}
           onCancel={onCancel}
         />
       )}
@@ -120,11 +119,13 @@ function RegistroDifusionFormBody({
   errors,
   submitCount,
   uploading,
+  uploadStatus,
   isSubmitting,
   error,
   cargandoDireccion,
   setCargandoDireccion,
   subirFoto,
+  setError,
   onCancel,
 }: {
   campanas: CampanaDifusionDTO[];
@@ -135,11 +136,13 @@ function RegistroDifusionFormBody({
   errors: FormikErrors<RegistroDifusionFormValues>;
   submitCount: number;
   uploading: boolean;
+  uploadStatus: UploadImageStatus | null;
   isSubmitting: boolean;
   error: string | null;
   cargandoDireccion: boolean;
   setCargandoDireccion: (v: boolean) => void;
   subirFoto: (file: File) => Promise<string>;
+  setError: (msg: string | null) => void;
   onCancel: () => void;
 }) {
   const mostrarErrores = submitCount > 0;
@@ -210,7 +213,11 @@ function RegistroDifusionFormBody({
             />
           ) : null}
           <label className="btn-secondary btn-responsive cursor-pointer">
-            {uploading ? "Subiendo…" : values.fotoUrl ? "Cambiar foto" : "Subir foto"}
+            {uploading
+              ? (etiquetaEstadoSubida(uploadStatus) ?? "Subiendo…")
+              : values.fotoUrl
+                ? "Cambiar foto"
+                : "Subir foto"}
             <input
               type="file"
               accept="image/*"
@@ -219,11 +226,18 @@ function RegistroDifusionFormBody({
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
-                void subirFoto(file).then((url) => setFieldValue("fotoUrl", url));
+                void subirFoto(file)
+                  .then((url) => setFieldValue("fotoUrl", url))
+                  .catch((err) => {
+                    setError(err instanceof Error ? err.message : "No se pudo subir la foto");
+                  });
               }}
             />
           </label>
         </div>
+        <p className="mt-1 text-xs text-ink-secondary">
+          La foto se optimiza en el dispositivo (tamaño y calidad) antes de enviarse al servidor.
+        </p>
         {mostrarErrores && errors.fotoUrl ? (
           <p className="field-error mt-1">{errors.fotoUrl}</p>
         ) : null}
@@ -232,7 +246,8 @@ function RegistroDifusionFormBody({
       <div>
         <span className="label">Ubicación (mapa)</span>
         <p className="mt-1 text-sm text-ink-secondary">
-          Usa tu ubicación actual o toca el mapa para marcar el punto de la acción.
+          Pulsa <strong className="font-medium text-ink">Usar mi ubicación actual</strong> o marca el punto en el
+          mapa.
         </p>
         <div className="mt-3">
           <ServicioUrbanoMapPicker
