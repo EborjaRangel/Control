@@ -4,6 +4,11 @@ export const lineaMaterialSchema = Yup.object({
   descripcion: Yup.string().trim().required("La descripción del material es obligatoria"),
   fotoUrl: Yup.string().trim().required("La fotografía del material es obligatoria"),
   cantidad: Yup.number()
+    .transform((value, original) => {
+      if (original === "" || original == null) return undefined;
+      const n = typeof original === "number" ? original : Number(original);
+      return Number.isFinite(n) ? n : undefined;
+    })
     .integer("La cantidad debe ser entera")
     .min(1, "La cantidad debe ser al menos 1")
     .required("Indica la cantidad"),
@@ -14,6 +19,7 @@ const participanteSchema = Yup.object({
   lineas: Yup.array().of(lineaMaterialSchema).min(1, "Agrega al menos un material por dirigente").required(),
 });
 
+/** Crear entrega: `lineasComunes` convoca a todos los dirigentes activos (flujo actual). */
 export const eventoEntregaMaterialCreateSchema = Yup.object({
   titulo: Yup.string().trim().required("El título es obligatorio"),
   fechaInicio: Yup.string()
@@ -27,25 +33,10 @@ export const eventoEntregaMaterialCreateSchema = Yup.object({
       if (!inicio || !fin) return true;
       return fin >= inicio;
     }),
-  todosDirigentesActivos: Yup.boolean().default(true),
-  lineasComunes: Yup.array().of(lineaMaterialSchema),
-  participantes: Yup.array().of(participanteSchema),
-}).test("modo-participantes", "Indica el material o los participantes", function (value) {
-  const todos = value.todosDirigentesActivos !== false;
-  if (todos) {
-    if (!value.lineasComunes?.length) {
-      return this.createError({
-        path: "lineasComunes",
-        message: "Agrega al menos un material para todos los dirigentes",
-      });
-    }
-    return true;
-  }
-  if (!value.participantes?.length) {
-    return this.createError({
-      path: "participantes",
-      message: "Selecciona al menos un dirigente",
-    });
-  }
-  return true;
+  todosDirigentesActivos: Yup.boolean().optional().default(true),
+  lineasComunes: Yup.array()
+    .of(lineaMaterialSchema)
+    .min(1, "Agrega al menos un material")
+    .required("Agrega al menos un material"),
+  participantes: Yup.array().of(participanteSchema).optional(),
 });

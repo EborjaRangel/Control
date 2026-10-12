@@ -55,8 +55,12 @@ router.post("/eventos", requireStaff, async (req, res) => {
       stripUnknown: true,
     });
 
-    const todosActivos = data.todosDirigentesActivos !== false;
-    const participantesPayload = todosActivos
+    const usarTodos =
+      data.todosDirigentesActivos !== false &&
+      Array.isArray(data.lineasComunes) &&
+      data.lineasComunes.length > 0;
+
+    const participantesPayload = usarTodos
       ? (
           await prisma.dirigente.findMany({
             where: { activo: true, status: "ACTIVO" },
@@ -65,9 +69,9 @@ router.post("/eventos", requireStaff, async (req, res) => {
           })
         ).map((d) => ({
           dirigenteId: d.id,
-          lineas: data.lineasComunes!,
+          lineas: data.lineasComunes,
         }))
-      : data.participantes!;
+      : (data.participantes ?? []);
 
     if (!participantesPayload.length) {
       res.status(400).json({ error: "No hay dirigentes activos para convocar" });

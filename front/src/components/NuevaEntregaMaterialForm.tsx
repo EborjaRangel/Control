@@ -98,7 +98,10 @@ export function NuevaEntregaMaterialForm({ onSuccess, onCancel }: Props) {
         }),
       });
       const body = (await res.json()) as { id?: string; error?: string; detalles?: string[] };
-      if (!res.ok) throw new Error(body.error ?? body.detalles?.join(" ") ?? "Error al guardar");
+      if (!res.ok) {
+        const detalle = body.detalles?.filter(Boolean).join(" · ");
+        throw new Error(detalle || body.error || "Error al guardar");
+      }
       onSuccess(body.id!);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar");
