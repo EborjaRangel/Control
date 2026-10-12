@@ -3,11 +3,12 @@ import { ValidationError } from "yup";
 import { prisma } from "../lib/prisma.js";
 import { requireAdmin, requireAuth, requireStaff, isStaffRol } from "../lib/auth.js";
 import { canAccessDirigentePanel } from "../lib/user-panel.js";
-import { campanaAceptaRegistros } from "../lib/campana-difusion.js";
+import { campanaAceptaRegistros, campanaPermiteEditarRegistros } from "../lib/campana-difusion.js";
 import {
   campanaDifusionCreateSchema,
   campanaDifusionUpdateSchema,
   registroDifusionCreateSchema,
+  registroDifusionUpdateSchema,
 } from "../lib/validation-difusion.js";
 import {
   dirigenteResumenDifusionSelect,
@@ -288,6 +289,58 @@ router.post("/registros", async (req, res) => {
     }
     console.error(error);
     res.status(500).json({ error: "Error al registrar acción" });
+  }
+});
+
+router.put("/registros/:id", async (req, res) => {
+  try {
+    const id = paramId(req.params.id);
+    const data = await registroDifusionUpdateSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+
+    const dirigenteId = req.user?.dirigenteId;
+    if (!dirigenteId || !req.user) {
+      res.status(403).json({ error: "Solo el dirigente puede editar su acción de difusión" });
+      return;
+    }
+
+    const existing = await prisma.registroDifusion.findUnique({
+      where: { id },
+      include: { campana: true },
+    });
+    if (!existing) {
+      res.status(404).json({ error: "No encontrado" });
+      return;
+    }
+    if (existing.dirigenteId !== dirigenteId) {
+      res.status(403).json({ error: "No autorizado" });
+      return;
+    }
+    if (!existing.campana || !campanaPermiteEditarRegistros(existing.campana)) {
+      res.status(400).json({ error: "La campaña está cerrada; el registro ya no se puede modificar" });
+      return;
+    }
+
+    const registro = await prisma.registroDifusion.update({
+      where: { id },
+      data: {
+        fotoUrl: data.fotoUrl,
+        lat: data.lat,
+        lng: data.lng,
+      },
+      include: registroInclude,
+    });
+
+    res.json(serializeRegistroDifusion(registro));
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
+      return;
+    }
+    console.error(error);
+    res.status(500).json({ error: "Error al actualizar registro" });
   }
 });
 

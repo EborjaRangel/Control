@@ -68,6 +68,8 @@ export function serializeRegistroDifusion(r: RegistroRow) {
     id: r.id,
     campanaId: r.campanaId,
     campanaTitulo: r.campana?.titulo ?? null,
+    campanaEstado: r.campana?.estado ?? null,
+    campanaPermiteEdicion: r.campana ? r.campana.estado !== "CERRADA" : false,
     dirigenteId: r.dirigenteId,
     dirigenteNombre: r.dirigente ? nombreCompleto(r.dirigente) : null,
     dirigenteTipo: r.dirigente?.tipo ?? null,

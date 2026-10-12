@@ -23,3 +23,9 @@ export const registroDifusionCreateSchema = Yup.object({
   lat: Yup.number().required("Ubica el punto en el mapa").min(-90).max(90),
   lng: Yup.number().required("Ubica el punto en el mapa").min(-180).max(180),
 });
+
+export const registroDifusionUpdateSchema = Yup.object({
+  fotoUrl: Yup.string().trim().required("La fotografía es obligatoria"),
+  lat: Yup.number().required("Ubica el punto en el mapa").min(-90).max(90),
+  lng: Yup.number().required("Ubica el punto en el mapa").min(-180).max(180),
+});

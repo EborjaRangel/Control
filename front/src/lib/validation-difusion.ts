@@ -15,17 +15,45 @@ export const campanaDifusionFormSchema = Yup.object({
     }),
 });
 
+const ubicacionLat = Yup.number()
+  .nullable()
+  .typeError("Falta capturar la ubicación en el mapa")
+  .required("Falta capturar la ubicación en el mapa")
+  .test("ubicado", "Falta capturar la ubicación en el mapa", (v) => v != null && Math.abs(v) > 0.0001);
+
+const ubicacionLng = Yup.number()
+  .nullable()
+  .typeError("Falta capturar la ubicación en el mapa")
+  .required("Falta capturar la ubicación en el mapa")
+  .test("ubicado", "Falta capturar la ubicación en el mapa", (v) => v != null && Math.abs(v) > 0.0001);
+
 export const registroDifusionFormSchema = Yup.object({
   campanaId: Yup.string().trim().required("Selecciona la campaña"),
-  fotoUrl: Yup.string().trim().required("Sube la fotografía del evento"),
-  lat: Yup.number()
-    .nullable()
-    .typeError("Marca la ubicación en el mapa")
-    .required("Marca la ubicación en el mapa")
-    .test("ubicado", "Marca la ubicación en el mapa", (v) => v != null && Math.abs(v) > 0.0001),
-  lng: Yup.number()
-    .nullable()
-    .typeError("Marca la ubicación en el mapa")
-    .required("Marca la ubicación en el mapa")
-    .test("ubicado", "Marca la ubicación en el mapa", (v) => v != null && Math.abs(v) > 0.0001),
+  fotoUrl: Yup.string().trim().required("Falta capturar la fotografía del evento"),
+  lat: ubicacionLat,
+  lng: ubicacionLng,
+  direccion: Yup.string()
+    .trim()
+    .required("Falta capturar la dirección (marca el punto en el mapa)"),
 });
+
+export const registroDifusionEditFormSchema = registroDifusionFormSchema.omit(["campanaId"]);
+
+export type RegistroDifusionFormValues = {
+  campanaId: string;
+  fotoUrl: string;
+  lat: number | null;
+  lng: number | null;
+  direccion: string;
+};
+
+export function resumenCamposFaltantesRegistroDifusion(
+  errors: Partial<Record<keyof RegistroDifusionFormValues, string>>,
+): string | null {
+  const faltantes: string[] = [];
+  if (errors.fotoUrl) faltantes.push("fotografía del evento");
+  if (errors.direccion || errors.lat || errors.lng) faltantes.push("dirección / ubicación en el mapa");
+  if (errors.campanaId) faltantes.push("campaña");
+  if (!faltantes.length) return null;
+  return `Falta capturar: ${faltantes.join(" y ")}.`;
+}

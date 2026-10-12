@@ -17,6 +17,11 @@ export function campanaAceptaRegistros(campana: Pick<CampanaDifusion, "estado" |
   return hoy >= inicio && hoy <= fin;
 }
 
+/** Mientras la campaña no esté cerrada manualmente, se pueden corregir registros ya capturados. */
+export function campanaPermiteEditarRegistros(campana: Pick<CampanaDifusion, "estado">): boolean {
+  return campana.estado !== "CERRADA";
+}
+
 export function etiquetaEstadoCampana(estado: EstadoCampanaDifusion): string {
   return estado === "ACTIVA" ? "Activa" : "Cerrada";
 }

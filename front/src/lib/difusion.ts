@@ -16,6 +16,8 @@ export type RegistroDifusionDTO = {
   id: string;
   campanaId: string;
   campanaTitulo: string | null;
+  campanaEstado: "ACTIVA" | "CERRADA" | null;
+  campanaPermiteEdicion: boolean;
   dirigenteId: string;
   dirigenteNombre: string | null;
   dirigenteTipo: string | null;
