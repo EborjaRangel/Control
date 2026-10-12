@@ -16,6 +16,7 @@ import {
   type DirigenteAsistenciaResumen,
   type FaltasFechaResponse,
 } from "@/lib/asistencia";
+import { LIVE_PANEL_POLL_MS } from "@/lib/live-polling";
 
 type PestanaDashboard = "faltas" | "resumen";
 
@@ -79,7 +80,7 @@ export default function AsistenciaDashboardPage() {
       if (pestana === "faltas") void loadFaltas({ silent: true });
       else void loadResumen({ silent: true });
     };
-    const timer = window.setInterval(refrescar, 2000);
+    const timer = window.setInterval(refrescar, LIVE_PANEL_POLL_MS);
     document.addEventListener("visibilitychange", refrescar);
     return () => {
       window.clearInterval(timer);

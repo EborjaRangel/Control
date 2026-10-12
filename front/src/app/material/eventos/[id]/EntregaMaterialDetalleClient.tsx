@@ -16,6 +16,7 @@ import {
   type PaseEntregaMaterialResponse,
   type ResumenDistritoEntrega,
 } from "@/lib/material";
+import { LIVE_PANEL_POLL_MS } from "@/lib/live-polling";
 
 export default function EntregaMaterialDetalleClient() {
   const { id } = useParams<{ id: string }>();
@@ -57,7 +58,7 @@ export default function EntregaMaterialDetalleClient() {
       if (document.visibilityState === "hidden") return;
       void load({ silent: true });
     };
-    const timer = window.setInterval(refrescar, 2000);
+    const timer = window.setInterval(refrescar, LIVE_PANEL_POLL_MS);
     document.addEventListener("visibilitychange", refrescar);
     return () => {
       window.clearInterval(timer);

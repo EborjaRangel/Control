@@ -101,6 +101,37 @@ railway run npm run db:seed
 
 Si cambias la URL del API en Railway, actualiza `API_PROXY_URL` en Vercel y vuelve a desplegar.
 
+## Rendimiento y escala (Vercel + Railway)
+
+Recomendaciones cuando crece el número de usuarios y módulos:
+
+### Railway (API + PostgreSQL)
+
+| Acción | Por qué |
+|--------|---------|
+| **Volumen en `/app/uploads`** | Evita re-subir fotos y reduce I/O en disco efímero. |
+| **`PG_POOL_MAX=10`** (variable opcional en el servicio API) | Limita conexiones simultáneas a Postgres; sube a 15–20 solo si Railway/Postgres lo permiten. |
+| **Postgres en el mismo proyecto/región** | Menor latencia entre API y BD (idealmente cerca de `sfo1`, región del front). |
+| **Plan con más CPU/RAM o réplicas** | El API es un proceso Node long-running; más carga = más memoria para mapas/geo en memoria. |
+| **Catálogos electorales** | Tras cambiar JSON locales, ejecuta una vez `railway run npm run electoral:seed-db` (ya no corre en cada deploy). |
+
+### Vercel (Next.js)
+
+| Acción | Por qué |
+|--------|---------|
+| **`regions: ["sfo1"]`** | Ya configurado en `front/vercel.json`; alinea con Railway US-West cuando sea posible. |
+| **`API_PROXY_URL`** | Todas las peticiones `/api/*` pasan por Vercel → Railway; mantén el API cerca geográficamente. |
+| **Fotos comprimidas en el cliente** | Difusión/servicios usan `compress-image.ts` antes del upload (menos timeout en proxy). |
+| **Plan Pro** | Más tiempo de función (proxy `/api`), mejor concurrencia en picos (pase de lista, entregas). |
+
+### Aplicación
+
+- Paneles en vivo (asistencia, material) refrescan cada **5 s** y solo con la pestaña visible.
+- Respuestas JSON del API van con **compresión gzip** (`compression` en Express).
+- Imágenes estáticas `/uploads` llevan cache de 7 días (Vercel rewrite + Express).
+
+Si el sistema sigue lento, revisa en Railway métricas de CPU/RAM y en Vercel **Function duration** en rutas `/api/*` durante eventos masivos.
+
 ## Recuperación de contraseña (correo SMTP)
 
 Flujo en producción:

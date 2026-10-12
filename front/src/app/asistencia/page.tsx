@@ -12,6 +12,7 @@ import {
   type EventoAsistenciaDTO,
   type FiltroEventosLista,
 } from "@/lib/asistencia";
+import { LIVE_PANEL_POLL_MS } from "@/lib/live-polling";
 
 const FILTRO_EVENTOS_LABEL: Record<FiltroEventosLista, string> = {
   activos: "Activos (programados y pase abierto)",
@@ -62,7 +63,7 @@ export default function AsistenciaPage() {
       if (document.visibilityState === "hidden") return;
       void load({ silent: true });
     };
-    const timer = window.setInterval(refrescar, 2000);
+    const timer = window.setInterval(refrescar, LIVE_PANEL_POLL_MS);
     document.addEventListener("visibilitychange", refrescar);
     return () => {
       window.clearInterval(timer);

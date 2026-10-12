@@ -1,4 +1,5 @@
 import "dotenv/config";
+import compression from "compression";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -24,6 +25,7 @@ const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:3000")
 
 fs.mkdirSync(uploadDir, { recursive: true });
 
+app.use(compression());
 app.use(
   cors({
     origin(origin, callback) {

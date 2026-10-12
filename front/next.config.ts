@@ -23,6 +23,9 @@ const apiHost = (() => {
 })();
 
 const nextConfig: NextConfig = {
+  experimental: {
+    optimizePackageImports: ["mapbox-gl"],
+  },
   images: {
     localPatterns: [{ pathname: "/uploads/**", search: "" }],
     ...(apiHost

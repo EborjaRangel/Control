@@ -3,7 +3,8 @@ builder = "NIXPACKS"
 buildCommand = "npm install && npm run build && (npm run geo:ensure-iecm-uts || true)"
 
 [deploy]
-preDeployCommand = "npx prisma migrate deploy && npm run electoral:seed-db"
+# Solo migraciones en cada deploy. Catálogos electorales: `railway run npm run electoral:seed-db` cuando cambien JSON.
+preDeployCommand = "npx prisma migrate deploy"
 startCommand = "npm start"
 healthcheckPath = "/health"
 healthcheckTimeout = 120

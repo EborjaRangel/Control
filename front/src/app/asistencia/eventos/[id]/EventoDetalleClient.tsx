@@ -16,6 +16,7 @@ import {
   type EventoAsistenciaDTO,
   type PaseListaResponse,
 } from "@/lib/asistencia";
+import { LIVE_PANEL_POLL_MS } from "@/lib/live-polling";
 
 export default function EventoDetalleClient() {
   const { id } = useParams<{ id: string }>();
@@ -61,7 +62,7 @@ export default function EventoDetalleClient() {
       if (document.visibilityState === "hidden") return;
       void load({ silent: true });
     };
-    const timer = window.setInterval(refrescar, 2000);
+    const timer = window.setInterval(refrescar, LIVE_PANEL_POLL_MS);
     document.addEventListener("visibilitychange", refrescar);
     return () => {
       window.clearInterval(timer);
