@@ -17,6 +17,7 @@ import {
   type ResumenDistritoEntrega,
 } from "@/lib/material";
 import { LIVE_PANEL_POLL_MS } from "@/lib/live-polling";
+import { codigoQrDesdeTextoQr } from "@/lib/qr";
 
 export default function EntregaMaterialDetalleClient() {
   const { id } = useParams<{ id: string }>();
@@ -29,7 +30,7 @@ export default function EntregaMaterialDetalleClient() {
   const [pestana, setPestana] = useState<"lista" | "distritos" | "recientes">("lista");
   const [distritoSel, setDistritoSel] = useState<number | "otros" | null>(null);
   const [convocarTexto, setConvocarTexto] = useState(
-    "Eduardo Arias\nMaria Concepcion Vazquez",
+    "Eduardo Arias\nMaria Concepcion Vazquez Resendia",
   );
   const [convocarMensaje, setConvocarMensaje] = useState<string | null>(null);
   const [convocando, setConvocando] = useState(false);
@@ -108,12 +109,21 @@ export default function EntregaMaterialDetalleClient() {
       .filter(Boolean);
     const buscar: string[] = [];
     const dirigenteIds: string[] = [];
+    const codigosQr: string[] = [];
     for (const linea of lineas) {
-      if (/^c[a-z0-9]{20,}$/i.test(linea)) dirigenteIds.push(linea);
-      else buscar.push(linea);
+      if (/^c[a-z0-9]{20,}$/i.test(linea)) {
+        dirigenteIds.push(linea);
+        continue;
+      }
+      const qr = codigoQrDesdeTextoQr(linea);
+      if (qr) {
+        codigosQr.push(linea);
+        continue;
+      }
+      buscar.push(linea);
     }
-    if (!buscar.length && !dirigenteIds.length) {
-      setConvocarMensaje("Escribe uno o más nombres (separados por coma o renglón) o un ID de dirigente.");
+    if (!buscar.length && !dirigenteIds.length && !codigosQr.length) {
+      setConvocarMensaje("Escribe nombres completos, ID de dirigente o enlace/código del QR.");
       return;
     }
     setConvocando(true);
@@ -122,7 +132,7 @@ export default function EntregaMaterialDetalleClient() {
       const res = await apiFetch(`/api/material/eventos/${id}/convocar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ buscar, dirigenteIds }),
+        body: JSON.stringify({ buscar, dirigenteIds, codigosQr }),
       });
       const body = (await res.json()) as {
         error?: string;
@@ -254,7 +264,7 @@ export default function EntregaMaterialDetalleClient() {
           <textarea
             className="input-area min-h-[72px]"
             value={convocarTexto}
-            placeholder={"Eduardo Arias\nMaria Concepcion Vazquez"}
+            placeholder={"Eduardo Arias\nMaria Concepcion Vazquez Resendia"}
             onChange={(e) => setConvocarTexto(e.target.value)}
           />
           <button

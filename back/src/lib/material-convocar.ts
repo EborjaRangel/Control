@@ -1,5 +1,7 @@
 import { prisma } from "./prisma.js";
 import { nombreCompleto } from "./dirigentes.js";
+import { buildFiltroBuscarDirigentes } from "./filtro-dirigentes.js";
+import { codigoQrDesdeTextoQr } from "./codigo-qr.js";
 
 export function normalizarTextoBusqueda(s: string) {
   return s
@@ -79,6 +81,7 @@ export type ResultadoConvocarMaterial = {
   resultados: Array<{
     buscar?: string;
     dirigenteIdEntrada?: string;
+    codigoQrEntrada?: string;
     estado: "ya_convocado" | "agregado" | "no_encontrado" | "ambiguo" | "invalido";
     dirigenteId?: string;
     nombreCompleto?: string;
@@ -93,6 +96,32 @@ type DirigenteMin = {
   primerApellido: string;
   segundoApellido: string | null;
 };
+
+const selectDirigenteMin = {
+  id: true,
+  nombre: true,
+  primerApellido: true,
+  segundoApellido: true,
+} as const;
+
+const whereDirigenteActivo = { activo: true, status: "ACTIVO" as const };
+
+async function candidatosActivosPorFrase(frase: string): Promise<DirigenteMin[]> {
+  const filtro = await buildFiltroBuscarDirigentes(frase);
+  if (filtro) {
+    const fromDb = await prisma.dirigente.findMany({
+      where: { ...whereDirigenteActivo, ...filtro },
+      select: selectDirigenteMin,
+    });
+    if (fromDb.length) return fromDb;
+  }
+
+  const activos = await prisma.dirigente.findMany({
+    where: whereDirigenteActivo,
+    select: selectDirigenteMin,
+  });
+  return activos.filter((d) => puntajeCoincidenciaDirigente(d, frase) >= 0);
+}
 
 async function lineasPlantillaEvento(eventoId: string) {
   const asignaciones = await prisma.asignacionMaterialEntrega.findMany({
@@ -116,7 +145,7 @@ async function convocarUnDirigente(
   eventoId: string,
   dirigente: DirigenteMin,
   lineasPlantilla: Awaited<ReturnType<typeof lineasPlantillaEvento>>,
-  meta: { buscar?: string; dirigenteIdEntrada?: string },
+  meta: { buscar?: string; dirigenteIdEntrada?: string; codigoQrEntrada?: string },
 ): Promise<ResultadoConvocarMaterial["resultados"][number]> {
   const ya = await prisma.eventoEntregaMaterialDirigente.findUnique({
     where: { eventoId_dirigenteId: { eventoId, dirigenteId: dirigente.id } },
@@ -157,10 +186,11 @@ async function convocarUnDirigente(
 
 export async function convocarDirigentesAEventoMaterial(
   eventoId: string,
-  input: { buscar?: string[]; dirigenteIds?: string[] } = {},
+  input: { buscar?: string[]; dirigenteIds?: string[]; codigosQr?: string[] } = {},
 ): Promise<ResultadoConvocarMaterial> {
   const frases = input.buscar ?? [];
   const ids = input.dirigenteIds ?? [];
+  const codigosQrRaw = input.codigosQr ?? [];
 
   const evento = await prisma.eventoEntregaMaterial.findUnique({ where: { id: eventoId } });
   if (!evento) {
@@ -169,20 +199,11 @@ export async function convocarDirigentesAEventoMaterial(
 
   const lineasPlantilla = await lineasPlantillaEvento(eventoId);
 
-  const activos = await prisma.dirigente.findMany({
-    where: { activo: true, status: "ACTIVO" },
-    select: {
-      id: true,
-      nombre: true,
-      primerApellido: true,
-      segundoApellido: true,
-    },
-  });
-
   const resultados: ResultadoConvocarMaterial["resultados"] = [];
 
   for (const buscar of frases) {
-    const resolved = resolverDirigentePorFrase(activos, buscar);
+    const candidatos = await candidatosActivosPorFrase(buscar);
+    const resolved = resolverDirigentePorFrase(candidatos, buscar);
     if (resolved.kind === "none") {
       resultados.push({ buscar, estado: "no_encontrado", mensaje: "Sin dirigente activo coincidente" });
       continue;
@@ -192,7 +213,7 @@ export async function convocarDirigentesAEventoMaterial(
         buscar,
         estado: "ambiguo",
         candidatos: resolved.candidatos.map((m) => `${nombreCompleto(m)} (${m.id})`),
-        mensaje: "Varios dirigentes coinciden; use apellidos completos o el ID del dirigente",
+        mensaje: "Varios dirigentes coinciden; use apellidos completos, QR o ID",
       });
       continue;
     }
@@ -203,7 +224,10 @@ export async function convocarDirigentesAEventoMaterial(
   }
 
   for (const dirigenteIdEntrada of ids) {
-    const dirigente = activos.find((d) => d.id === dirigenteIdEntrada);
+    const dirigente = await prisma.dirigente.findFirst({
+      where: { id: dirigenteIdEntrada, ...whereDirigenteActivo },
+      select: selectDirigenteMin,
+    });
     if (!dirigente) {
       resultados.push({
         dirigenteIdEntrada,
@@ -214,6 +238,29 @@ export async function convocarDirigentesAEventoMaterial(
     }
     resultados.push(
       await convocarUnDirigente(eventoId, dirigente, lineasPlantilla, { dirigenteIdEntrada }),
+    );
+  }
+
+  for (const raw of codigosQrRaw) {
+    const codigoQrEntrada = codigoQrDesdeTextoQr(raw) ?? raw.trim();
+    if (!codigoQrEntrada) {
+      resultados.push({ codigoQrEntrada: raw, estado: "invalido", mensaje: "Código QR vacío" });
+      continue;
+    }
+    const dirigente = await prisma.dirigente.findFirst({
+      where: { codigoQr: codigoQrEntrada, ...whereDirigenteActivo },
+      select: selectDirigenteMin,
+    });
+    if (!dirigente) {
+      resultados.push({
+        codigoQrEntrada,
+        estado: "invalido",
+        mensaje: "QR no corresponde a un dirigente activo",
+      });
+      continue;
+    }
+    resultados.push(
+      await convocarUnDirigente(eventoId, dirigente, lineasPlantilla, { codigoQrEntrada }),
     );
   }
 

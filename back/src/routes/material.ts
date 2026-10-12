@@ -25,8 +25,12 @@ const router = Router();
 const convocarDirigentesSchema = Yup.object({
   buscar: Yup.array().of(Yup.string().trim().min(2).required()).default([]),
   dirigenteIds: Yup.array().of(Yup.string().trim().min(8).required()).default([]),
-}).test("buscar-o-ids", "Indica al menos un nombre o un ID de dirigente", (value) => {
-  const n = (value?.buscar?.length ?? 0) + (value?.dirigenteIds?.length ?? 0);
+  codigosQr: Yup.array().of(Yup.string().trim().min(8).required()).default([]),
+}).test("buscar-o-ids", "Indica al menos un nombre, ID o código QR", (value) => {
+  const n =
+    (value?.buscar?.length ?? 0) +
+    (value?.dirigenteIds?.length ?? 0) +
+    (value?.codigosQr?.length ?? 0);
   return n > 0;
 });
 
@@ -349,6 +353,7 @@ router.post("/eventos/:id/convocar", requireStaff, async (req, res) => {
     const resultado = await convocarDirigentesAEventoMaterial(id, {
       buscar: data.buscar,
       dirigenteIds: data.dirigenteIds,
+      codigosQr: data.codigosQr,
     });
     res.json(resultado);
   } catch (error) {

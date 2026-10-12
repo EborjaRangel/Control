@@ -7,7 +7,7 @@ import { prisma } from "../src/lib/prisma.js";
 import { convocarEnEventoMaterialAbiertoPorTitulo } from "../src/lib/material-convocar.js";
 
 const TITULO_EVENTO = "LONAS";
-const PERSONAS = ["Eduardo Arias", "Maria Concepcion Vazquez"];
+const PERSONAS = ["Eduardo Arias", "Maria Concepcion Vazquez Resendia"];
 
 async function main() {
   const resultado = await convocarEnEventoMaterialAbiertoPorTitulo(TITULO_EVENTO, PERSONAS);

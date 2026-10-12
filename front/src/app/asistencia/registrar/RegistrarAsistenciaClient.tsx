@@ -27,7 +27,7 @@ type RespuestaEscaneo = {
   mensaje?: string;
   error?: string;
   codigo?: CodigoEscaneoAsistencia | CodigoEscaneoMaterial;
-  dirigente?: { nombreCompleto?: string };
+  dirigente?: { id?: string; nombreCompleto?: string };
   evento?: EventoPase;
 };
 
@@ -141,7 +141,13 @@ export default function RegistrarAsistenciaClient() {
       const data = (await res.json()) as RespuestaEscaneo;
       const texto = data.mensaje ?? data.error ?? "El QR es inválido";
       setMensaje(texto);
-      setDetalle(data.dirigente?.nombreCompleto ?? null);
+      if (modo === "material" && data.codigo === "NO_CONVOCADO" && data.dirigente?.id) {
+        setDetalle(
+          `${data.dirigente.nombreCompleto ?? "Dirigente"} — ID para convocar en Material: ${data.dirigente.id}`,
+        );
+      } else {
+        setDetalle(data.dirigente?.nombreCompleto ?? null);
+      }
       if (data.evento?.titulo) setEventoTitulo(data.evento.titulo);
 
       if (data.codigo === "CLAVE_INCORRECTA") {
