@@ -78,10 +78,10 @@ type RgRow = OperadorRow;
 export function serializeRepresentante(r: RepresentanteRow) {
   const nombres = normalizarCamposNombrePersona(r);
   return {
+    ...nombres,
     id: r.id,
     responsableColoniaId: r.responsableColoniaId,
     responsableGeneralId: r.responsableGeneralId,
-    ...nombres,
     nombreCompleto: nombreCompleto(nombres),
     fechaNacimiento: r.fechaNacimiento.toISOString().slice(0, 10),
     sexo: r.sexo,
@@ -114,10 +114,10 @@ function serializeOperadorBase(
   const registrados = d._count?.representantes ?? d.representantes?.filter((r) => r.activo).length ?? 0;
   const nombres = normalizarCamposNombrePersona(d);
   return {
+    ...nombres,
     id: d.id,
     dirigenteId: d.dirigenteId ?? d.dirigente?.id ?? null,
     dirigente: serializeDirigenteResumen(d.dirigente),
-    ...nombres,
     nombreCompleto: nombreCompleto(nombres),
     telefonoCelular: d.telefonoCelular,
     representantesRegistrados: registrados,

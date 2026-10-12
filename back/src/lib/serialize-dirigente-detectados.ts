@@ -41,8 +41,8 @@ export function serializeDirigenteDetectados(
   const nombres = normalizarCamposNombrePersona(dirigente);
 
   return {
-    id: dirigente.id,
     ...nombres,
+    id: dirigente.id,
     nombreCompleto: nombreCompleto(nombres),
     tipo: dirigente.tipo,
     colonia: dirigente.colonia,

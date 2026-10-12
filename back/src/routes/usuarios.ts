@@ -78,7 +78,7 @@ router.post("/", async (req, res) => {
     if (!puedeAsignarRol(req.user?.rol, body.rol as PanelUserRol)) {
       res.status(403).json({
         error:
-          body.rol === "ASISTENCIA"
+          String(body.rol) === "ASISTENCIA"
             ? "El rol Captura de asistencia ya no está disponible"
             : "Solo un administrador puede crear cuentas de administrador",
       });
@@ -92,12 +92,17 @@ router.post("/", async (req, res) => {
       return;
     }
 
-    const passwordHash = await hashPassword(body.password);
+    const passwordPlain = body.password;
+    if (!passwordPlain) {
+      res.status(400).json({ error: "La contraseña es obligatoria" });
+      return;
+    }
+    const passwordHash = await hashPassword(passwordPlain);
     const usuario = await prisma.usuario.create({
       data: {
         username,
         passwordHash,
-        passwordPlano: body.password,
+        passwordPlano: passwordPlain,
         rol: body.rol,
         activo: true,
       },

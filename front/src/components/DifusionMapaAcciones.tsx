@@ -1,7 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CENTRO_COYOACAN, MAPBOX_STYLE, MAPBOX_TOKEN, mapboxConfigError } from "@/lib/mapbox-config";
+import {
+  addAlcaldiaCoyoacanBoundary,
+  boundsFromFeatureCollection,
+  fetchAlcaldiaCoyoacanGeoJson,
+  whenMapReady,
+} from "@/lib/mapbox-alcaldia-coyoacan";
 import { formatRegistroDifusionFecha, type RegistroDifusionDTO } from "@/lib/difusion";
 import { resolveMediaUrl } from "@/lib/media-url";
 import { theme } from "@/lib/theme";
@@ -22,6 +28,9 @@ export function DifusionMapaAcciones({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("mapbox-gl").Map | null>(null);
   const markersRef = useRef<import("mapbox-gl").Marker[]>([]);
+  const alcaldiaBoundsRef = useRef<[[number, number], [number, number]] | null>(null);
+  const alcaldiaLoadedRef = useRef(false);
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     if (!MAPBOX_TOKEN || !containerRef.current) return;
@@ -43,13 +52,39 @@ export function DifusionMapaAcciones({
           zoom: 12,
         });
         mapRef.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+        setMapReady(true);
       }
 
       const map = mapRef.current;
+      if (!map) return;
+
+      if (!alcaldiaLoadedRef.current) {
+        const alcaldia = await fetchAlcaldiaCoyoacanGeoJson();
+        if (cancelled) return;
+        if (alcaldia) {
+          alcaldiaBoundsRef.current = boundsFromFeatureCollection(alcaldia);
+          whenMapReady(map, () => {
+            if (cancelled || !mapRef.current) return;
+            addAlcaldiaCoyoacanBoundary(mapRef.current, alcaldia);
+          });
+        }
+        alcaldiaLoadedRef.current = true;
+      }
+
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
 
-      if (registros.length === 0) return;
+      if (registros.length === 0) {
+        const bounds = alcaldiaBoundsRef.current;
+        whenMapReady(map, () => {
+          if (bounds) {
+            map.fitBounds(bounds, { padding: 40, duration: 0, maxZoom: 13 });
+          } else {
+            map.flyTo({ center: [CENTRO_COYOACAN.lng, CENTRO_COYOACAN.lat], zoom: 12, duration: 0 });
+          }
+        });
+        return;
+      }
 
       const bounds = new mapboxgl.LngLatBounds();
 
@@ -92,17 +127,19 @@ export function DifusionMapaAcciones({
         bounds.extend([registro.lng, registro.lat]);
       }
 
-      if (registros.length === 1) {
-        map.flyTo({ center: [registros[0].lng, registros[0].lat], zoom: 15 });
-      } else {
-        map.fitBounds(bounds, { padding: 48, maxZoom: 15, duration: 600 });
-      }
+      whenMapReady(map, () => {
+        if (registros.length === 1) {
+          map.flyTo({ center: [registros[0].lng, registros[0].lat], zoom: 15 });
+        } else {
+          map.fitBounds(bounds, { padding: 48, maxZoom: 15, duration: 600 });
+        }
+      });
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [registros, selectedId, detalleHref]);
+  }, [registros, selectedId, detalleHref, mapReady]);
 
   useEffect(() => {
     return () => {
@@ -110,6 +147,7 @@ export function DifusionMapaAcciones({
       markersRef.current = [];
       mapRef.current?.remove();
       mapRef.current = null;
+      alcaldiaLoadedRef.current = false;
     };
   }, []);
 

@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CENTRO_COYOACAN, MAPBOX_STYLE, MAPBOX_TOKEN, mapboxConfigError } from "@/lib/mapbox-config";
+import {
+  addAlcaldiaCoyoacanBoundary,
+  fetchAlcaldiaCoyoacanGeoJson,
+  whenMapReady,
+} from "@/lib/mapbox-alcaldia-coyoacan";
 import { reverseGeocodeMapbox } from "@/lib/mapbox-geocode";
 import { theme } from "@/lib/theme";
 
@@ -73,6 +78,14 @@ export function ServicioUrbanoMapPicker({
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
       mapRef.current = map;
 
+      const alcaldia = await fetchAlcaldiaCoyoacanGeoJson();
+      if (!cancelled && alcaldia) {
+        whenMapReady(map, () => {
+          if (cancelled) return;
+          addAlcaldiaCoyoacanBoundary(map, alcaldia);
+        });
+      }
+
       const marker = new mapboxgl.Marker({ color: theme.pin, draggable: true })
         .setLngLat(centro as [number, number])
         .addTo(map);
@@ -133,6 +146,15 @@ export function ServicioUrbanoMapPicker({
         interactive: false,
       });
       mapRef.current = map;
+
+      const alcaldia = await fetchAlcaldiaCoyoacanGeoJson();
+      if (!cancelled && alcaldia) {
+        whenMapReady(map, () => {
+          if (cancelled) return;
+          addAlcaldiaCoyoacanBoundary(map, alcaldia);
+        });
+      }
+
       new mapboxgl.Marker({ color: theme.pin })
         .setLngLat([lng, lat])
         .addTo(map);

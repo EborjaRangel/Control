@@ -370,7 +370,9 @@ router.put("/:id", requireStaff, async (req, res) => {
       await tx.responsableColonia.update({
         where: { id },
         data: {
-          ...nombres,
+          nombre: nombres.nombre,
+          primerApellido: nombres.primerApellido,
+          segundoApellido: nombres.segundoApellido,
           telefonoCelular: data.telefonoCelular || null,
           colonia: data.colonia,
         },

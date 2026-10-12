@@ -184,7 +184,10 @@ export async function analisisSeccionesElectorales(): Promise<AnalisisSeccionesR
 
   const resultadosAlcaldiaAnios = resultados
     ? ([2015, 2018, 2021, 2024] as const).filter(
-        (anio) => Object.keys(resultados[String(anio)]?.porSeccion ?? {}).length > 0,
+        (anio) =>
+          Object.keys(
+            resultados[String(anio) as keyof typeof resultados]?.porSeccion ?? {},
+          ).length > 0,
       )
     : [];
 

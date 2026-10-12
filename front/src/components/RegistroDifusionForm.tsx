@@ -6,6 +6,7 @@ import { ServicioUrbanoMapPicker } from "@/components/ServicioUrbanoMapPicker";
 import { UploadImage } from "@/components/UploadImage";
 import { apiFetch } from "@/lib/api";
 import type { CampanaDifusionDTO } from "@/lib/difusion";
+import { registroDifusionFormSchema } from "@/lib/validation-difusion";
 
 type Props = {
   campanas: CampanaDifusionDTO[];
@@ -42,20 +43,9 @@ export function RegistroDifusionForm({ campanas, onSuccess, onCancel }: Props) {
   return (
     <Formik<Values>
       initialValues={{ campanaId: campanas[0]?.id ?? "", fotoUrl: "", lat: null, lng: null }}
+      validationSchema={registroDifusionFormSchema}
       onSubmit={async (values, { setSubmitting }) => {
         setError(null);
-        if (!values.campanaId) {
-          setError("Selecciona la campaña");
-          return;
-        }
-        if (!values.fotoUrl) {
-          setError("Sube la fotografía del evento");
-          return;
-        }
-        if (values.lat == null || values.lng == null) {
-          setError("Marca la ubicación en el mapa");
-          return;
-        }
         setSubmitting(true);
         try {
           const res = await apiFetch("/api/difusion/registros", {

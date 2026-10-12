@@ -318,7 +318,9 @@ router.put("/:id", requireStaff, async (req, res) => {
       await tx.responsableGeneral.update({
         where: { id },
         data: {
-          ...nombres,
+          nombre: nombres.nombre,
+          primerApellido: nombres.primerApellido,
+          segundoApellido: nombres.segundoApellido,
           telefonoCelular: data.telefonoCelular || null,
         },
       });

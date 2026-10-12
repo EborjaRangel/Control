@@ -290,8 +290,8 @@ router.post("/", requireAuth, async (req, res) => {
 
     const detectado = await prisma.detectado.create({
       data: {
-        dirigenteId: data.dirigenteId,
         ...nombres,
+        dirigenteId: data.dirigenteId,
         telefonoCelular: data.telefonoCelular || null,
         curp: curpCheck.curp,
         seccionElectoral: data.seccionElectoral,

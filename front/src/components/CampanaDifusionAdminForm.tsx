@@ -3,6 +3,7 @@
 import { Field, Form, Formik } from "formik";
 import { apiFetch } from "@/lib/api";
 import type { CampanaDifusionDTO } from "@/lib/difusion";
+import { campanaDifusionFormSchema } from "@/lib/validation-difusion";
 
 type Props = {
   initial?: CampanaDifusionDTO;
@@ -26,6 +27,7 @@ export function CampanaDifusionAdminForm({ initial, onSuccess, onCancel }: Props
         fechaInicio: initial?.fechaInicio ?? "",
         fechaFin: initial?.fechaFin ?? "",
       }}
+      validationSchema={campanaDifusionFormSchema}
       onSubmit={async (values, { setSubmitting, setStatus }) => {
         setStatus(undefined);
         setSubmitting(true);

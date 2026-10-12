@@ -163,8 +163,8 @@ export function serializeDirigenteListItem(
 ) {
   const nombres = normalizarCamposNombrePersona(d);
   return {
-    id: d.id,
     ...nombres,
+    id: d.id,
     telefonoCelular: d.telefonoCelular,
     fotoUrl: d.fotoUrl,
     tipo: d.tipo,
@@ -198,8 +198,8 @@ export function serializeDirigente(
   const nombres = normalizarCamposNombrePersona(d);
 
   return {
-    id: d.id,
     ...nombres,
+    id: d.id,
     fechaNacimiento: d.fechaNacimiento.toISOString().slice(0, 10),
     telefonoCelular: d.telefonoCelular,
     correo: d.correo,
@@ -226,8 +226,8 @@ export function serializeDirigente(
     referenteId: d.referenteId,
     referente: d.referente
       ? {
-          id: d.referente.id,
           ...normalizarCamposNombrePersona(d.referente),
+          id: d.referente.id,
         }
       : null,
     antecedentesPoliticos: d.antecedentesPoliticos,

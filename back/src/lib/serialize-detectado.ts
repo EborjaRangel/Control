@@ -56,9 +56,9 @@ type DetectadoRow = {
 function serializePersona(p: PersonaRow) {
   const nombres = normalizarCamposNombrePersona(p);
   return {
+    ...nombres,
     id: p.id,
     detectadoId: p.detectadoId,
-    ...nombres,
     nombreCompleto: nombreCompleto(nombres),
     fechaNacimiento: p.fechaNacimiento.toISOString().slice(0, 10),
     sexo: p.sexo,
@@ -93,9 +93,9 @@ export function serializeDetectado(
   const nombres = normalizarCamposNombrePersona(d);
 
   return {
+    ...nombres,
     id: d.id,
     dirigenteId: d.dirigenteId,
-    ...nombres,
     nombreCompleto: nombreCompleto(nombres),
     telefonoCelular: d.telefonoCelular,
     curp: d.curp,
