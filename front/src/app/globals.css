@@ -888,18 +888,15 @@
 @keyframes difusion-globo-drop {
   0% {
     transform: translateY(-7rem) scale(0.35);
-    opacity: 0;
   }
   55% {
     transform: translateY(0.35rem) scale(1.08);
-    opacity: 1;
   }
   75% {
     transform: translateY(-0.2rem) scale(0.98);
   }
   100% {
     transform: translateY(0) scale(1);
-    opacity: 1;
   }
 }
 

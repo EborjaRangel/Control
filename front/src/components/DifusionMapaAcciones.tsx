@@ -27,14 +27,28 @@ type Props = {
   heightClassName?: string;
 };
 
-function coordenadasValidas(r: RegistroDifusionDTO) {
-  return (
-    Number.isFinite(r.lat) &&
-    Number.isFinite(r.lng) &&
-    Math.abs(r.lat) <= 90 &&
-    Math.abs(r.lng) <= 180 &&
-    (Math.abs(r.lat) > 0.0001 || Math.abs(r.lng) > 0.0001)
-  );
+type RegistroMapa = RegistroDifusionDTO & { lat: number; lng: number };
+
+function parseCoord(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = Number.parseFloat(value);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function normalizarRegistrosMapa(registros: RegistroDifusionDTO[]): RegistroMapa[] {
+  const out: RegistroMapa[] = [];
+  for (const r of registros) {
+    const lat = parseCoord(r.lat);
+    const lng = parseCoord(r.lng);
+    if (lat == null || lng == null) continue;
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;
+    if (Math.abs(lat) <= 0.0001 && Math.abs(lng) <= 0.0001) continue;
+    out.push({ ...r, lat, lng });
+  }
+  return out;
 }
 
 function buildPopupContent(
@@ -76,28 +90,18 @@ export function DifusionMapaAcciones({
   const alcaldiaBoundsRef = useRef<[[number, number], [number, number]] | null>(null);
   const alcaldiaLoadedRef = useRef(false);
   const animatedIdsRef = useRef<Set<string>>(new Set());
-  const animacionKeyRef = useRef<string | undefined>(undefined);
+  const lastPaintKeyRef = useRef("");
   const detalleHrefRef = useRef(detalleHref);
   const [mapLoaded, setMapLoaded] = useState(false);
 
   detalleHrefRef.current = detalleHref;
 
-  useEffect(() => {
-    if (animacionAlCambiarKey === undefined) return;
-    if (animacionKeyRef.current !== animacionAlCambiarKey) {
-      animacionKeyRef.current = animacionAlCambiarKey;
-      animatedIdsRef.current.clear();
-    }
-  }, [animacionAlCambiarKey]);
-
-  const registrosValidos = useMemo(
-    () => registros.filter(coordenadasValidas),
-    [registros],
-  );
+  const registrosValidos = useMemo(() => normalizarRegistrosMapa(registros), [registros]);
 
   const registrosKey = useMemo(
-    () => `${registrosMapaKey(registrosValidos)}|nums:${mostrarNumerosGlobo ? 1 : 0}`,
-    [registrosValidos, mostrarNumerosGlobo],
+    () =>
+      `${animacionAlCambiarKey ?? ""}|${registrosMapaKey(registrosValidos)}|nums:${mostrarNumerosGlobo ? 1 : 0}`,
+    [registrosValidos, mostrarNumerosGlobo, animacionAlCambiarKey],
   );
 
   const numerosPorRegistro = useMemo(
@@ -107,10 +111,18 @@ export function DifusionMapaAcciones({
 
   const pintarMarcadores = useCallback(() => {
     const map = mapRef.current;
-    if (!map || !mapLoaded) return;
+    if (!map) return;
+
+    const paintKey = registrosKey;
+    if (lastPaintKeyRef.current !== paintKey) {
+      lastPaintKeyRef.current = paintKey;
+      animatedIdsRef.current.clear();
+    }
 
     void import("mapbox-gl").then((mod) => {
       const mapboxgl = mod.default;
+      if (!mapRef.current) return;
+
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
 
@@ -121,14 +133,17 @@ export function DifusionMapaAcciones({
         } else {
           map.flyTo({ center: [CENTRO_COYOACAN.lng, CENTRO_COYOACAN.lat], zoom: 12, duration: 0 });
         }
+        map.resize();
         return;
       }
 
       const bounds = new mapboxgl.LngLatBounds();
+      const animScope = animacionAlCambiarKey ?? "global";
 
       registrosValidos.forEach((registro, index) => {
-        const animateDrop = !animatedIdsRef.current.has(registro.id);
-        if (animateDrop) animatedIdsRef.current.add(registro.id);
+        const animId = `${animScope}:${registro.id}`;
+        const animateDrop = !animatedIdsRef.current.has(animId);
+        if (animateDrop) animatedIdsRef.current.add(animId);
 
         const numero = mostrarNumerosGlobo ? numerosPorRegistro.get(registro.id) ?? null : null;
 
@@ -165,17 +180,18 @@ export function DifusionMapaAcciones({
       map.resize();
 
       if (registrosValidos.length === 1) {
-        map.flyTo({ center: [registrosValidos[0].lng, registrosValidos[0].lat], zoom: 15 });
+        map.flyTo({ center: [registrosValidos[0].lng, registrosValidos[0].lat], zoom: 15, duration: 500 });
       } else {
         map.fitBounds(bounds, { padding: 48, maxZoom: 15, duration: 600 });
       }
     });
-  }, [mapLoaded, registrosValidos, selectedId, mostrarNumerosGlobo, numerosPorRegistro]);
+  }, [registrosValidos, selectedId, mostrarNumerosGlobo, numerosPorRegistro, animacionAlCambiarKey, registrosKey]);
 
   useEffect(() => {
     if (!MAPBOX_TOKEN || !containerRef.current) return;
 
     let cancelled = false;
+    setMapLoaded(false);
 
     void (async () => {
       const mapboxgl = (await import("mapbox-gl")).default;
@@ -183,8 +199,6 @@ export function DifusionMapaAcciones({
       if (cancelled || !containerRef.current) return;
 
       mapboxgl.accessToken = MAPBOX_TOKEN;
-
-      if (mapRef.current) return;
 
       const map = new mapboxgl.Map({
         container: containerRef.current,
@@ -197,44 +211,56 @@ export function DifusionMapaAcciones({
 
       map.once("load", () => {
         if (cancelled) return;
-        setMapLoaded(true);
         map.resize();
+        setMapLoaded(true);
       });
 
-      const alcaldia = await fetchAlcaldiaCoyoacanGeoJson();
-      if (cancelled) return;
-      if (alcaldia) {
-        alcaldiaBoundsRef.current = boundsFromFeatureCollection(alcaldia);
-        whenMapReady(map, () => {
-          if (cancelled || !mapRef.current) return;
-          addAlcaldiaCoyoacanBoundary(mapRef.current, alcaldia);
-        });
+      if (!alcaldiaLoadedRef.current) {
+        const alcaldia = await fetchAlcaldiaCoyoacanGeoJson();
+        if (cancelled) return;
+        if (alcaldia) {
+          alcaldiaBoundsRef.current = boundsFromFeatureCollection(alcaldia);
+          whenMapReady(map, () => {
+            if (cancelled || !mapRef.current) return;
+            addAlcaldiaCoyoacanBoundary(mapRef.current, alcaldia);
+          });
+        }
+        alcaldiaLoadedRef.current = true;
       }
-      alcaldiaLoadedRef.current = true;
     })();
 
     return () => {
       cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!mapLoaded) return;
-    whenMapReady(mapRef.current!, () => {
-      pintarMarcadores();
-    });
-  }, [mapLoaded, registrosKey, pintarMarcadores]);
-
-  useEffect(() => {
-    return () => {
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
       mapRef.current?.remove();
       mapRef.current = null;
       alcaldiaLoadedRef.current = false;
+      lastPaintKeyRef.current = "";
       animatedIdsRef.current.clear();
+      setMapLoaded(false);
     };
-  }, []);
+  }, [animacionAlCambiarKey ?? "default-map"]);
+
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current) return;
+    whenMapReady(mapRef.current, () => {
+      requestAnimationFrame(() => {
+        pintarMarcadores();
+      });
+    });
+  }, [mapLoaded, registrosKey, pintarMarcadores]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      mapRef.current?.resize();
+      if (mapLoaded) pintarMarcadores();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mapLoaded, pintarMarcadores]);
 
   const configError = mapboxConfigError();
 
@@ -243,7 +269,10 @@ export function DifusionMapaAcciones({
       {configError ? (
         <p className="text-sm text-ink-secondary">{configError}</p>
       ) : null}
-      <div ref={containerRef} className={`card overflow-hidden p-0 ${heightClassName}`} />
+      <div
+        ref={containerRef}
+        className={`card overflow-hidden p-0 ${heightClassName}`}
+      />
       {registros.length === 0 ? (
         <p className="text-sm text-ink-secondary">Aún no hay acciones en el mapa.</p>
       ) : registrosValidos.length === 0 ? (

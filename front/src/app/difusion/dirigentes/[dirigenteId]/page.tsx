@@ -25,7 +25,7 @@ export default function DirigenteDifusionPage() {
   const { isStaff, user } = useAuth();
   const canAccess = isStaff || canViewOwnDirigente(user, dirigenteId);
   const [panel, setPanel] = useState<DirigenteDifusionPanelDTO | null>(null);
-  const [campanaId, setCampanaId] = useState("");
+  const [campanaManual, setCampanaManual] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,13 +53,13 @@ export default function DirigenteDifusionPage() {
     [panel],
   );
 
-  useEffect(() => {
-    if (!panel) return;
-    setCampanaId((prev) => {
-      if (prev && campanasOpciones.some((c) => c.id === prev)) return prev;
-      return campanaDifusionInicialDirigente(panel);
-    });
-  }, [panel, campanasOpciones]);
+  const campanaId = useMemo(() => {
+    if (!panel) return "";
+    if (campanaManual && campanasOpciones.some((c) => c.id === campanaManual)) {
+      return campanaManual;
+    }
+    return campanaDifusionInicialDirigente(panel);
+  }, [panel, campanaManual, campanasOpciones]);
 
   const registrosCampana = useMemo(() => {
     if (!panel || !campanaId) return [];
@@ -143,7 +143,7 @@ export default function DirigenteDifusionPage() {
               <select
                 className="input mt-1"
                 value={campanaId}
-                onChange={(e) => setCampanaId(e.target.value)}
+                onChange={(e) => setCampanaManual(e.target.value)}
               >
                 {campanasOpciones.map((c) => (
                   <option key={c.id} value={c.id}>
