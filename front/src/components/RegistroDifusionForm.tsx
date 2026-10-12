@@ -19,6 +19,7 @@ type Values = {
   fotoUrl: string;
   lat: number | null;
   lng: number | null;
+  direccion: string;
 };
 
 export function RegistroDifusionForm({ campanas, onSuccess, onCancel }: Props) {
@@ -42,7 +43,13 @@ export function RegistroDifusionForm({ campanas, onSuccess, onCancel }: Props) {
 
   return (
     <Formik<Values>
-      initialValues={{ campanaId: campanas[0]?.id ?? "", fotoUrl: "", lat: null, lng: null }}
+      initialValues={{
+        campanaId: campanas[0]?.id ?? "",
+        fotoUrl: "",
+        lat: null,
+        lng: null,
+        direccion: "",
+      }}
       validationSchema={registroDifusionFormSchema}
       onSubmit={async (values, { setSubmitting }) => {
         setError(null);
@@ -125,10 +132,11 @@ export function RegistroDifusionForm({ campanas, onSuccess, onCancel }: Props) {
               <ServicioUrbanoMapPicker
                 lat={values.lat}
                 lng={values.lng}
-                direccion=""
-                onChange={({ lat, lng }) => {
+                direccion={values.direccion}
+                onChange={({ lat, lng, direccion }) => {
                   void setFieldValue("lat", lat);
                   void setFieldValue("lng", lng);
+                  void setFieldValue("direccion", direccion);
                 }}
               />
             </div>
