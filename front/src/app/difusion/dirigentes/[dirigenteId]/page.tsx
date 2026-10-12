@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppIcon } from "@/components/AppIcon";
 import { DifusionMapaAcciones } from "@/components/DifusionMapaAcciones";
 import { TableWrap } from "@/components/TableWrap";
@@ -12,6 +12,8 @@ import { apiFetch } from "@/lib/api";
 import { TIPO_DIRIGENTE_LABEL } from "@/lib/dirigentes";
 import { canViewOwnDirigente } from "@/lib/mi-panel";
 import {
+  campanaDifusionInicialDirigente,
+  campanasDifusionParaDirigente,
   formatRegistroDifusionFecha,
   type DirigenteDifusionPanelDTO,
 } from "@/lib/difusion";
@@ -23,6 +25,7 @@ export default function DirigenteDifusionPage() {
   const { isStaff, user } = useAuth();
   const canAccess = isStaff || canViewOwnDirigente(user, dirigenteId);
   const [panel, setPanel] = useState<DirigenteDifusionPanelDTO | null>(null);
+  const [campanaId, setCampanaId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +48,29 @@ export default function DirigenteDifusionPage() {
     void load();
   }, [load, canAccess]);
 
+  const campanasOpciones = useMemo(
+    () => (panel ? campanasDifusionParaDirigente(panel) : []),
+    [panel],
+  );
+
+  useEffect(() => {
+    if (!panel) return;
+    setCampanaId((prev) => {
+      if (prev && campanasOpciones.some((c) => c.id === prev)) return prev;
+      return campanaDifusionInicialDirigente(panel);
+    });
+  }, [panel, campanasOpciones]);
+
+  const registrosCampana = useMemo(() => {
+    if (!panel || !campanaId) return [];
+    return panel.registros.filter((r) => r.campanaId === campanaId);
+  }, [panel, campanaId]);
+
+  const numerosAccion = useMemo(
+    () => numerosAccionPorRegistro(registrosCampana),
+    [registrosCampana],
+  );
+
   if (!canAccess) return null;
 
   if (loading) {
@@ -62,7 +88,7 @@ export default function DirigenteDifusionPage() {
 
   const d = panel.dirigente;
   const puedeRegistrar = !isStaff && panel.campanasActivas.length > 0 && d.activo;
-  const numerosAccion = numerosAccionPorRegistro(panel.registros);
+  const campanaSeleccionada = campanasOpciones.find((c) => c.id === campanaId);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -96,26 +122,67 @@ export default function DirigenteDifusionPage() {
         </div>
       </div>
 
-      {panel.campanasActivas.length === 0 ? (
+      {panel.campanasActivas.length === 0 && campanasOpciones.length === 0 ? (
         <p className="panel-soft text-sm text-ink-secondary">
-          No hay campañas activas en este momento. Cuando el administrador abra una campaña podrás registrar fotos
-          aquí.
+          No hay campañas activas ni registros previos. Cuando el administrador abra una campaña podrás registrar
+          fotos aquí.
         </p>
       ) : null}
 
-      <section className="card-section space-y-3">
-        <h2 className="section-title">Mis acciones en el mapa</h2>
-        <DifusionMapaAcciones
-          registros={panel.registros}
-          mostrarNumerosGlobo
-          detalleHref={(r) => `/difusion/registros/${r.id}`}
-        />
+      <section className="card-section space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="section-title">Mis acciones en el mapa</h2>
+            <p className="text-sm text-ink-secondary">
+              Elige la campaña para ver solo tus globos numerados (1…N) en esa campaña.
+            </p>
+          </div>
+          {campanasOpciones.length > 0 ? (
+            <label className="block min-w-[min(100%,16rem)] sm:max-w-xs">
+              <span className="label">Campaña</span>
+              <select
+                className="input mt-1"
+                value={campanaId}
+                onChange={(e) => setCampanaId(e.target.value)}
+              >
+                {campanasOpciones.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.titulo}
+                    {c.activa ? "" : " (cerrada)"}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
+
+        {campanaSeleccionada && !campanaSeleccionada.activa ? (
+          <p className="text-sm text-ink-secondary">Campaña cerrada: solo consulta de registros.</p>
+        ) : null}
+
+        {campanaId ? (
+          <DifusionMapaAcciones
+            registros={registrosCampana}
+            mostrarNumerosGlobo
+            animacionAlCambiarKey={campanaId}
+            detalleHref={(r) => `/difusion/registros/${r.id}`}
+          />
+        ) : (
+          <p className="text-sm text-ink-secondary">Selecciona una campaña para ver el mapa.</p>
+        )}
       </section>
 
       <section className="card-section space-y-4">
-        <h2 className="section-title">Registros ({panel.totalRegistros})</h2>
-        {panel.registros.length === 0 ? (
-          <p className="text-sm text-ink-secondary">Aún no hay acciones registradas.</p>
+        <h2 className="section-title">
+          Registros
+          {campanaSeleccionada ? ` — ${campanaSeleccionada.titulo}` : ""} ({registrosCampana.length})
+        </h2>
+        {registrosCampana.length === 0 ? (
+          <p className="text-sm text-ink-secondary">
+            {campanaId
+              ? "Aún no hay acciones en esta campaña."
+              : "Selecciona una campaña para ver tus registros."}
+          </p>
         ) : (
           <TableWrap>
             <table className="table-dense">
@@ -123,13 +190,12 @@ export default function DirigenteDifusionPage() {
                 <tr>
                   <th>#</th>
                   <th>Foto</th>
-                  <th>Campaña</th>
                   <th>Fecha y hora</th>
                   <th />
                 </tr>
               </thead>
               <tbody>
-                {panel.registros.map((r) => (
+                {registrosCampana.map((r) => (
                   <tr key={r.id}>
                     <td className="font-semibold tabular-nums text-pin">
                       {numerosAccion.get(r.id) ?? "—"}
@@ -143,7 +209,6 @@ export default function DirigenteDifusionPage() {
                         className="h-10 w-14 rounded object-cover"
                       />
                     </td>
-                    <td>{r.campanaTitulo}</td>
                     <td>{formatRegistroDifusionFecha(r.registradoAt)}</td>
                     <td className="text-right">
                       <Link href={`/difusion/registros/${r.id}`} className="text-sm font-semibold text-pin hover:underline">

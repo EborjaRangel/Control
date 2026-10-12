@@ -21,6 +21,8 @@ type Props = {
   registros: RegistroDifusionDTO[];
   selectedId?: string | null;
   mostrarNumerosGlobo?: boolean;
+  /** Al cambiar (p. ej. campaña), los globos vuelven a animarse desde arriba. */
+  animacionAlCambiarKey?: string;
   detalleHref?: (registro: RegistroDifusionDTO) => string;
   heightClassName?: string;
 };
@@ -64,6 +66,7 @@ export function DifusionMapaAcciones({
   registros,
   selectedId,
   mostrarNumerosGlobo = false,
+  animacionAlCambiarKey,
   detalleHref,
   heightClassName = "h-[min(70vh,420px)] w-full min-h-[280px] sm:min-h-[360px]",
 }: Props) {
@@ -73,10 +76,19 @@ export function DifusionMapaAcciones({
   const alcaldiaBoundsRef = useRef<[[number, number], [number, number]] | null>(null);
   const alcaldiaLoadedRef = useRef(false);
   const animatedIdsRef = useRef<Set<string>>(new Set());
+  const animacionKeyRef = useRef<string | undefined>(undefined);
   const detalleHrefRef = useRef(detalleHref);
   const [mapLoaded, setMapLoaded] = useState(false);
 
   detalleHrefRef.current = detalleHref;
+
+  useEffect(() => {
+    if (animacionAlCambiarKey === undefined) return;
+    if (animacionKeyRef.current !== animacionAlCambiarKey) {
+      animacionKeyRef.current = animacionAlCambiarKey;
+      animatedIdsRef.current.clear();
+    }
+  }, [animacionAlCambiarKey]);
 
   const registrosValidos = useMemo(
     () => registros.filter(coordenadasValidas),
