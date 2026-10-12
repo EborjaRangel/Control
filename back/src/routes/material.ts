@@ -17,8 +17,17 @@ import {
 import { serializeEventoEntregaMaterial, serializeRegistroEntregaMaterial } from "../lib/serialize-material.js";
 import { eventoEntregaMaterialCreateSchema } from "../lib/validation-material.js";
 import { registrarAuditoria } from "../lib/audit.js";
+import { convocarDirigentesAEventoMaterial } from "../lib/material-convocar.js";
+import * as Yup from "yup";
 
 const router = Router();
+
+const convocarDirigentesSchema = Yup.object({
+  buscar: Yup.array()
+    .of(Yup.string().trim().min(2).required())
+    .min(1, "Indica al menos un nombre")
+    .required(),
+});
 
 router.use(requireAuth);
 
@@ -326,6 +335,29 @@ router.post("/eventos/:id/cerrar", requireStaff, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al cerrar entrega" });
+  }
+});
+
+router.post("/eventos/:id/convocar", requireStaff, async (req, res) => {
+  try {
+    const id = paramId(req.params.id);
+    const data = await convocarDirigentesSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+    const resultado = await convocarDirigentesAEventoMaterial(id, data.buscar);
+    res.json(resultado);
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      res.status(400).json({ error: "Datos inválidos", detalles: error.errors });
+      return;
+    }
+    if (error instanceof Error && error.message.includes("no encontrado")) {
+      res.status(404).json({ error: error.message });
+      return;
+    }
+    console.error(error);
+    res.status(500).json({ error: error instanceof Error ? error.message : "Error al convocar" });
   }
 });
 

@@ -28,6 +28,11 @@ export default function EntregaMaterialDetalleClient() {
   const [accionando, setAccionando] = useState(false);
   const [pestana, setPestana] = useState<"lista" | "distritos" | "recientes">("lista");
   const [distritoSel, setDistritoSel] = useState<number | "otros" | null>(null);
+  const [convocarTexto, setConvocarTexto] = useState(
+    "Eduardo Arias\nMaria Concepcion Vazquez",
+  );
+  const [convocarMensaje, setConvocarMensaje] = useState<string | null>(null);
+  const [convocando, setConvocando] = useState(false);
   const registrosPreviosRef = useRef(0);
 
   const load = useCallback(async (opts?: { silent?: boolean }) => {
@@ -93,6 +98,43 @@ export default function EntregaMaterialDetalleClient() {
       setMensaje(err instanceof Error ? err.message : "Error");
     } finally {
       setAccionando(false);
+    }
+  }
+
+  async function convocarDirigentes() {
+    const buscar = convocarTexto
+      .split(/[\n,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!buscar.length) {
+      setConvocarMensaje("Escribe uno o más nombres (separados por coma o renglón).");
+      return;
+    }
+    setConvocando(true);
+    setConvocarMensaje(null);
+    try {
+      const res = await apiFetch(`/api/material/eventos/${id}/convocar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ buscar }),
+      });
+      const body = (await res.json()) as {
+        error?: string;
+        resultados?: Array<{ buscar: string; estado: string; nombreCompleto?: string; mensaje?: string }>;
+      };
+      if (!res.ok) throw new Error(body.error ?? "No se pudo convocar");
+      const lineas = (body.resultados ?? []).map((r) => {
+        if (r.estado === "agregado") return `${r.nombreCompleto}: agregado al evento.`;
+        if (r.estado === "ya_convocado") return `${r.nombreCompleto}: ya estaba convocado.`;
+        if (r.estado === "no_encontrado") return `${r.buscar}: no encontrado.`;
+        return `${r.buscar}: ${r.mensaje ?? r.estado}`;
+      });
+      setConvocarMensaje(lineas.join(" "));
+      await load({ silent: true });
+    } catch (err) {
+      setConvocarMensaje(err instanceof Error ? err.message : "Error al convocar");
+    } finally {
+      setConvocando(false);
     }
   }
 
@@ -186,6 +228,31 @@ export default function EntregaMaterialDetalleClient() {
       ) : null}
 
       {mensaje ? <div className="alert-success font-medium">{mensaje}</div> : null}
+
+      {evento.estado !== "CERRADO" ? (
+        <section className="card-section space-y-3">
+          <h2 className="section-title text-base">Convocar dirigentes faltantes</h2>
+          <p className="text-sm text-ink-secondary">
+            Si alguien no aparece en la lista, escribe nombre y apellidos (uno por línea). Se copia el mismo material
+            del evento.
+          </p>
+          <textarea
+            className="input-area min-h-[72px]"
+            value={convocarTexto}
+            placeholder={"Eduardo Arias\nMaria Concepcion Vazquez"}
+            onChange={(e) => setConvocarTexto(e.target.value)}
+          />
+          <button
+            type="button"
+            className="btn-secondary btn-responsive"
+            disabled={convocando}
+            onClick={() => void convocarDirigentes()}
+          >
+            {convocando ? "Convocando…" : "Agregar a este evento"}
+          </button>
+          {convocarMensaje ? <div className="alert-info text-sm">{convocarMensaje}</div> : null}
+        </section>
+      ) : null}
 
       <section className="card-section space-y-4">
         <div className="flex flex-wrap gap-2" role="tablist">
