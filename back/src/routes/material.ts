@@ -55,7 +55,26 @@ router.post("/eventos", requireStaff, async (req, res) => {
       stripUnknown: true,
     });
 
-    const ids = [...new Set(data.participantes.map((p) => p.dirigenteId))];
+    const todosActivos = data.todosDirigentesActivos !== false;
+    const participantesPayload = todosActivos
+      ? (
+          await prisma.dirigente.findMany({
+            where: { activo: true, status: "ACTIVO" },
+            select: { id: true },
+            orderBy: [{ primerApellido: "asc" }, { segundoApellido: "asc" }, { nombre: "asc" }],
+          })
+        ).map((d) => ({
+          dirigenteId: d.id,
+          lineas: data.lineasComunes!,
+        }))
+      : data.participantes!;
+
+    if (!participantesPayload.length) {
+      res.status(400).json({ error: "No hay dirigentes activos para convocar" });
+      return;
+    }
+
+    const ids = [...new Set(participantesPayload.map((p) => p.dirigenteId))];
     const encontrados = await prisma.dirigente.count({ where: { id: { in: ids }, activo: true, status: "ACTIVO" } });
     if (encontrados !== ids.length) {
       res.status(400).json({ error: "Uno o más dirigentes no son válidos o están inactivos" });
@@ -72,7 +91,7 @@ router.post("/eventos", requireStaff, async (req, res) => {
         },
       });
 
-      for (const p of data.participantes) {
+      for (const p of participantesPayload) {
         await tx.eventoEntregaMaterialDirigente.create({
           data: { eventoId: created.id, dirigenteId: p.dirigenteId },
         });

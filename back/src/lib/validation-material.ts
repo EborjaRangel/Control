@@ -1,6 +1,6 @@
 import * as Yup from "yup";
 
-const lineaMaterialSchema = Yup.object({
+export const lineaMaterialSchema = Yup.object({
   descripcion: Yup.string().trim().required("La descripción del material es obligatoria"),
   fotoUrl: Yup.string().trim().required("La fotografía del material es obligatoria"),
   cantidad: Yup.number()
@@ -27,8 +27,25 @@ export const eventoEntregaMaterialCreateSchema = Yup.object({
       if (!inicio || !fin) return true;
       return fin >= inicio;
     }),
-  participantes: Yup.array()
-    .of(participanteSchema)
-    .min(1, "Selecciona al menos un dirigente")
-    .required(),
+  todosDirigentesActivos: Yup.boolean().default(true),
+  lineasComunes: Yup.array().of(lineaMaterialSchema),
+  participantes: Yup.array().of(participanteSchema),
+}).test("modo-participantes", "Indica el material o los participantes", function (value) {
+  const todos = value.todosDirigentesActivos !== false;
+  if (todos) {
+    if (!value.lineasComunes?.length) {
+      return this.createError({
+        path: "lineasComunes",
+        message: "Agrega al menos un material para todos los dirigentes",
+      });
+    }
+    return true;
+  }
+  if (!value.participantes?.length) {
+    return this.createError({
+      path: "participantes",
+      message: "Selecciona al menos un dirigente",
+    });
+  }
+  return true;
 });

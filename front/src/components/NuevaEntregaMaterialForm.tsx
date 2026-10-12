@@ -1,21 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  BuscarDirigentesMaterial,
-  type DirigenteMaterialBusqueda,
-} from "@/components/BuscarDirigentesMaterial";
+import { useEffect, useState } from "react";
+import { BuscarDirigentesMaterial } from "@/components/BuscarDirigentesMaterial";
 import { UploadImage } from "@/components/UploadImage";
 import { apiFetch } from "@/lib/api";
-import { nombreCompleto } from "@/lib/dirigentes";
 import type { LineaMaterialDTO } from "@/lib/material";
 
 type LineaDraft = LineaMaterialDTO & { key: string };
-
-type ParticipanteDraft = {
-  dirigente: DirigenteMaterialBusqueda;
-  lineas: LineaDraft[];
-};
 
 function nuevaLinea(): LineaDraft {
   return {
@@ -35,27 +26,21 @@ export function NuevaEntregaMaterialForm({ onSuccess, onCancel }: Props) {
   const [titulo, setTitulo] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
-  const [participantes, setParticipantes] = useState<Map<string, ParticipanteDraft>>(new Map());
-  const [dirigenteActivo, setDirigenteActivo] = useState<string | null>(null);
+  const [lineas, setLineas] = useState<LineaDraft[]>([nuevaLinea()]);
+  const [totalConvocados, setTotalConvocados] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
 
-  const selectedIds = useMemo(() => new Set(participantes.keys()), [participantes]);
-
-  function toggleDirigente(d: DirigenteMaterialBusqueda) {
-    setParticipantes((prev) => {
-      const next = new Map(prev);
-      if (next.has(d.id)) {
-        next.delete(d.id);
-        if (dirigenteActivo === d.id) setDirigenteActivo(next.keys().next().value ?? null);
-      } else {
-        next.set(d.id, { dirigente: d, lineas: [nuevaLinea()] });
-        setDirigenteActivo(d.id);
-      }
-      return next;
-    });
-  }
+  useEffect(() => {
+    void apiFetch("/api/dirigentes?estatus=alta&orden=apellidos")
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = (await res.json()) as unknown[];
+        setTotalConvocados(data.length);
+      })
+      .catch(() => setTotalConvocados(null));
+  }, []);
 
   async function subirFoto(file: File, lineKey: string) {
     setUploadingKey(lineKey);
@@ -71,17 +56,8 @@ export function NuevaEntregaMaterialForm({ onSuccess, onCancel }: Props) {
     }
   }
 
-  function actualizarLinea(dirigenteId: string, lineKey: string, patch: Partial<LineaDraft>) {
-    setParticipantes((prev) => {
-      const next = new Map(prev);
-      const p = next.get(dirigenteId);
-      if (!p) return prev;
-      next.set(dirigenteId, {
-        ...p,
-        lineas: p.lineas.map((l) => (l.key === lineKey ? { ...l, ...patch } : l)),
-      });
-      return next;
-    });
+  function actualizarLinea(lineKey: string, patch: Partial<LineaDraft>) {
+    setLineas((prev) => prev.map((l) => (l.key === lineKey ? { ...l, ...patch } : l)));
   }
 
   async function guardar() {
@@ -94,35 +70,17 @@ export function NuevaEntregaMaterialForm({ onSuccess, onCancel }: Props) {
       setError("Indica las fechas de vigencia");
       return;
     }
-    if (participantes.size === 0) {
-      setError("Selecciona al menos un dirigente");
-      return;
-    }
 
-    const payload = {
-      titulo: titulo.trim(),
-      fechaInicio,
-      fechaFin,
-      participantes: [...participantes.values()].map((p) => ({
-        dirigenteId: p.dirigente.id,
-        lineas: p.lineas.map(({ descripcion, fotoUrl, cantidad }) => ({
-          descripcion: descripcion.trim(),
-          fotoUrl,
-          cantidad,
-        })),
-      })),
-    };
+    const lineasComunes = lineas.map(({ descripcion, fotoUrl, cantidad }) => ({
+      descripcion: descripcion.trim(),
+      fotoUrl,
+      cantidad,
+    }));
 
-    for (const p of payload.participantes) {
-      if (!p.lineas.length) {
-        setError(`Agrega material para ${nombreCompleto(participantes.get(p.dirigenteId)!.dirigente)}`);
+    for (const l of lineasComunes) {
+      if (!l.descripcion || !l.fotoUrl || l.cantidad < 1) {
+        setError("Completa descripción, foto y cantidad de cada material");
         return;
-      }
-      for (const l of p.lineas) {
-        if (!l.descripcion || !l.fotoUrl || l.cantidad < 1) {
-          setError("Completa descripción, foto y cantidad de cada material");
-          return;
-        }
       }
     }
 
@@ -131,7 +89,13 @@ export function NuevaEntregaMaterialForm({ onSuccess, onCancel }: Props) {
       const res = await apiFetch("/api/material/eventos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          titulo: titulo.trim(),
+          fechaInicio,
+          fechaFin,
+          todosDirigentesActivos: true,
+          lineasComunes,
+        }),
       });
       const body = (await res.json()) as { id?: string; error?: string; detalles?: string[] };
       if (!res.ok) throw new Error(body.error ?? body.detalles?.join(" ") ?? "Error al guardar");
@@ -142,8 +106,6 @@ export function NuevaEntregaMaterialForm({ onSuccess, onCancel }: Props) {
       setGuardando(false);
     }
   }
-
-  const activo = dirigenteActivo ? participantes.get(dirigenteActivo) : null;
 
   return (
     <div className="space-y-8">
@@ -176,131 +138,92 @@ export function NuevaEntregaMaterialForm({ onSuccess, onCancel }: Props) {
       </section>
 
       <section className="card-section space-y-4">
-        <h2 className="section-title">Dirigentes</h2>
+        <h2 className="section-title">Convocados</h2>
+        <div className="panel-soft text-sm">
+          <strong className="text-ink">
+            {totalConvocados != null ? totalConvocados : "…"} dirigentes activos
+          </strong>{" "}
+          quedan incluidos en esta entrega. Al escanear el QR se registrará quién ya recogió; la lista de pase
+          mostrará pendientes y entregados.
+        </div>
         <p className="text-sm text-ink-secondary">
-          Filtra por nombre, apellidos, colonia, sección o unidad territorial y marca a quienes recibirán material.
+          Usa los filtros para consultar dirigentes (todos permanecen convocados).
         </p>
-        <BuscarDirigentesMaterial selectedIds={selectedIds} onToggle={toggleDirigente} />
+        <BuscarDirigentesMaterial convocadosTodos />
       </section>
 
-      {participantes.size > 0 ? (
-        <section className="card-section space-y-4">
-          <h2 className="section-title">Material por dirigente</h2>
-          <div className="flex flex-wrap gap-2">
-            {[...participantes.values()].map((p) => (
-              <button
-                key={p.dirigente.id}
-                type="button"
-                className={dirigenteActivo === p.dirigente.id ? "btn-primary btn-responsive" : "btn-secondary btn-responsive"}
-                onClick={() => setDirigenteActivo(p.dirigente.id)}
-              >
-                {nombreCompleto(p.dirigente)}
-              </button>
-            ))}
-          </div>
-
-          {activo ? (
-            <div className="space-y-4">
-              <p className="text-sm text-ink-secondary">
-                {activo.dirigente.tipo} · {activo.dirigente.colonia} · Secc. {activo.dirigente.seccionElectoral}
-              </p>
-              {activo.lineas.map((linea) => (
-                <div key={linea.key} className="panel-soft space-y-3 p-4">
-                  <label className="block">
-                    <span className="label">Descripción del material</span>
-                    <input
-                      className="input mt-1"
-                      value={linea.descripcion}
-                      onChange={(e) =>
-                        actualizarLinea(activo.dirigente.id, linea.key, { descripcion: e.target.value })
-                      }
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="label">Cantidad entregada</span>
-                    <input
-                      type="number"
-                      min={1}
-                      className="input mt-1 w-32"
-                      value={linea.cantidad}
-                      onChange={(e) =>
-                        actualizarLinea(activo.dirigente.id, linea.key, {
-                          cantidad: Number.parseInt(e.target.value, 10) || 1,
-                        })
-                      }
-                    />
-                  </label>
-                  <div>
-                    <span className="label">Foto del material</span>
-                    <div className="mt-2 flex flex-wrap items-center gap-3">
-                      {linea.fotoUrl ? (
-                        <UploadImage
-                          src={linea.fotoUrl}
-                          alt="Material"
-                          width={120}
-                          height={90}
-                          className="h-24 w-32 rounded object-cover"
-                        />
-                      ) : null}
-                      <label className="btn-secondary btn-responsive cursor-pointer">
-                        {uploadingKey === linea.key ? "Subiendo…" : linea.fotoUrl ? "Cambiar foto" : "Subir foto"}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="sr-only"
-                          disabled={uploadingKey === linea.key}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            void subirFoto(file, linea.key).then((url) =>
-                              actualizarLinea(activo.dirigente.id, linea.key, { fotoUrl: url }),
-                            );
-                          }}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                  {activo.lineas.length > 1 ? (
-                    <button
-                      type="button"
-                      className="btn-ghost btn-responsive text-sm"
-                      onClick={() =>
-                        setParticipantes((prev) => {
-                          const next = new Map(prev);
-                          const p = next.get(activo.dirigente.id);
-                          if (!p) return prev;
-                          next.set(activo.dirigente.id, {
-                            ...p,
-                            lineas: p.lineas.filter((l) => l.key !== linea.key),
-                          });
-                          return next;
-                        })
-                      }
-                    >
-                      Quitar material
-                    </button>
-                  ) : null}
-                </div>
-              ))}
-              <button
-                type="button"
-                className="btn-secondary btn-responsive"
-                onClick={() =>
-                  setParticipantes((prev) => {
-                    const next = new Map(prev);
-                    const p = next.get(activo.dirigente.id);
-                    if (!p) return prev;
-                    next.set(activo.dirigente.id, { ...p, lineas: [...p.lineas, nuevaLinea()] });
-                    return next;
+      <section className="card-section space-y-4">
+        <h2 className="section-title">Material (mismo paquete para todos)</h2>
+        <p className="text-sm text-ink-secondary">
+          Define uno o más materiales; se asignará a cada dirigente convocado.
+        </p>
+        {lineas.map((linea) => (
+          <div key={linea.key} className="panel-soft space-y-3 p-4">
+            <label className="block">
+              <span className="label">Descripción del material</span>
+              <input
+                className="input mt-1"
+                value={linea.descripcion}
+                onChange={(e) => actualizarLinea(linea.key, { descripcion: e.target.value })}
+              />
+            </label>
+            <label className="block">
+              <span className="label">Cantidad entregada</span>
+              <input
+                type="number"
+                min={1}
+                className="input mt-1 w-32"
+                value={linea.cantidad}
+                onChange={(e) =>
+                  actualizarLinea(linea.key, {
+                    cantidad: Number.parseInt(e.target.value, 10) || 1,
                   })
                 }
-              >
-                Agregar otro material
-              </button>
+              />
+            </label>
+            <div>
+              <span className="label">Foto del material</span>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                {linea.fotoUrl ? (
+                  <UploadImage
+                    src={linea.fotoUrl}
+                    alt="Material"
+                    width={120}
+                    height={90}
+                    className="h-24 w-32 rounded object-cover"
+                  />
+                ) : null}
+                <label className="btn-secondary btn-responsive cursor-pointer">
+                  {uploadingKey === linea.key ? "Subiendo…" : linea.fotoUrl ? "Cambiar foto" : "Subir foto"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    disabled={uploadingKey === linea.key}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      void subirFoto(file, linea.key).then((url) => actualizarLinea(linea.key, { fotoUrl: url }));
+                    }}
+                  />
+                </label>
+              </div>
             </div>
-          ) : null}
-        </section>
-      ) : null}
+            {lineas.length > 1 ? (
+              <button
+                type="button"
+                className="btn-ghost btn-responsive text-sm"
+                onClick={() => setLineas((prev) => prev.filter((l) => l.key !== linea.key))}
+              >
+                Quitar material
+              </button>
+            ) : null}
+          </div>
+        ))}
+        <button type="button" className="btn-secondary btn-responsive" onClick={() => setLineas((p) => [...p, nuevaLinea()])}>
+          Agregar otro material
+        </button>
+      </section>
 
       {error ? <div className="alert-error">{error}</div> : null}
 

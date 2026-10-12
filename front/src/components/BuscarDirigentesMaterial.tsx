@@ -21,11 +21,13 @@ export type DirigenteMaterialBusqueda = {
 };
 
 type Props = {
-  selectedIds: Set<string>;
-  onToggle: (dirigente: DirigenteMaterialBusqueda) => void;
+  /** Todos los dirigentes activos van convocados; la lista es solo consulta. */
+  convocadosTodos?: boolean;
+  selectedIds?: Set<string>;
+  onToggle?: (dirigente: DirigenteMaterialBusqueda) => void;
 };
 
-export function BuscarDirigentesMaterial({ selectedIds, onToggle }: Props) {
+export function BuscarDirigentesMaterial({ convocadosTodos = false, selectedIds, onToggle }: Props) {
   const [buscar, setBuscar] = useState("");
   const [tipo, setTipo] = useState("");
   const [colonia, setColonia] = useState("");
@@ -159,21 +161,29 @@ export function BuscarDirigentesMaterial({ selectedIds, onToggle }: Props) {
       {error ? <div className="alert-error text-sm">{error}</div> : null}
       {loading ? <p className="text-sm text-ink-secondary">Buscando…</p> : null}
 
-      <p className="text-sm text-ink-secondary">
-        Seleccionados: <strong className="text-ink">{selectedIds.size}</strong>
-      </p>
+      {!convocadosTodos && selectedIds ? (
+        <p className="text-sm text-ink-secondary">
+          Seleccionados: <strong className="text-ink">{selectedIds.size}</strong>
+        </p>
+      ) : null}
 
       <ul className="max-h-[420px] space-y-2 overflow-y-auto rounded-md border border-border p-2">
         {visibles.map((d) => {
-          const checked = selectedIds.has(d.id);
+          const checked = convocadosTodos || Boolean(selectedIds?.has(d.id));
           return (
             <li key={d.id}>
-              <label className="flex cursor-pointer gap-3 rounded-md p-2 hover:bg-zinc-50">
+              <label
+                className={`flex gap-3 rounded-md p-2 ${convocadosTodos ? "" : "cursor-pointer hover:bg-zinc-50"}`}
+              >
                 <input
                   type="checkbox"
                   className="mt-1"
                   checked={checked}
-                  onChange={() => onToggle(d)}
+                  disabled={convocadosTodos}
+                  readOnly={convocadosTodos}
+                  onChange={() => {
+                    if (!convocadosTodos && onToggle) onToggle(d);
+                  }}
                 />
                 <span className="min-w-0 text-sm">
                   <span className="font-medium text-ink">{nombreCompleto(d)}</span>
