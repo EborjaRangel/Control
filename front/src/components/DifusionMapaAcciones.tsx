@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CENTRO_COYOACAN, MAPBOX_STYLE, MAPBOX_TOKEN, mapboxConfigError } from "@/lib/mapbox-config";
 import {
   addAlcaldiaCoyoacanBoundary,
@@ -9,8 +9,12 @@ import {
   whenMapReady,
 } from "@/lib/mapbox-alcaldia-coyoacan";
 import { formatRegistroDifusionFecha, type RegistroDifusionDTO } from "@/lib/difusion";
+import {
+  bindStableHoverPopup,
+  createDifusionGloboElement,
+  registrosMapaKey,
+} from "@/lib/difusion-mapa-markers";
 import { resolveMediaUrl } from "@/lib/media-url";
-import { theme } from "@/lib/theme";
 
 type Props = {
   registros: RegistroDifusionDTO[];
@@ -18,6 +22,29 @@ type Props = {
   detalleHref?: (registro: RegistroDifusionDTO) => string;
   heightClassName?: string;
 };
+
+function buildPopupContent(
+  registro: RegistroDifusionDTO,
+  detalleHref: ((registro: RegistroDifusionDTO) => string) | undefined,
+): HTMLDivElement {
+  const popupNode = document.createElement("div");
+  popupNode.className = "space-y-2 text-sm max-w-[220px]";
+  const imgSrc = resolveMediaUrl(registro.fotoUrl);
+  popupNode.innerHTML = `
+    <p class="font-semibold text-pin">${registro.campanaTitulo ?? "Difusión"}</p>
+    ${registro.dirigenteNombre ? `<p class="text-xs">${registro.dirigenteNombre}</p>` : ""}
+    <p class="text-xs text-ink-secondary">${formatRegistroDifusionFecha(registro.registradoAt)}</p>
+    ${imgSrc ? `<img src="${imgSrc}" alt="" class="mt-1 max-h-28 w-full rounded-md object-cover" />` : ""}
+  `;
+  if (detalleHref) {
+    const link = document.createElement("a");
+    link.href = detalleHref(registro);
+    link.className = "inline-flex text-xs font-semibold text-pin hover:underline";
+    link.textContent = "Ver detalle";
+    popupNode.appendChild(link);
+  }
+  return popupNode;
+}
 
 export function DifusionMapaAcciones({
   registros,
@@ -30,7 +57,13 @@ export function DifusionMapaAcciones({
   const markersRef = useRef<import("mapbox-gl").Marker[]>([]);
   const alcaldiaBoundsRef = useRef<[[number, number], [number, number]] | null>(null);
   const alcaldiaLoadedRef = useRef(false);
+  const animatedIdsRef = useRef<Set<string>>(new Set());
+  const detalleHrefRef = useRef(detalleHref);
   const [mapReady, setMapReady] = useState(false);
+
+  detalleHrefRef.current = detalleHref;
+
+  const registrosKey = useMemo(() => registrosMapaKey(registros), [registros]);
 
   useEffect(() => {
     if (!MAPBOX_TOKEN || !containerRef.current) return;
@@ -70,7 +103,23 @@ export function DifusionMapaAcciones({
         }
         alcaldiaLoadedRef.current = true;
       }
+    })();
 
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!MAPBOX_TOKEN || !mapRef.current || !mapReady) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      const mapboxgl = (await import("mapbox-gl")).default;
+      if (cancelled || !mapRef.current) return;
+
+      const map = mapRef.current;
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
 
@@ -88,44 +137,34 @@ export function DifusionMapaAcciones({
 
       const bounds = new mapboxgl.LngLatBounds();
 
-      for (const registro of registros) {
-        const el = document.createElement("button");
-        el.type = "button";
-        el.className =
-          "size-5 rounded-full border-2 border-white shadow-md transition-transform hover:scale-125";
-        el.style.backgroundColor = theme.pin;
-        if (registro.id === selectedId) {
-          el.style.boxShadow = "0 0 0 3px rgba(0,85,164,0.45)";
-          el.style.transform = "scale(1.2)";
-        }
+      registros.forEach((registro, index) => {
+        const animateDrop = !animatedIdsRef.current.has(registro.id);
+        if (animateDrop) animatedIdsRef.current.add(registro.id);
 
-        const popupNode = document.createElement("div");
-        popupNode.className = "space-y-2 text-sm max-w-[220px]";
-        const imgSrc = resolveMediaUrl(registro.fotoUrl);
-        popupNode.innerHTML = `
-          <p class="font-semibold text-pin">${registro.campanaTitulo ?? "Difusión"}</p>
-          ${registro.dirigenteNombre ? `<p class="text-xs">${registro.dirigenteNombre}</p>` : ""}
-          <p class="text-xs text-ink-secondary">${formatRegistroDifusionFecha(registro.registradoAt)}</p>
-          ${imgSrc ? `<img src="${imgSrc}" alt="" class="mt-1 max-h-28 w-full rounded-md object-cover" />` : ""}
-        `;
-        if (detalleHref) {
-          const link = document.createElement("a");
-          link.href = detalleHref(registro);
-          link.className = "inline-flex text-xs font-semibold text-pin hover:underline";
-          link.textContent = "Ver detalle";
-          popupNode.appendChild(link);
-        }
+        const el = createDifusionGloboElement({
+          selected: registro.id === selectedId,
+          animateDrop,
+          staggerIndex: index,
+        });
 
-        const popup = new mapboxgl.Popup({ offset: 16, maxWidth: "260px" }).setDOMContent(popupNode);
+        const popup = new mapboxgl.Popup({
+          offset: [0, -36],
+          closeButton: false,
+          closeOnClick: false,
+          closeOnMove: false,
+          maxWidth: "260px",
+          className: "difusion-mapa-popup",
+        }).setDOMContent(buildPopupContent(registro, detalleHrefRef.current));
 
-        const marker = new mapboxgl.Marker({ element: el })
+        const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
           .setLngLat([registro.lng, registro.lat])
-          .setPopup(popup)
           .addTo(map);
+
+        bindStableHoverPopup(marker, el, popup);
 
         markersRef.current.push(marker);
         bounds.extend([registro.lng, registro.lat]);
-      }
+      });
 
       whenMapReady(map, () => {
         if (registros.length === 1) {
@@ -139,7 +178,7 @@ export function DifusionMapaAcciones({
     return () => {
       cancelled = true;
     };
-  }, [registros, selectedId, detalleHref, mapReady]);
+  }, [registrosKey, selectedId, mapReady, registros]);
 
   useEffect(() => {
     return () => {
@@ -148,6 +187,7 @@ export function DifusionMapaAcciones({
       mapRef.current?.remove();
       mapRef.current = null;
       alcaldiaLoadedRef.current = false;
+      animatedIdsRef.current.clear();
     };
   }, []);
 
