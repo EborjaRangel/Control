@@ -81,10 +81,10 @@ export default function DifusionAdminPage() {
       <DifusionAdminMapaSection
         registros={registros}
         campanaFiltroExtra={
-          <label className="block min-w-[12rem]">
+          <label className="flex min-w-0 flex-col gap-1">
             <span className="label">Filtrar campaña</span>
             <select
-              className="input mt-1"
+              className="input"
               value={campanaFiltro}
               onChange={(e) => setCampanaFiltro(e.target.value)}
             >

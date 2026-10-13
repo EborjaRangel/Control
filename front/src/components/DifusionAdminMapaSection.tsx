@@ -59,18 +59,18 @@ export function DifusionAdminMapaSection({
 
   return (
     <section className="card-section space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 shrink-0 lg:max-w-md">
           <h2 className="section-title">{titulo}</h2>
           <p className="text-sm text-ink-secondary">{subtitulo}</p>
         </div>
-        <div className="flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="grid w-full min-w-0 gap-3 sm:grid-cols-2 lg:max-w-3xl lg:flex-1 xl:grid-cols-3">
           {campanaFiltroExtra}
-          <label className="block min-w-0 flex-1">
+          <label className="flex min-w-0 flex-col gap-1 sm:col-span-2 xl:col-span-1">
             <span className="label">Buscar dirigente</span>
             <input
               type="search"
-              className="input mt-1"
+              className="input"
               placeholder="Nombre o apellido…"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
@@ -82,10 +82,10 @@ export function DifusionAdminMapaSection({
               ))}
             </datalist>
           </label>
-          <label className="block min-w-[12rem]">
+          <label className="flex min-w-0 flex-col gap-1 sm:col-span-2 xl:col-span-1">
             <span className="label">Ver mapa</span>
             <select
-              className="input mt-1"
+              className="input"
               value={dirigenteId}
               onChange={(e) => setDirigenteId(e.target.value)}
             >
