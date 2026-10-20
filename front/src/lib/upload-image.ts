@@ -1,6 +1,18 @@
 import { getSessionToken } from "./session-token";
 import { compressImageForUpload } from "./compress-image";
 
+function uploadPostUrl(): string {
+  if (typeof window === "undefined") return "/api/upload";
+  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+  if (!base) return "/api/upload";
+  try {
+    if (new URL(base).origin === window.location.origin) return "/api/upload";
+    return `${base}/api/upload`;
+  } catch {
+    return "/api/upload";
+  }
+}
+
 export type UploadImageStatus =
   | { phase: "compress" }
   | { phase: "upload"; percent: number };
@@ -26,7 +38,7 @@ export async function uploadImageFile(
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/upload");
+    xhr.open("POST", uploadPostUrl());
     xhr.withCredentials = true;
     xhr.timeout = 55_000;
 
@@ -48,7 +60,20 @@ export async function uploadImageFile(
         return;
       }
       if (xhr.status < 200 || xhr.status >= 300 || !data.url) {
-        reject(new Error(data.error ?? "Error al subir la imagen"));
+        const msg = data.error ?? "Error al subir la imagen";
+        if (xhr.status === 401) {
+          reject(new Error("Sesión expirada. Vuelve a iniciar sesión e intenta de nuevo."));
+          return;
+        }
+        if (msg.includes("5 MB") || msg.includes("formato")) {
+          reject(
+            new Error(
+              "No se aceptó la imagen en el servidor. La app debería comprimirla antes; intenta «Tomar foto» o otra imagen JPG.",
+            ),
+          );
+          return;
+        }
+        reject(new Error(msg));
         return;
       }
       resolve(data.url);

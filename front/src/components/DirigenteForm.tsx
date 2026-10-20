@@ -24,7 +24,7 @@ import {
   TIPOS_DIRIGENTE,
 } from "@/lib/dirigentes";
 import { apiFetch } from "@/lib/api";
-import { uploadImageFile } from "@/lib/upload-image";
+import { etiquetaEstadoSubida, uploadImageFile, type UploadImageStatus } from "@/lib/upload-image";
 import type { UnidadTerritorialResumen } from "@/lib/unidades-territoriales";
 import { etiquetaUnidadTerritorial } from "@/lib/unidades-territoriales";
 import type { DirigenteFormValues } from "@/lib/validation";
@@ -399,6 +399,7 @@ function UnidadTerritorialSelect() {
 function FotoUpload() {
   const { values, setFieldValue } = useFormikContext<DirigenteFormValues>();
   const [uploading, setUploading] = useState(false);
+  const [status, setStatus] = useState<UploadImageStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -407,12 +408,14 @@ function FotoUpload() {
 
     setUploading(true);
     setError(null);
+    setStatus({ phase: "compress" });
     try {
-      await setFieldValue("fotoUrl", await uploadImageFile(file));
+      await setFieldValue("fotoUrl", await uploadImageFile(file, setStatus));
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo subir la imagen");
     } finally {
       setUploading(false);
+      setStatus(null);
       e.target.value = "";
     }
   }
@@ -451,7 +454,9 @@ function FotoUpload() {
               Quitar foto
             </button>
           ) : null}
-          {uploading ? <p className="text-xs text-ink-secondary">Subiendo…</p> : null}
+          {uploading ? (
+            <p className="text-xs text-ink-secondary">{etiquetaEstadoSubida(status) ?? "Subiendo…"}</p>
+          ) : null}
           {error ? <p className="field-error">{error}</p> : null}
         </div>
       </div>
