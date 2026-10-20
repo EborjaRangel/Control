@@ -1,5 +1,6 @@
 export type AlcanceNotificacion =
   | "TODOS"
+  | "DIRIGENTES_SELECCION"
   | "TIPO_DIRIGENTE"
   | "DISTRITO_FEDERAL"
   | "DISTRITO_LOCAL"
@@ -9,6 +10,7 @@ export type AlcanceNotificacion =
 
 export const ALCANCE_NOTIFICACION_LABEL: Record<AlcanceNotificacion, string> = {
   TODOS: "Todos los dirigentes (D1–D4 y Transversales)",
+  DIRIGENTES_SELECCION: "Seleccionar dirigentes (checkbox)",
   TIPO_DIRIGENTE: "Por tipo de dirigente",
   DISTRITO_FEDERAL: "Por distrito federal",
   DISTRITO_LOCAL: "Por distrito local",

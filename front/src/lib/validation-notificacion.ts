@@ -15,6 +15,7 @@ const IMAGEN_NOTIFICACION_URL =
 
 export const ALCANCES_NOTIFICACION = [
   "TODOS",
+  "DIRIGENTES_SELECCION",
   "TIPO_DIRIGENTE",
   "DISTRITO_FEDERAL",
   "DISTRITO_LOCAL",
@@ -32,6 +33,7 @@ export type NotificacionFormValues = {
   distritoLocal: string;
   distritoFederal: string;
   tipoDirigente: string;
+  dirigenteIds: string[];
   imagenesUrl: string[];
 };
 
@@ -44,6 +46,7 @@ export const EMPTY_NOTIFICACION: NotificacionFormValues = {
   distritoLocal: "",
   distritoFederal: "",
   tipoDirigente: "",
+  dirigenteIds: [],
   imagenesUrl: [],
 };
 
@@ -99,6 +102,14 @@ export const notificacionEnviarSchema = Yup.object({
       s.oneOf([...TIPOS_DIRIGENTE], "Tipo inválido").required("Selecciona tipo"),
     otherwise: (s) => s.optional(),
   }),
+  dirigenteIds: Yup.array()
+    .of(Yup.string().trim().min(1).required())
+    .default([])
+    .when("alcance", {
+      is: "DIRIGENTES_SELECCION",
+      then: (s) => s.min(1, "Selecciona al menos un dirigente").required(),
+      otherwise: (s) => s.optional(),
+    }),
   imagenesUrl: Yup.array()
     .of(
       Yup.string().matches(
@@ -127,6 +138,8 @@ export function payloadFromNotificacionForm(values: NotificacionFormValues) {
         ? Number(values.distritoFederal)
         : null,
     tipoDirigente: values.alcance === "TIPO_DIRIGENTE" ? values.tipoDirigente : null,
+    dirigenteIds:
+      values.alcance === "DIRIGENTES_SELECCION" ? values.dirigenteIds.filter(Boolean) : [],
     imagenesUrl: values.imagenesUrl.filter((url) => IMAGEN_NOTIFICACION_URL.test(url)),
   };
 }

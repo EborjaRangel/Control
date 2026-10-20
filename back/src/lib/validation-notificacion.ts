@@ -29,6 +29,7 @@ export function normalizarImagenesNotificacion(value: unknown): string[] {
 
 export const ALCANCES_NOTIFICACION = [
   "TODOS",
+  "DIRIGENTES_SELECCION",
   "TIPO_DIRIGENTE",
   "DISTRITO_FEDERAL",
   "DISTRITO_LOCAL",
@@ -108,6 +109,14 @@ export const notificacionEnviarSchema = Yup.object({
         s
           .oneOf([...TIPOS_DIRIGENTE], "Tipo de dirigente inválido")
           .required("Selecciona el tipo de dirigente"),
+    }),
+  dirigenteIds: Yup.array()
+    .of(Yup.string().trim().min(1).required())
+    .default([])
+    .when("alcance", {
+      is: "DIRIGENTES_SELECCION",
+      then: (s) =>
+        s.min(1, "Selecciona al menos un dirigente").required("Selecciona dirigentes"),
     }),
   imagenesUrl: Yup.array()
     .transform((v) => normalizarImagenesNotificacion(v))

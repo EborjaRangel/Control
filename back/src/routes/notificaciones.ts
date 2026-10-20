@@ -118,6 +118,7 @@ router.post("/preview", requireStaff, async (req, res) => {
     const conteo = await contarDestinatariosNotificacion({
       ...data,
       tipoDirigente: (data.tipoDirigente as TipoDirigente | null | undefined) ?? null,
+      dirigenteIds: data.dirigenteIds ?? [],
     });
     res.json(conteo);
   } catch (error) {
@@ -143,6 +144,7 @@ router.post("/enviar", requireStaff, async (req, res) => {
       ...data,
       imagenesUrl,
       tipoDirigente: (data.tipoDirigente as TipoDirigente | null | undefined) ?? null,
+      dirigenteIds: data.dirigenteIds ?? [],
       creadoPorId: req.user!.sub,
     });
 

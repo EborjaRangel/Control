@@ -22,6 +22,7 @@ import {
 import { etiquetaUnidadTerritorial, type UnidadTerritorialResumen } from "@/lib/unidades-territoriales";
 import { NotificacionImagenes } from "@/components/NotificacionImagenes";
 import { NotificacionImagenesField } from "@/components/NotificacionImagenesField";
+import { NotificacionDirigentesSeleccionField } from "@/components/NotificacionDirigentesSeleccionField";
 import {
   ALCANCES_NOTIFICACION,
   EMPTY_NOTIFICACION,
@@ -50,6 +51,7 @@ function AlcanceSelect() {
           void setFieldValue("distritoLocal", "");
           void setFieldValue("distritoFederal", "");
           void setFieldValue("tipoDirigente", "");
+          void setFieldValue("dirigenteIds", []);
         }}
       >
         <option value="">Selecciona alcance…</option>
@@ -223,6 +225,7 @@ export function NotificacionesAdminPanel() {
             <div className="form-grid">
               <AlcanceSelect />
               <AlcanceCampos uts={uts} />
+              <NotificacionDirigentesSeleccionField />
             </div>
 
             {preview ? (
@@ -250,6 +253,7 @@ export function NotificacionesAdminPanel() {
                         distritoLocal: true,
                         distritoFederal: true,
                         tipoDirigente: true,
+                        dirigenteIds: true,
                       });
                       return;
                     }

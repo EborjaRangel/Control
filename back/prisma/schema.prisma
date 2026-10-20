@@ -92,6 +92,7 @@ enum AlcanceNotificacion {
   COLONIA
   UNIDAD_TERRITORIAL
   SECCION
+  DIRIGENTES_SELECCION
 }
 
 /// Tipo de reporte de servicios urbanos
@@ -810,6 +811,8 @@ model Notificacion {
   distritoLocal       Int?
   distritoFederal     Int?
   tipoDirigente       TipoDirigente?
+  /// IDs de dirigente cuando alcance = DIRIGENTES_SELECCION
+  dirigenteIdsSeleccionados String[]      @default([])
   enviadoAt           DateTime            @default(now())
   creadoPorId         String?
   destinatarios       NotificacionDestinatario[]

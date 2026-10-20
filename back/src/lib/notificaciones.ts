@@ -16,6 +16,8 @@ export type NotificacionAlcanceFields = {
   distritoLocal?: number | null;
   distritoFederal?: number | null;
   tipoDirigente?: TipoDirigente | null;
+  /** Solo cuando alcance = DIRIGENTES_SELECCION */
+  dirigenteIds?: string[];
 };
 
 export function filtroDirigentesNotificacion(
@@ -45,6 +47,11 @@ export function filtroDirigentesNotificacion(
       return { ...base, seccionElectoral: fields.seccionElectoral ?? undefined };
     case "UNIDAD_TERRITORIAL":
       return { ...base, unidadTerritorialId: fields.unidadTerritorialId ?? undefined };
+    case "DIRIGENTES_SELECCION": {
+      const ids = fields.dirigenteIds?.filter(Boolean) ?? [];
+      if (!ids.length) return { ...base, id: { in: [] } };
+      return { ...base, id: { in: ids } };
+    }
     default:
       return base;
   }
@@ -53,6 +60,7 @@ export function filtroDirigentesNotificacion(
 export function etiquetaAlcanceNotificacion(
   n: NotificacionAlcanceFields & {
     unidadTerritorial?: { clave: string; nombre: string } | null;
+    dirigenteIdsSeleccionados?: string[];
   },
 ): string {
   switch (n.alcance) {
@@ -76,6 +84,10 @@ export function etiquetaAlcanceNotificacion(
       return n.unidadTerritorial
         ? `UT: ${etiquetaUnidadTerritorial(n.unidadTerritorial)}`
         : "Unidad territorial";
+    case "DIRIGENTES_SELECCION": {
+      const nIds = n.dirigenteIdsSeleccionados?.length ?? n.dirigenteIds?.length ?? 0;
+      return nIds > 0 ? `Dirigentes seleccionados (${nIds})` : "Dirigentes seleccionados";
+    }
     default:
       return "—";
   }
@@ -182,6 +194,8 @@ export async function enviarNotificacion(input: EnviarNotificacionInput) {
       distritoLocal: input.distritoLocal ?? null,
       distritoFederal: input.distritoFederal ?? null,
       tipoDirigente: input.tipoDirigente ?? null,
+      dirigenteIdsSeleccionados:
+        input.alcance === "DIRIGENTES_SELECCION" ? (input.dirigenteIds ?? []) : [],
       creadoPorId: input.creadoPorId ?? null,
       destinatarios: {
         createMany: {
