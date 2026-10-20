@@ -11,5 +11,6 @@ healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
-# Persistencia de fotos: en Railway Dashboard → servicio Control → Volumes
-# Montar volumen en /app/uploads (ruta usada por multer y express.static).
+# Fotos: servicio Control → Volumes → montar en /app/uploads (≥5 GB recomendado).
+# Variable: UPLOAD_DIR=/app/uploads
+# Si aparece ENOSPC, ampliar el volumen o liberar archivos viejos en /app/uploads.

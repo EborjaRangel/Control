@@ -6,7 +6,7 @@ import { randomUUID } from "crypto";
 import { ValidationError } from "yup";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
-import { ensureUploadDir } from "../lib/upload-dir.js";
+import { ensureUploadDir, mensajeErrorEspacioUpload } from "../lib/upload-dir.js";
 import {
   canAccessDirigente,
   hashPassword,
@@ -122,6 +122,8 @@ function tipoImagenPermitido(mimetype: string, originalname: string): boolean {
 }
 
 function mensajeErrorUpload(err: unknown): string {
+  const espacio = mensajeErrorEspacioUpload(err);
+  if (espacio) return espacio;
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") return "La imagen supera 5 MB";
     return `No se pudo recibir la imagen (${err.code})`;

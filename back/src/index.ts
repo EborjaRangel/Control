@@ -4,7 +4,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import routes from "./routes/index.js";
-import { ensureUploadDir } from "./lib/upload-dir.js";
+import { ensureUploadDir, uploadDiskInfo } from "./lib/upload-dir.js";
 import { hidratarCatalogosElectorales } from "./lib/catalogos-electorales.js";
 import {
   faltantesWhatsApp,
@@ -49,7 +49,8 @@ app.use(
   }),
 );
 app.use("/api", routes);
-app.get("/health", (_req, res) => {
+app.get("/health", async (_req, res) => {
+  const uploads = await uploadDiskInfo();
   const resend = resendConfigurado();
   const smtpConfigurado =
     Boolean(
@@ -62,6 +63,12 @@ app.get("/health", (_req, res) => {
 
   res.json({
     ok: true,
+    uploads: {
+      dir: uploads.dir,
+      freeMb:
+        uploads.freeBytes != null ? Math.round(uploads.freeBytes / (1024 * 1024)) : null,
+      lowSpace: uploads.lowSpace,
+    },
     email: {
       habilitado: config.email.habilitado && !smtpUsaValoresEjemplo(),
       proveedor: resend ? "resend" : smtpConfigurado ? "smtp" : null,
@@ -100,8 +107,14 @@ const port = Number(process.env.PORT ?? 4000);
 
 async function start() {
   const catalogos = await hidratarCatalogosElectorales();
+  const uploads = await uploadDiskInfo();
   console.log(
     `Catálogos electorales: resultados=${catalogos.resultados ? "db" : "archivo"} casillas=${catalogos.casillas ? "db" : "archivo"}`,
+  );
+  console.log(
+    `Uploads: dir=${uploads.dir} libre=${uploads.freeBytes != null ? `${Math.round(uploads.freeBytes / (1024 * 1024))} MB` : "?"}${
+      uploads.lowSpace ? " (poco espacio)" : ""
+    }`,
   );
   app.listen(port, "0.0.0.0", () => {
     console.log(`Control API escuchando en http://0.0.0.0:${port}`);
