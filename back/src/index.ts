@@ -3,9 +3,8 @@ import compression from "compression";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import path from "path";
-import fs from "fs";
 import routes from "./routes/index.js";
+import { ensureUploadDir } from "./lib/upload-dir.js";
 import { hidratarCatalogosElectorales } from "./lib/catalogos-electorales.js";
 import {
   faltantesWhatsApp,
@@ -17,13 +16,11 @@ import {
 import { resendConfigurado } from "./lib/comunicacion/email-resend.js";
 
 const app = express();
-const uploadDir = path.join(process.cwd(), "uploads");
+const uploadDir = ensureUploadDir();
 const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:3000")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
-
-fs.mkdirSync(uploadDir, { recursive: true });
 
 app.use(compression());
 app.use(

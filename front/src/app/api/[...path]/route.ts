@@ -27,10 +27,7 @@ function forwardRequestHeaders(request: NextRequest) {
 async function proxyRequest(request: NextRequest, path: string[]) {
   const target = `${apiBaseUrl()}/api/${path.join("/")}${request.nextUrl.search}`;
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
-  const contentType = request.headers.get("content-type") ?? "";
-  const isMultipart = contentType.includes("multipart/form-data");
-
-  const init: RequestInit & { duplex?: "half" } = {
+  const init: RequestInit = {
     method: request.method,
     headers: forwardRequestHeaders(request),
     cache: "no-store",
@@ -38,12 +35,8 @@ async function proxyRequest(request: NextRequest, path: string[]) {
   };
 
   if (hasBody) {
-    if (isMultipart && request.body) {
-      init.body = request.body;
-      init.duplex = "half";
-    } else {
-      init.body = await request.arrayBuffer();
-    }
+    // Buffer completo: el stream multipart con duplex falla en producción (Vercel → Railway).
+    init.body = await request.arrayBuffer();
   }
 
   try {

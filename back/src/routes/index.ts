@@ -6,6 +6,7 @@ import { randomUUID } from "crypto";
 import { ValidationError } from "yup";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
+import { ensureUploadDir } from "../lib/upload-dir.js";
 import {
   canAccessDirigente,
   hashPassword,
@@ -97,24 +98,49 @@ import {
 
 const router = Router();
 
-const uploadDir = path.join(process.cwd(), "uploads");
-fs.mkdirSync(uploadDir, { recursive: true });
+const uploadDir = ensureUploadDir();
 
 const TIPOS_OK = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_BYTES = 5 * 1024 * 1024;
 const SAFE_UPLOAD_NAME = /^[a-f0-9-]+\.(jpg|jpeg|png|webp|gif)$/i;
 
+function extensionDesdeArchivo(originalname: string, mimetype: string): string {
+  const fromName = originalname.match(/\.(jpe?g|png|webp|gif)$/i)?.[1]?.toLowerCase();
+  if (fromName) return fromName.replace("jpeg", "jpg");
+  const fromMime = mimetype.split("/")[1]?.toLowerCase().replace("jpeg", "jpg");
+  if (fromMime && fromMime !== "octet-stream") return fromMime;
+  return "jpg";
+}
+
+function tipoImagenPermitido(mimetype: string, originalname: string): boolean {
+  const mt = mimetype.toLowerCase();
+  if (TIPOS_OK.includes(mt)) return true;
+  if (mt === "application/octet-stream" || mt === "") {
+    return /\.(jpe?g|png|webp|gif)$/i.test(originalname);
+  }
+  return false;
+}
+
+function mensajeErrorUpload(err: unknown): string {
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") return "La imagen supera 5 MB";
+    return `No se pudo recibir la imagen (${err.code})`;
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return "Error al subir archivo";
+}
+
 const upload = multer({
   storage: multer.diskStorage({
     destination: uploadDir,
     filename: (_req, file, cb) => {
-      const ext = file.mimetype.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
+      const ext = extensionDesdeArchivo(file.originalname ?? "", file.mimetype ?? "");
       cb(null, `${randomUUID()}.${ext}`);
     },
   }),
   limits: { fileSize: MAX_BYTES },
   fileFilter: (_req, file, cb) => {
-    cb(null, TIPOS_OK.includes(file.mimetype));
+    cb(null, tipoImagenPermitido(file.mimetype ?? "", file.originalname ?? ""));
   },
 });
 
@@ -1008,19 +1034,9 @@ router.delete("/dirigentes/:id", requireStaff, async (req, res) => {
 router.post("/upload", (req, res) => {
   const started = Date.now();
   upload.single("file")(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      if (err.code === "LIMIT_FILE_SIZE") {
-        console.warn(`upload reject size ms=${Date.now() - started}`);
-        res.status(400).json({ error: "La imagen supera 5 MB" });
-        return;
-      }
-      console.warn(`upload multer ${err.code} ms=${Date.now() - started}`);
-      res.status(400).json({ error: "Error al subir archivo" });
-      return;
-    }
     if (err) {
-      console.warn("upload error", err);
-      res.status(400).json({ error: "Error al subir archivo" });
+      console.warn("upload failed", err instanceof multer.MulterError ? err.code : err);
+      res.status(400).json({ error: mensajeErrorUpload(err) });
       return;
     }
     if (!req.file) {
