@@ -56,6 +56,7 @@ type ReferenteRow = {
 
 type DirigenteRow = {
   id: string;
+  numeroFicha: number | null;
   nombre: string;
   primerApellido: string;
   segundoApellido: string | null;
@@ -114,6 +115,7 @@ export type DirigenteDTO = ReturnType<typeof serializeDirigente>;
 
 const dirigenteListSelect = {
   id: true,
+  numeroFicha: true,
   nombre: true,
   primerApellido: true,
   segundoApellido: true,
@@ -137,6 +139,7 @@ export const dirigenteListArgs = {
 
 type DirigenteListRow = {
   id: string;
+  numeroFicha: number | null;
   nombre: string;
   primerApellido: string;
   segundoApellido: string | null;
@@ -165,6 +168,7 @@ export function serializeDirigenteListItem(
   return {
     ...nombres,
     id: d.id,
+    numeroFicha: d.numeroFicha,
     telefonoCelular: d.telefonoCelular,
     fotoUrl: d.fotoUrl,
     tipo: d.tipo,
@@ -200,6 +204,7 @@ export function serializeDirigente(
   return {
     ...nombres,
     id: d.id,
+    numeroFicha: d.numeroFicha,
     fechaNacimiento: d.fechaNacimiento.toISOString().slice(0, 10),
     telefonoCelular: d.telefonoCelular,
     correo: d.correo,

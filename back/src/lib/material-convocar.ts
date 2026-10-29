@@ -1,5 +1,6 @@
 import { prisma } from "./prisma.js";
-import { nombreCompleto } from "./dirigentes.js";
+import { etiquetaNumeroDirigente, nombreCompleto } from "./dirigentes.js";
+import { whereDirigentePorNumeroOId } from "./numero-ficha-dirigente.js";
 import { buildFiltroBuscarDirigentes } from "./filtro-dirigentes.js";
 import { codigoQrDesdeTextoQr } from "./codigo-qr.js";
 
@@ -92,6 +93,7 @@ export type ResultadoConvocarMaterial = {
 
 type DirigenteMin = {
   id: string;
+  numeroFicha: number | null;
   nombre: string;
   primerApellido: string;
   segundoApellido: string | null;
@@ -99,6 +101,7 @@ type DirigenteMin = {
 
 const selectDirigenteMin = {
   id: true,
+  numeroFicha: true,
   nombre: true,
   primerApellido: true,
   segundoApellido: true,
@@ -212,7 +215,9 @@ export async function convocarDirigentesAEventoMaterial(
       resultados.push({
         buscar,
         estado: "ambiguo",
-        candidatos: resolved.candidatos.map((m) => `${nombreCompleto(m)} (${m.id})`),
+        candidatos: resolved.candidatos.map(
+          (m) => `${nombreCompleto(m)} (#${etiquetaNumeroDirigente(m)})`,
+        ),
         mensaje: "Varios dirigentes coinciden; use apellidos completos, QR o ID",
       });
       continue;
@@ -224,10 +229,13 @@ export async function convocarDirigentesAEventoMaterial(
   }
 
   for (const dirigenteIdEntrada of ids) {
-    const dirigente = await prisma.dirigente.findFirst({
-      where: { id: dirigenteIdEntrada, ...whereDirigenteActivo },
-      select: selectDirigenteMin,
-    });
+    const clave = await whereDirigentePorNumeroOId(dirigenteIdEntrada);
+    const dirigente = clave
+      ? await prisma.dirigente.findFirst({
+          where: { ...clave, ...whereDirigenteActivo },
+          select: selectDirigenteMin,
+        })
+      : null;
     if (!dirigente) {
       resultados.push({
         dirigenteIdEntrada,

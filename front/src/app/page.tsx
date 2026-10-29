@@ -14,6 +14,7 @@ import { NOMBRES_COLONIAS_COYOACAN, variantesColoniaParaBusqueda } from "@/lib/c
 import {
   TIPO_DIRIGENTE_LABEL,
   TIPOS_DIRIGENTE,
+  etiquetaNumeroDirigente,
   etiquetaTipoDirigenteCorto,
 } from "@/lib/dirigentes";
 import { esDirigenteBaja, STATUS_DIRIGENTE_LABEL } from "@/lib/dirigente-spec";
@@ -300,7 +301,7 @@ export default function DirigentesPage() {
 
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="badge-muted shrink-0">#{d.id}</span>
+                  <span className="badge-muted shrink-0">#{etiquetaNumeroDirigente(d)}</span>
                   {d.distritoLocal != null ? (
                     <span className="badge-pin shrink-0">Distrito {d.distritoLocal}</span>
                   ) : null}

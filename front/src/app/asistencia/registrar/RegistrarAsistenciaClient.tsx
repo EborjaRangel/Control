@@ -143,7 +143,7 @@ export default function RegistrarAsistenciaClient() {
       setMensaje(texto);
       if (modo === "material" && data.codigo === "NO_CONVOCADO" && data.dirigente?.id) {
         setDetalle(
-          `${data.dirigente.nombreCompleto ?? "Dirigente"} — ID para convocar en Material: ${data.dirigente.id}`,
+          `${data.dirigente.nombreCompleto ?? "Dirigente"} — ID para convocar en Material: ${data.dirigente.numeroFicha ?? data.dirigente.id}`,
         );
       } else {
         setDetalle(data.dirigente?.nombreCompleto ?? null);

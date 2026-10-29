@@ -35,6 +35,24 @@ export {
 
 export { formatMxn, nombreCompleto } from "./composicion-sueldo";
 
+export function numeroDirigenteVisible(d: {
+  id: string;
+  numeroFicha?: number | null;
+}): number | null {
+  if (d.numeroFicha != null) return d.numeroFicha;
+  const n = Number(d.id);
+  return Number.isFinite(n) && n > 0 && Number.isInteger(n) ? n : null;
+}
+
+/** Etiqueta para badge (#410). Si aún no hay ficha, muestra id técnico. */
+export function etiquetaNumeroDirigente(d: {
+  id: string;
+  numeroFicha?: number | null;
+}): string {
+  const n = numeroDirigenteVisible(d);
+  return n != null ? String(n) : d.id;
+}
+
 /** Apellido paterno, apellido materno, nombre (para listados ordenados). */
 export function etiquetaApellidosNombre(d: {
   nombre: string;

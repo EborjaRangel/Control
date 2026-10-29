@@ -501,7 +501,7 @@ router.delete("/:id", requireStaff, async (req, res) => {
 
     const detectado = await prisma.detectado.update({
       where: { id },
-      data: { activo: reactivar },
+      data: reactivar ? { activo: true } : { activo: false, curp: null },
       include: detectadoInclude,
     });
 
@@ -742,7 +742,7 @@ router.delete("/:id/personas/:personaId", requireAuth, async (req, res) => {
 
     const persona = await prisma.personaDetectada.update({
       where: { id: personaId },
-      data: { activo: false },
+      data: { activo: false, curp: null },
     });
 
     const detectado = await prisma.detectado.findUnique({

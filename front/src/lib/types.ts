@@ -64,6 +64,7 @@ export const EMPTY_DIRIGENTE: DirigenteFormValues = {
 
 export type DirigenteDTO = {
   id: string;
+  numeroFicha: number | null;
   nombre: string;
   primerApellido: string;
   segundoApellido: string | null;

@@ -14,6 +14,7 @@ export async function personaDetectadaConCurp(curp: string, excludePersonaId?: s
   return prisma.personaDetectada.findFirst({
     where: {
       curp,
+      activo: true,
       ...(excludePersonaId ? { id: { not: excludePersonaId } } : {}),
     },
   });

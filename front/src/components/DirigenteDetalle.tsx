@@ -6,6 +6,7 @@ import { UploadImage } from "@/components/UploadImage";
 import Link from "next/link";
 import {
   formatMxn,
+  etiquetaNumeroDirigente,
   nombreCompleto,
   TIPO_DIRIGENTE_LABEL,
   type TipoDirigente,
@@ -85,6 +86,7 @@ export function DirigenteDetalle({
           <div className="min-w-0 flex-1">
             <h1 className="page-title break-words">{nombreCompleto(d)}</h1>
             <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className="badge-muted">#{etiquetaNumeroDirigente(d)}</span>
               <span className="badge-pin">
                 {TIPO_DIRIGENTE_LABEL[d.tipo as TipoDirigente] ?? d.tipo}
               </span>

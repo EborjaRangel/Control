@@ -33,7 +33,9 @@ export default function RegistroDifusionDetallePage() {
   if (!registro) return <div className="alert-error">No encontrado</div>;
 
   const volverHref = isStaff
-    ? `/difusion/${registro.campanaId}`
+    ? registro.dirigenteId
+      ? `/difusion/dirigentes/${registro.dirigenteId}`
+      : `/difusion/${registro.campanaId}`
     : user?.dirigenteId
       ? `/difusion/dirigentes/${user.dirigenteId}`
       : "/";

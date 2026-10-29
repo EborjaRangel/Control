@@ -262,8 +262,10 @@ function datosDesdeExcel(fila: CargaDirigente) {
 }
 
 function defaultsParaFila(fila: CargaDirigente) {
+  const numeroFicha = Number(fila.id);
   return {
     id: fila.id,
+    numeroFicha: Number.isInteger(numeroFicha) && numeroFicha > 0 ? numeroFicha : undefined,
     ...datosDesdeExcel(fila),
     fechaNacimiento: new Date("1990-01-01"),
     telefonoCelular: "",

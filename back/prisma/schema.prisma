@@ -116,6 +116,9 @@ enum EstatusReporteServicioUrbano {
 model Dirigente {
   id String @id @default(cuid())
 
+  /// Número consecutivo visible (#410) — único; distinto del id técnico cuando es cuid.
+  numeroFicha Int? @unique
+
   // Datos personales
   nombre          String
   primerApellido  String

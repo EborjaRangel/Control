@@ -78,6 +78,7 @@ import {
   snapshotUsuarioStaff,
 } from "../lib/audit.js";
 import { TIPOS_DIRIGENTE, compararDirigentePorApellidosNombre, compararNumeroDirigente, nombreCompleto } from "../lib/dirigentes.js";
+import { reservarSiguienteNumeroFicha } from "../lib/numero-ficha-dirigente.js";
 import {
   buildFiltroBuscarDirigentes,
   filtroColoniaDirigente,
@@ -750,9 +751,12 @@ router.post("/dirigentes", requireStaff, async (req, res) => {
         throw new Error(`VALIDACION:${duplicado}`);
       }
 
+      const numeroFicha = await reservarSiguienteNumeroFicha(tx);
+
       const created = await tx.dirigente.create({
         data: {
           ...(dirigenteScalarData(guardado) as Prisma.DirigenteUncheckedCreateInput),
+          numeroFicha,
           codigoQr: generarCodigoQr(),
           unidadTerritorialId,
           nomina: {

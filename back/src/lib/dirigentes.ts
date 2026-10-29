@@ -34,15 +34,29 @@ export {
 
 export { formatMxn, nombreCompleto } from "./composicion-sueldo.js";
 
+import {
+  numeroDirigenteVisible as numeroDirigenteVisibleImpl,
+} from "./numero-ficha-dirigente.js";
+
+export {
+  etiquetaNumeroDirigente,
+  numeroDesdeIdLegacy,
+  numeroDirigenteVisible,
+} from "./numero-ficha-dirigente.js";
+
+/** @deprecated Use numeroDirigenteVisible */
 export function numeroDirigente(id: string): number | null {
   const n = Number(id);
   return Number.isFinite(n) ? n : null;
 }
 
-/** Orden numérico por ID de dirigente del Excel (1, 2, 10…). */
-export function compararNumeroDirigente(a: { id: string }, b: { id: string }): number {
-  const na = numeroDirigente(a.id);
-  const nb = numeroDirigente(b.id);
+/** Orden numérico por # de ficha (1, 2, 10…). */
+export function compararNumeroDirigente(
+  a: { id: string; numeroFicha?: number | null },
+  b: { id: string; numeroFicha?: number | null },
+): number {
+  const na = numeroDirigenteVisibleImpl(a);
+  const nb = numeroDirigenteVisibleImpl(b);
   if (na != null && nb != null) return na - nb;
   return a.id.localeCompare(b.id, "es");
 }

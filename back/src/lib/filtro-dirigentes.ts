@@ -76,6 +76,13 @@ export async function buildFiltroBuscarDirigentes(
     { colonia: { contains: texto, mode: modo } },
   ];
 
+  if (!esBusquedaSoloSeccionElectoral(texto) && /^\d{1,6}$/.test(texto)) {
+    const n = Number(texto);
+    if (Number.isInteger(n) && n > 0) {
+      or.unshift({ id: texto }, { numeroFicha: n });
+    }
+  }
+
   const seccion = parseSeccionDeBusqueda(texto);
   if (seccion && !esBusquedaSoloSeccionElectoral(texto)) {
     or.push({ seccionElectoral: seccion });

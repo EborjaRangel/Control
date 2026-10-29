@@ -15,6 +15,7 @@ export async function curpRegistradaEnSistema(
   const detectado = await prisma.detectado.findFirst({
     where: {
       curp,
+      activo: true,
       ...(options?.excludeDetectadoId ? { id: { not: options.excludeDetectadoId } } : {}),
     },
     select: { id: true },
@@ -24,6 +25,7 @@ export async function curpRegistradaEnSistema(
   const persona = await prisma.personaDetectada.findFirst({
     where: {
       curp,
+      activo: true,
       ...(options?.excludePersonaId ? { id: { not: options.excludePersonaId } } : {}),
     },
     select: { id: true },
