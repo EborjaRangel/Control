@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { DifusionMapaAcciones } from "@/components/DifusionMapaAcciones";
 import type { RegistroDifusionDTO } from "@/lib/difusion";
 
@@ -31,16 +31,39 @@ type Props = {
   titulo?: string;
   subtitulo?: string;
   campanaFiltroExtra?: ReactNode;
+  /** Filtro de campaña activo en la página admin (para enlaces de vuelta). */
+  campanaIdFiltro?: string;
+  /** Preselección al volver desde detalle de acción (?dirigenteId=). */
+  initialDirigenteId?: string;
 };
+
+function hrefDetalleRegistroAdmin(
+  registro: RegistroDifusionDTO,
+  dirigenteIdMapa: string,
+  campanaIdFiltro?: string,
+) {
+  const params = new URLSearchParams({ from: "admin" });
+  const dir = dirigenteIdMapa || registro.dirigenteId;
+  if (dir) params.set("dirigenteId", dir);
+  const camp = campanaIdFiltro || registro.campanaId;
+  if (camp) params.set("campanaId", camp);
+  return `/difusion/registros/${registro.id}?${params.toString()}`;
+}
 
 export function DifusionAdminMapaSection({
   registros,
   titulo = "Mapa global de acciones",
   subtitulo = "Globos de todas las fotografías registradas por dirigentes.",
   campanaFiltroExtra,
+  campanaIdFiltro,
+  initialDirigenteId = "",
 }: Props) {
   const [busqueda, setBusqueda] = useState("");
-  const [dirigenteId, setDirigenteId] = useState("");
+  const [dirigenteId, setDirigenteId] = useState(initialDirigenteId);
+
+  useEffect(() => {
+    setDirigenteId(initialDirigenteId);
+  }, [initialDirigenteId]);
 
   const dirigentes = useMemo(() => dirigentesUnicos(registros), [registros]);
 
@@ -117,7 +140,7 @@ export function DifusionAdminMapaSection({
       <DifusionMapaAcciones
         registros={registrosMapa}
         mostrarNumerosGlobo={mostrarNumeros}
-        detalleHref={(r) => `/difusion/registros/${r.id}`}
+        detalleHref={(r) => hrefDetalleRegistroAdmin(r, dirigenteId, campanaIdFiltro)}
       />
     </section>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { DifusionMapaAcciones } from "@/components/DifusionMapaAcciones";
 import { RegistroDifusionForm } from "@/components/RegistroDifusionForm";
@@ -12,6 +12,7 @@ import { formatRegistroDifusionFecha, type CampanaDifusionDTO, type RegistroDifu
 
 export default function RegistroDifusionDetallePage() {
   const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const { isStaff, user } = useAuth();
   const [registro, setRegistro] = useState<RegistroDifusionDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,12 +33,35 @@ export default function RegistroDifusionDetallePage() {
   if (loading) return <p className="text-ink-secondary">Cargando…</p>;
   if (!registro) return <div className="alert-error">No encontrado</div>;
 
+  const volverDesde = searchParams.get("from");
   const volverHref = isStaff
-    ? registro.dirigenteId
-      ? `/difusion/dirigentes/${registro.dirigenteId}`
-      : `/difusion/${registro.campanaId}`
+    ? (() => {
+        if (volverDesde === "admin") {
+          const q = new URLSearchParams();
+          if (registro.dirigenteId) q.set("dirigenteId", registro.dirigenteId);
+          if (registro.campanaId) q.set("campanaId", registro.campanaId);
+          const qs = q.toString();
+          return qs ? `/difusion?${qs}` : "/difusion";
+        }
+        if (registro.dirigenteId) {
+          const q = new URLSearchParams();
+          if (registro.campanaId) q.set("campanaId", registro.campanaId);
+          const qs = q.toString();
+          return qs
+            ? `/difusion/dirigentes/${registro.dirigenteId}?${qs}`
+            : `/difusion/dirigentes/${registro.dirigenteId}`;
+        }
+        return `/difusion/${registro.campanaId}`;
+      })()
     : user?.dirigenteId
-      ? `/difusion/dirigentes/${user.dirigenteId}`
+      ? (() => {
+          const q = new URLSearchParams();
+          if (registro.campanaId) q.set("campanaId", registro.campanaId);
+          const qs = q.toString();
+          return qs
+            ? `/difusion/dirigentes/${user.dirigenteId}?${qs}`
+            : `/difusion/dirigentes/${user.dirigenteId}`;
+        })()
       : "/";
 
   const puedeEditar =

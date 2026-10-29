@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { CampanaDifusionAdminForm } from "@/components/CampanaDifusionAdminForm";
 import { DifusionAdminMapaSection } from "@/components/DifusionAdminMapaSection";
@@ -12,6 +12,8 @@ import type { CampanaDifusionDTO, RegistroDifusionDTO } from "@/lib/difusion";
 export default function CampanaDifusionDetallePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const dirigenteInicial = searchParams.get("dirigenteId") ?? "";
   const { isAdmin } = useAuth();
   const [campana, setCampana] = useState<CampanaDifusionDTO | null>(null);
   const [registros, setRegistros] = useState<RegistroDifusionDTO[]>([]);
@@ -97,6 +99,8 @@ export default function CampanaDifusionDetallePage() {
 
       <DifusionAdminMapaSection
         registros={registros}
+        campanaIdFiltro={id}
+        initialDirigenteId={dirigenteInicial}
         titulo="Acciones en mapa"
         subtitulo={`Registros de la campaña «${campana.titulo}».`}
       />

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppIcon } from "@/components/AppIcon";
 import { DifusionAdminMapaSection } from "@/components/DifusionAdminMapaSection";
@@ -12,10 +12,13 @@ import { formatRegistroDifusionFecha, type CampanaDifusionDTO, type RegistroDifu
 
 export default function DifusionAdminPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAdmin } = useAuth();
   const [campanas, setCampanas] = useState<CampanaDifusionDTO[]>([]);
   const [registros, setRegistros] = useState<RegistroDifusionDTO[]>([]);
-  const [campanaFiltro, setCampanaFiltro] = useState("");
+  const campanaInicial = searchParams.get("campanaId") ?? "";
+  const dirigenteInicial = searchParams.get("dirigenteId") ?? "";
+  const [campanaFiltro, setCampanaFiltro] = useState(campanaInicial);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +39,10 @@ export default function DifusionAdminPage() {
       setLoading(false);
     }
   }, [campanaFiltro]);
+
+  useEffect(() => {
+    setCampanaFiltro(searchParams.get("campanaId") ?? "");
+  }, [searchParams]);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -80,6 +87,8 @@ export default function DifusionAdminPage() {
 
       <DifusionAdminMapaSection
         registros={registros}
+        campanaIdFiltro={campanaFiltro || undefined}
+        initialDirigenteId={dirigenteInicial}
         campanaFiltroExtra={
           <label className="flex min-w-0 flex-col gap-1">
             <span className="label">Filtrar campaña</span>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppIcon } from "@/components/AppIcon";
 import { DifusionMapaAcciones } from "@/components/DifusionMapaAcciones";
@@ -22,6 +22,7 @@ import { etiquetaSeccion } from "@/lib/secciones-electorales";
 
 export default function DirigenteDifusionPage() {
   const { dirigenteId } = useParams<{ dirigenteId: string }>();
+  const searchParams = useSearchParams();
   const { isStaff, user } = useAuth();
   const canAccess = isStaff || canViewOwnDirigente(user, dirigenteId);
   const [panel, setPanel] = useState<DirigenteDifusionPanelDTO | null>(null);
@@ -47,6 +48,11 @@ export default function DirigenteDifusionPage() {
     if (!canAccess) return;
     void load();
   }, [load, canAccess]);
+
+  useEffect(() => {
+    const campanaUrl = searchParams.get("campanaId");
+    if (campanaUrl) setCampanaManual(campanaUrl);
+  }, [searchParams]);
 
   const campanasOpciones = useMemo(
     () => (panel ? campanasDifusionParaDirigente(panel) : []),
@@ -165,7 +171,9 @@ export default function DirigenteDifusionPage() {
             registros={registrosCampana}
             mostrarNumerosGlobo
             animacionAlCambiarKey={campanaId}
-            detalleHref={(r) => `/difusion/registros/${r.id}`}
+            detalleHref={(r) =>
+              `/difusion/registros/${r.id}?from=dirigente&campanaId=${encodeURIComponent(r.campanaId)}`
+            }
           />
         ) : (
           <p className="text-sm text-ink-secondary">Selecciona una campaña para ver el mapa.</p>
@@ -211,7 +219,10 @@ export default function DirigenteDifusionPage() {
                     </td>
                     <td>{formatRegistroDifusionFecha(r.registradoAt)}</td>
                     <td className="text-right">
-                      <Link href={`/difusion/registros/${r.id}`} className="text-sm font-semibold text-pin hover:underline">
+                      <Link
+                        href={`/difusion/registros/${r.id}?from=dirigente&campanaId=${encodeURIComponent(r.campanaId)}`}
+                        className="text-sm font-semibold text-pin hover:underline"
+                      >
                         Ver
                       </Link>
                     </td>
