@@ -16,9 +16,11 @@ export default function DifusionAdminPage() {
   const { isAdmin } = useAuth();
   const [campanas, setCampanas] = useState<CampanaDifusionDTO[]>([]);
   const [registros, setRegistros] = useState<RegistroDifusionDTO[]>([]);
-  const campanaInicial = searchParams.get("campanaId") ?? "";
-  const dirigenteInicial = searchParams.get("dirigenteId") ?? "";
-  const [campanaFiltro, setCampanaFiltro] = useState(campanaInicial);
+  const [campanaFiltro, setCampanaFiltro] = useState(() => searchParams.get("campanaId") ?? "");
+  const [dirigenteFiltro, setDirigenteFiltro] = useState(() => searchParams.get("dirigenteId") ?? "");
+  const [dirigenteNombreHint, setDirigenteNombreHint] = useState(
+    () => searchParams.get("dirigenteNombre") ?? "",
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,9 +28,13 @@ export default function DifusionAdminPage() {
     setLoading(true);
     setError(null);
     try {
+      const mapaParams = new URLSearchParams();
+      if (campanaFiltro) mapaParams.set("campanaId", campanaFiltro);
+      if (dirigenteFiltro) mapaParams.set("dirigenteId", dirigenteFiltro);
+      const mapaQs = mapaParams.toString();
       const [resCampanas, resMapa] = await Promise.all([
         apiFetch("/api/difusion/campanas"),
-        apiFetch(`/api/difusion/registros/mapa${campanaFiltro ? `?campanaId=${encodeURIComponent(campanaFiltro)}` : ""}`),
+        apiFetch(`/api/difusion/registros/mapa${mapaQs ? `?${mapaQs}` : ""}`),
       ]);
       if (!resCampanas.ok || !resMapa.ok) throw new Error("Error al cargar difusión");
       setCampanas((await resCampanas.json()) as CampanaDifusionDTO[]);
@@ -38,10 +44,12 @@ export default function DifusionAdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [campanaFiltro]);
+  }, [campanaFiltro, dirigenteFiltro]);
 
   useEffect(() => {
     setCampanaFiltro(searchParams.get("campanaId") ?? "");
+    setDirigenteFiltro(searchParams.get("dirigenteId") ?? "");
+    setDirigenteNombreHint(searchParams.get("dirigenteNombre") ?? "");
   }, [searchParams]);
 
   useEffect(() => {
@@ -88,7 +96,13 @@ export default function DifusionAdminPage() {
       <DifusionAdminMapaSection
         registros={registros}
         campanaIdFiltro={campanaFiltro || undefined}
-        initialDirigenteId={dirigenteInicial}
+        dirigenteId={dirigenteFiltro}
+        onDirigenteIdChange={(id) => {
+          if (id === dirigenteFiltro) return;
+          setDirigenteFiltro(id);
+          if (!id) setDirigenteNombreHint("");
+        }}
+        dirigenteNombreHint={dirigenteNombreHint}
         campanaFiltroExtra={
           <label className="flex min-w-0 flex-col gap-1">
             <span className="label">Filtrar campaña</span>

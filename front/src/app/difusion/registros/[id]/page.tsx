@@ -39,6 +39,7 @@ export default function RegistroDifusionDetallePage() {
         if (volverDesde === "admin") {
           const q = new URLSearchParams();
           if (registro.dirigenteId) q.set("dirigenteId", registro.dirigenteId);
+          if (registro.dirigenteNombre) q.set("dirigenteNombre", registro.dirigenteNombre);
           if (registro.campanaId) q.set("campanaId", registro.campanaId);
           const qs = q.toString();
           return qs ? `/difusion?${qs}` : "/difusion";

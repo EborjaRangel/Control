@@ -13,19 +13,24 @@ export default function CampanaDifusionDetallePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const dirigenteInicial = searchParams.get("dirigenteId") ?? "";
   const { isAdmin } = useAuth();
   const [campana, setCampana] = useState<CampanaDifusionDTO | null>(null);
   const [registros, setRegistros] = useState<RegistroDifusionDTO[]>([]);
+  const [dirigenteFiltro, setDirigenteFiltro] = useState(() => searchParams.get("dirigenteId") ?? "");
+  const [dirigenteNombreHint, setDirigenteNombreHint] = useState(
+    () => searchParams.get("dirigenteNombre") ?? "",
+  );
   const [editando, setEditando] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const mapaParams = new URLSearchParams({ campanaId: id });
+      if (dirigenteFiltro) mapaParams.set("dirigenteId", dirigenteFiltro);
       const [resC, resR] = await Promise.all([
         apiFetch(`/api/difusion/campanas/${id}`),
-        apiFetch(`/api/difusion/registros/mapa?campanaId=${encodeURIComponent(id)}`),
+        apiFetch(`/api/difusion/registros/mapa?${mapaParams.toString()}`),
       ]);
       if (!resC.ok) throw new Error("No encontrado");
       setCampana((await resC.json()) as CampanaDifusionDTO);
@@ -33,7 +38,12 @@ export default function CampanaDifusionDetallePage() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, dirigenteFiltro]);
+
+  useEffect(() => {
+    setDirigenteFiltro(searchParams.get("dirigenteId") ?? "");
+    setDirigenteNombreHint(searchParams.get("dirigenteNombre") ?? "");
+  }, [searchParams]);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -100,7 +110,13 @@ export default function CampanaDifusionDetallePage() {
       <DifusionAdminMapaSection
         registros={registros}
         campanaIdFiltro={id}
-        initialDirigenteId={dirigenteInicial}
+        dirigenteId={dirigenteFiltro}
+        onDirigenteIdChange={(dirId) => {
+          if (dirId === dirigenteFiltro) return;
+          setDirigenteFiltro(dirId);
+          if (!dirId) setDirigenteNombreHint("");
+        }}
+        dirigenteNombreHint={dirigenteNombreHint}
         titulo="Acciones en mapa"
         subtitulo={`Registros de la campaña «${campana.titulo}».`}
       />
