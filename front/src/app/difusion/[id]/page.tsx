@@ -16,10 +16,8 @@ export default function CampanaDifusionDetallePage() {
   const { isAdmin } = useAuth();
   const [campana, setCampana] = useState<CampanaDifusionDTO | null>(null);
   const [registros, setRegistros] = useState<RegistroDifusionDTO[]>([]);
-  const [dirigenteFiltro, setDirigenteFiltro] = useState(() => searchParams.get("dirigenteId") ?? "");
-  const [dirigenteNombreHint, setDirigenteNombreHint] = useState(
-    () => searchParams.get("dirigenteNombre") ?? "",
-  );
+  const dirigenteFiltro = searchParams.get("dirigenteId") ?? "";
+  const dirigenteNombreHint = searchParams.get("dirigenteNombre") ?? "";
   const [editando, setEditando] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -39,11 +37,6 @@ export default function CampanaDifusionDetallePage() {
       setLoading(false);
     }
   }, [id, dirigenteFiltro]);
-
-  useEffect(() => {
-    setDirigenteFiltro(searchParams.get("dirigenteId") ?? "");
-    setDirigenteNombreHint(searchParams.get("dirigenteNombre") ?? "");
-  }, [searchParams]);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -111,12 +104,17 @@ export default function CampanaDifusionDetallePage() {
         registros={registros}
         campanaIdFiltro={id}
         dirigenteId={dirigenteFiltro}
-        onDirigenteIdChange={(dirId) => {
-          if (dirId === dirigenteFiltro) return;
-          setDirigenteFiltro(dirId);
-          if (!dirId) setDirigenteNombreHint("");
+        onDirigenteIdChange={(dirId, nombre) => {
+          const q = new URLSearchParams();
+          if (dirId) {
+            q.set("dirigenteId", dirId);
+            if (nombre) q.set("dirigenteNombre", nombre);
+          }
+          const qs = q.toString();
+          router.replace(qs ? `/difusion/${id}?${qs}` : `/difusion/${id}`, { scroll: false });
         }}
         dirigenteNombreHint={dirigenteNombreHint}
+        mapaCargando={loading}
         titulo="Acciones en mapa"
         subtitulo={`Registros de la campaña «${campana.titulo}».`}
       />

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { DifusionMapaAcciones } from "@/components/DifusionMapaAcciones";
+import { RegistroDifusionDireccion } from "@/components/RegistroDifusionDireccion";
+import { urlDifusionAdmin } from "@/lib/difusion-admin-url";
 import { RegistroDifusionForm } from "@/components/RegistroDifusionForm";
 import { UploadImage } from "@/components/UploadImage";
 import { useAuth } from "@/components/AuthProvider";
@@ -36,15 +38,7 @@ export default function RegistroDifusionDetallePage() {
   const volverDesde = searchParams.get("from");
   const volverHref = isStaff
     ? (() => {
-        if (volverDesde === "admin") {
-          const q = new URLSearchParams();
-          if (registro.dirigenteId) q.set("dirigenteId", registro.dirigenteId);
-          if (registro.dirigenteNombre) q.set("dirigenteNombre", registro.dirigenteNombre);
-          if (registro.campanaId) q.set("campanaId", registro.campanaId);
-          const qs = q.toString();
-          return qs ? `/difusion?${qs}` : "/difusion";
-        }
-        if (registro.dirigenteId) {
+        if (volverDesde === "dirigente" && registro.dirigenteId) {
           const q = new URLSearchParams();
           if (registro.campanaId) q.set("campanaId", registro.campanaId);
           const qs = q.toString();
@@ -52,7 +46,11 @@ export default function RegistroDifusionDetallePage() {
             ? `/difusion/dirigentes/${registro.dirigenteId}?${qs}`
             : `/difusion/dirigentes/${registro.dirigenteId}`;
         }
-        return `/difusion/${registro.campanaId}`;
+        return urlDifusionAdmin({
+          campanaId: registro.campanaId,
+          dirigenteId: registro.dirigenteId,
+          dirigenteNombre: registro.dirigenteNombre ?? undefined,
+        });
       })()
     : user?.dirigenteId
       ? (() => {
@@ -112,6 +110,8 @@ export default function RegistroDifusionDetallePage() {
           {registro.dirigenteSeccion ? ` · Sección ${registro.dirigenteSeccion}` : ""}
         </p>
       ) : null}
+
+      <RegistroDifusionDireccion lat={registro.lat} lng={registro.lng} />
 
       {registro.campanaEstado === "CERRADA" ? (
         <p className="panel-soft text-sm text-ink-secondary">

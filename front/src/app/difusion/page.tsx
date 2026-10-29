@@ -8,63 +8,93 @@ import { DifusionAdminMapaSection } from "@/components/DifusionAdminMapaSection"
 import { TableWrap } from "@/components/TableWrap";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
-import { formatRegistroDifusionFecha, type CampanaDifusionDTO, type RegistroDifusionDTO } from "@/lib/difusion";
+import { urlDifusionAdmin } from "@/lib/difusion-admin-url";
+import type { CampanaDifusionDTO, RegistroDifusionDTO } from "@/lib/difusion";
 
 export default function DifusionAdminPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAdmin } = useAuth();
+
+  const campanaFiltro = searchParams.get("campanaId") ?? "";
+  const dirigenteFiltro = searchParams.get("dirigenteId") ?? "";
+  const dirigenteNombreHint = searchParams.get("dirigenteNombre") ?? "";
+
   const [campanas, setCampanas] = useState<CampanaDifusionDTO[]>([]);
   const [registros, setRegistros] = useState<RegistroDifusionDTO[]>([]);
-  const [campanaFiltro, setCampanaFiltro] = useState(() => searchParams.get("campanaId") ?? "");
-  const [dirigenteFiltro, setDirigenteFiltro] = useState(() => searchParams.get("dirigenteId") ?? "");
-  const [dirigenteNombreHint, setDirigenteNombreHint] = useState(
-    () => searchParams.get("dirigenteNombre") ?? "",
-  );
-  const [loading, setLoading] = useState(true);
+  const [loadingCampanas, setLoadingCampanas] = useState(true);
+  const [loadingMapa, setLoadingMapa] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    setLoadingCampanas(true);
+    void apiFetch("/api/difusion/campanas")
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Error al cargar campañas");
+        if (!cancelled) setCampanas((await res.json()) as CampanaDifusionDTO[]);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Error");
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingCampanas(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin]);
+
+  const loadMapa = useCallback(async () => {
+    setLoadingMapa(true);
     setError(null);
     try {
       const mapaParams = new URLSearchParams();
       if (campanaFiltro) mapaParams.set("campanaId", campanaFiltro);
       if (dirigenteFiltro) mapaParams.set("dirigenteId", dirigenteFiltro);
       const mapaQs = mapaParams.toString();
-      const [resCampanas, resMapa] = await Promise.all([
-        apiFetch("/api/difusion/campanas"),
-        apiFetch(`/api/difusion/registros/mapa${mapaQs ? `?${mapaQs}` : ""}`),
-      ]);
-      if (!resCampanas.ok || !resMapa.ok) throw new Error("Error al cargar difusión");
-      setCampanas((await resCampanas.json()) as CampanaDifusionDTO[]);
+      const resMapa = await apiFetch(`/api/difusion/registros/mapa${mapaQs ? `?${mapaQs}` : ""}`);
+      if (!resMapa.ok) throw new Error("Error al cargar mapa");
       setRegistros((await resMapa.json()) as RegistroDifusionDTO[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
+      setRegistros([]);
     } finally {
-      setLoading(false);
+      setLoadingMapa(false);
     }
   }, [campanaFiltro, dirigenteFiltro]);
-
-  useEffect(() => {
-    setCampanaFiltro(searchParams.get("campanaId") ?? "");
-    setDirigenteFiltro(searchParams.get("dirigenteId") ?? "");
-    setDirigenteNombreHint(searchParams.get("dirigenteNombre") ?? "");
-  }, [searchParams]);
 
   useEffect(() => {
     if (!isAdmin) {
       router.replace("/");
       return;
     }
-    void load();
-  }, [isAdmin, router, load]);
+    void loadMapa();
+  }, [isAdmin, router, loadMapa]);
 
   const activas = useMemo(() => campanas.filter((c) => c.estado === "ACTIVA").length, [campanas]);
 
+  function actualizarFiltros(next: {
+    campanaId?: string;
+    dirigenteId?: string;
+    dirigenteNombre?: string;
+  }) {
+    router.replace(
+      urlDifusionAdmin({
+        campanaId: next.campanaId ?? "",
+        dirigenteId: next.dirigenteId ?? "",
+        dirigenteNombre: next.dirigenteId ? next.dirigenteNombre : undefined,
+      }),
+      { scroll: false },
+    );
+  }
+
   if (!isAdmin) return null;
 
-  if (loading) {
+  const loadingInicial = loadingCampanas && campanas.length === 0;
+
+  if (loadingInicial) {
     return (
       <div className="flex items-center gap-3 text-ink-secondary">
         <span className="size-5 animate-pulse rounded-full bg-pin-light" />
@@ -82,7 +112,9 @@ export default function DifusionAdminPage() {
             Difusión
           </h1>
           <p className="page-subtitle">
-            Campañas de difusión · {activas} activa(s) · {registros.length} acción(es) en mapa
+            Campañas de difusión · {activas} activa(s) ·{" "}
+            {loadingMapa ? "…" : `${registros.length} acción(es) en mapa`}
+            {dirigenteFiltro ? " (dirigente filtrado)" : ""}
           </p>
         </div>
         <Link href="/difusion/nuevo" className="btn-primary btn-responsive">
@@ -97,19 +129,28 @@ export default function DifusionAdminPage() {
         registros={registros}
         campanaIdFiltro={campanaFiltro || undefined}
         dirigenteId={dirigenteFiltro}
-        onDirigenteIdChange={(id) => {
-          if (id === dirigenteFiltro) return;
-          setDirigenteFiltro(id);
-          if (!id) setDirigenteNombreHint("");
-        }}
         dirigenteNombreHint={dirigenteNombreHint}
+        mapaCargando={loadingMapa}
+        onDirigenteIdChange={(id, nombre) => {
+          actualizarFiltros({
+            campanaId: campanaFiltro,
+            dirigenteId: id,
+            dirigenteNombre: nombre,
+          });
+        }}
         campanaFiltroExtra={
           <label className="flex min-w-0 flex-col gap-1">
             <span className="label">Filtrar campaña</span>
             <select
               className="input"
               value={campanaFiltro}
-              onChange={(e) => setCampanaFiltro(e.target.value)}
+              onChange={(e) => {
+                actualizarFiltros({
+                  campanaId: e.target.value,
+                  dirigenteId: dirigenteFiltro,
+                  dirigenteNombre: dirigenteNombreHint,
+                });
+              }}
             >
               <option value="">Todas</option>
               {campanas.map((c) => (

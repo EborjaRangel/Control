@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { DifusionMapaAcciones } from "@/components/DifusionMapaAcciones";
 import type { RegistroDifusionDTO } from "@/lib/difusion";
 
@@ -31,13 +31,11 @@ type Props = {
   titulo?: string;
   subtitulo?: string;
   campanaFiltroExtra?: ReactNode;
-  /** Filtro de campaña activo en la página admin (para enlaces de vuelta). */
   campanaIdFiltro?: string;
-  /** Dirigente seleccionado en mapa (controlado por la página). */
   dirigenteId: string;
-  onDirigenteIdChange: (dirigenteId: string) => void;
-  /** Nombre para el campo buscar al volver (?dirigenteNombre=). */
+  onDirigenteIdChange: (dirigenteId: string, nombre?: string) => void;
   dirigenteNombreHint?: string;
+  mapaCargando?: boolean;
 };
 
 function hrefDetalleRegistroAdmin(
@@ -63,31 +61,34 @@ export function DifusionAdminMapaSection({
   dirigenteId,
   onDirigenteIdChange,
   dirigenteNombreHint = "",
+  mapaCargando = false,
 }: Props) {
-  const [busqueda, setBusqueda] = useState(dirigenteNombreHint);
-
-  useEffect(() => {
-    if (dirigenteNombreHint) {
-      setBusqueda(dirigenteNombreHint);
-      return;
-    }
-    if (!dirigenteId) {
-      setBusqueda("");
-      return;
-    }
-    const nombre =
-      registros.find((r) => r.dirigenteId === dirigenteId)?.dirigenteNombre ??
-      dirigentesUnicos(registros).find((d) => d.id === dirigenteId)?.nombre;
-    if (nombre) setBusqueda(nombre);
-  }, [dirigenteId, dirigenteNombreHint, registros]);
+  const [busquedaSinFiltro, setBusquedaSinFiltro] = useState("");
 
   const dirigentes = useMemo(() => dirigentesUnicos(registros), [registros]);
 
-  const dirigentesFiltrados = useMemo(() => {
-    const q = normalizarBusqueda(busqueda);
+  const nombreDirigenteActivo =
+    dirigentes.find((d) => d.id === dirigenteId)?.nombre ??
+    registros.find((r) => r.dirigenteId === dirigenteId)?.dirigenteNombre ??
+    dirigenteNombreHint ||
+    "";
+
+  const busquedaMostrada = dirigenteId ? nombreDirigenteActivo : busquedaSinFiltro;
+
+  const dirigentesFiltradosBusqueda = useMemo(() => {
+    const q = normalizarBusqueda(busquedaMostrada);
     if (!q) return dirigentes;
     return dirigentes.filter((d) => normalizarBusqueda(d.nombre).includes(q));
-  }, [dirigentes, busqueda]);
+  }, [dirigentes, busquedaMostrada]);
+
+  const opcionesVerMapa = useMemo(() => {
+    const list = [...dirigentesFiltradosBusqueda];
+    if (dirigenteId && nombreDirigenteActivo && !list.some((d) => d.id === dirigenteId)) {
+      list.push({ id: dirigenteId, nombre: nombreDirigenteActivo });
+      list.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+    }
+    return list;
+  }, [dirigentesFiltradosBusqueda, dirigenteId, nombreDirigenteActivo]);
 
   const registrosMapa = useMemo(() => {
     if (!dirigenteId) return registros;
@@ -96,21 +97,19 @@ export function DifusionAdminMapaSection({
 
   const mostrarNumeros = Boolean(dirigenteId);
 
-  const nombreDirigenteActivo =
-    dirigentes.find((d) => d.id === dirigenteId)?.nombre ??
-    registros.find((r) => r.dirigenteId === dirigenteId)?.dirigenteNombre ??
-    (dirigenteId ? "dirigente" : null);
-
   function elegirDirigentePorNombre(nombreEscrito: string) {
     const q = normalizarBusqueda(nombreEscrito);
     if (!q) {
       onDirigenteIdChange("");
+      setBusquedaSinFiltro("");
       return;
     }
     const match =
       dirigentes.find((d) => normalizarBusqueda(d.nombre) === q) ??
       dirigentes.find((d) => normalizarBusqueda(d.nombre).includes(q));
-    if (match && match.id !== dirigenteId) onDirigenteIdChange(match.id);
+    if (match) {
+      onDirigenteIdChange(match.id, match.nombre);
+    }
   }
 
   return (
@@ -128,19 +127,28 @@ export function DifusionAdminMapaSection({
               type="search"
               className="input"
               placeholder="Nombre o apellido…"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              onBlur={() => elegirDirigentePorNombre(busqueda)}
+              value={busquedaMostrada}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (dirigenteId) {
+                  onDirigenteIdChange("");
+                }
+                setBusquedaSinFiltro(v);
+              }}
+              onBlur={() => {
+                if (!dirigenteId) elegirDirigentePorNombre(busquedaSinFiltro);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  elegirDirigentePorNombre(busqueda);
+                  if (dirigenteId) return;
+                  elegirDirigentePorNombre(busquedaSinFiltro);
                 }
               }}
               list="difusion-dirigentes-list"
             />
             <datalist id="difusion-dirigentes-list">
-              {dirigentesFiltrados.map((d) => (
+              {dirigentes.map((d) => (
                 <option key={d.id} value={d.nombre} />
               ))}
             </datalist>
@@ -152,17 +160,17 @@ export function DifusionAdminMapaSection({
               value={dirigenteId}
               onChange={(e) => {
                 const id = e.target.value;
-                onDirigenteIdChange(id);
                 if (!id) {
-                  setBusqueda("");
+                  onDirigenteIdChange("");
+                  setBusquedaSinFiltro("");
                   return;
                 }
-                const d = dirigentes.find((x) => x.id === id);
-                if (d) setBusqueda(d.nombre);
+                const d = opcionesVerMapa.find((x) => x.id === id) ?? dirigentes.find((x) => x.id === id);
+                onDirigenteIdChange(id, d?.nombre);
               }}
             >
               <option value="">Todos (sin número en globo)</option>
-              {dirigentesFiltrados.map((d) => (
+              {opcionesVerMapa.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.nombre}
                 </option>
@@ -175,20 +183,28 @@ export function DifusionAdminMapaSection({
       {dirigenteId ? (
         <p className="text-sm text-ink-secondary">
           Mostrando acciones de{" "}
-          <span className="font-semibold text-ink">{nombreDirigenteActivo}</span>
+          <span className="font-semibold text-ink">{nombreDirigenteActivo || "dirigente"}</span>
           . Los globos llevan el número de acción (1…N) en cada campaña.
         </p>
       ) : (
         <p className="text-sm text-ink-secondary">
-          Vista general: {registros.length} acción(es). Elige un dirigente para ver numeración por campaña.
+          Vista general: {mapaCargando ? "…" : registros.length} acción(es). Elige un dirigente para ver numeración
+          por campaña.
         </p>
       )}
 
-      <DifusionMapaAcciones
-        registros={registrosMapa}
-        mostrarNumerosGlobo={mostrarNumeros}
-        detalleHref={(r) => hrefDetalleRegistroAdmin(r, dirigenteId, campanaIdFiltro)}
-      />
+      {mapaCargando ? (
+        <div className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-8 text-ink-secondary">
+          <span className="size-5 animate-pulse rounded-full bg-pin-light" />
+          Cargando acciones en mapa…
+        </div>
+      ) : (
+        <DifusionMapaAcciones
+          registros={registrosMapa}
+          mostrarNumerosGlobo={mostrarNumeros}
+          detalleHref={(r) => hrefDetalleRegistroAdmin(r, dirigenteId, campanaIdFiltro)}
+        />
+      )}
     </section>
   );
 }
