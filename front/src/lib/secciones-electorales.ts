@@ -49,8 +49,19 @@ export const CENTRO_DISTRITO_LOCAL: Record<number, { lat: number; lng: number }>
   30: { lat: 19.328, lng: -99.152 },
 };
 
+export const SECCION_ELECTORAL_NO_APLICA = "0";
+
 export function esSeccionValida(seccion: string): boolean {
   return seccionSet.has(seccion);
+}
+
+export function esSeccionValidaParaDirigente(tipo: string, seccion: string): boolean {
+  if (seccion === SECCION_ELECTORAL_NO_APLICA) {
+    return (
+      tipo === "ADMINISTRATIVO" || tipo === "ENTIDAD" || tipo === "PARTIDO_POLITICO"
+    );
+  }
+  return esSeccionValida(seccion);
 }
 
 export function distritoLocalDeSeccion(seccion: string): number | null {
@@ -78,5 +89,6 @@ export function seccionesParaSelect(
 }
 
 export function etiquetaSeccion(seccion: string): string {
+  if (seccion === SECCION_ELECTORAL_NO_APLICA) return "Sin sección electoral (0)";
   return `Sección ${seccion}`;
 }

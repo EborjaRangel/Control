@@ -24,13 +24,16 @@ enum RolUsuario {
   RG
 }
 
-/// Clasificación del dirigente: D1–D4 por nivel y Transversales
+/// Clasificación del dirigente: campo (D1–D4), transversal u organizacional
 enum TipoDirigente {
   D1
   D2
   D3
   D4
   TRANSVERSAL
+  ADMINISTRATIVO
+  ENTIDAD
+  PARTIDO_POLITICO
 }
 
 /// Estado operativo del dirigente (spec Excel)

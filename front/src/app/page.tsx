@@ -13,7 +13,7 @@ import { cn } from "@/lib/cn";
 import { NOMBRES_COLONIAS_COYOACAN, variantesColoniaParaBusqueda } from "@/lib/colonias";
 import {
   TIPO_DIRIGENTE_LABEL,
-  TIPOS_DIRIGENTE,
+  TIPOS_DIRIGENTE_FILTRO_GRUPOS,
   etiquetaNumeroDirigente,
   etiquetaTipoDirigenteCorto,
 } from "@/lib/dirigentes";
@@ -194,9 +194,9 @@ export default function DirigentesPage() {
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="block sm:col-span-2 lg:col-span-3">
+          <div className="block space-y-3 sm:col-span-2 lg:col-span-3">
             <span className="label">Tipo de dirigente</span>
-            <div className="mt-1.5 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 className={!tipo ? "btn-primary btn-sm btn-responsive" : "btn-secondary btn-sm btn-responsive"}
@@ -204,18 +204,28 @@ export default function DirigentesPage() {
               >
                 Todos
               </button>
-              {TIPOS_DIRIGENTE.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  className={tipo === t ? "btn-primary btn-sm btn-responsive" : "btn-secondary btn-sm btn-responsive"}
-                  onClick={() => setTipo(t)}
-                >
-                  {etiquetaTipoDirigenteCorto(t)}
-                </button>
-              ))}
             </div>
-          </label>
+            {TIPOS_DIRIGENTE_FILTRO_GRUPOS.map((grupo) => (
+              <div key={grupo.titulo} className="space-y-1.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-ink-secondary">{grupo.titulo}</p>
+                <div className="flex flex-wrap gap-2">
+                  {grupo.tipos.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      className={
+                        tipo === t ? "btn-primary btn-sm btn-responsive" : "btn-secondary btn-sm btn-responsive"
+                      }
+                      onClick={() => setTipo(t)}
+                      title={TIPO_DIRIGENTE_LABEL[t]}
+                    >
+                      {etiquetaTipoDirigenteCorto(t)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
 
           <label className="block">
             <span className="label">Colonia</span>

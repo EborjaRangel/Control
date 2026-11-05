@@ -7,6 +7,9 @@ export const CUPO_REPORTES_SERVICIO_URBANO: Record<TipoDirigente, number> = {
   D3: 2,
   D4: 2,
   TRANSVERSAL: 2,
+  ADMINISTRATIVO: 0,
+  ENTIDAD: 0,
+  PARTIDO_POLITICO: 0,
 };
 
 const ESTATUS_EN_TRAMITE: EstatusReporteServicioUrbano[] = ["ENVIADO", "RECIBIDO"];

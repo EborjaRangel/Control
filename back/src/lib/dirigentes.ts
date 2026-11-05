@@ -1,12 +1,36 @@
-export const TIPOS_DIRIGENTE = ["D1", "D2", "D3", "D4", "TRANSVERSAL"] as const;
+export const TIPOS_DIRIGENTE_CAMPO = ["D1", "D2", "D3", "D4"] as const;
+export const TIPOS_DIRIGENTE_ORGANIZACION = [
+  "TRANSVERSAL",
+  "ADMINISTRATIVO",
+  "ENTIDAD",
+  "PARTIDO_POLITICO",
+] as const;
+
+export const TIPOS_DIRIGENTE = [
+  ...TIPOS_DIRIGENTE_CAMPO,
+  ...TIPOS_DIRIGENTE_ORGANIZACION,
+] as const;
 export type TipoDirigente = (typeof TIPOS_DIRIGENTE)[number];
+
+export const TIPOS_SECCION_ELECTORAL_CERO = [
+  "ADMINISTRATIVO",
+  "ENTIDAD",
+  "PARTIDO_POLITICO",
+] as const;
+
+export function tipoPermiteSeccionCero(tipo: string): boolean {
+  return (TIPOS_SECCION_ELECTORAL_CERO as readonly string[]).includes(tipo);
+}
 
 export const TIPO_DIRIGENTE_LABEL: Record<TipoDirigente, string> = {
   D1: "D1 — Más experiencia",
   D2: "D2 — Avanzado",
   D3: "D3 — Intermedio",
   D4: "D4 — Principiante",
-  TRANSVERSAL: "Transversales",
+  TRANSVERSAL: "Transversal",
+  ADMINISTRATIVO: "Administrativo",
+  ENTIDAD: "Entidad",
+  PARTIDO_POLITICO: "Partido político",
 };
 
 export const TIPO_DIRIGENTE_CORTO: Record<TipoDirigente, string> = {
@@ -14,7 +38,10 @@ export const TIPO_DIRIGENTE_CORTO: Record<TipoDirigente, string> = {
   D2: "D2",
   D3: "D3",
   D4: "D4",
-  TRANSVERSAL: "Transversales",
+  TRANSVERSAL: "Transversal",
+  ADMINISTRATIVO: "Administrativo",
+  ENTIDAD: "Entidad",
+  PARTIDO_POLITICO: "Partido político",
 };
 
 export function etiquetaTipoDirigenteCorto(tipo: string): string {
@@ -34,9 +61,7 @@ export {
 
 export { formatMxn, nombreCompleto } from "./composicion-sueldo.js";
 
-import {
-  numeroDirigenteVisible as numeroDirigenteVisibleImpl,
-} from "./numero-ficha-dirigente.js";
+import { numeroDirigenteVisible as numeroDirigenteVisibleImpl } from "./numero-ficha-dirigente.js";
 
 export {
   etiquetaNumeroDirigente,
@@ -50,7 +75,6 @@ export function numeroDirigente(id: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Orden numérico por # de ficha (1, 2, 10…). */
 export function compararNumeroDirigente(
   a: { id: string; numeroFicha?: number | null },
   b: { id: string; numeroFicha?: number | null },
@@ -61,7 +85,6 @@ export function compararNumeroDirigente(
   return a.id.localeCompare(b.id, "es");
 }
 
-/** Orden alfabético: apellido paterno, apellido materno, nombre. */
 export function compararDirigentePorApellidosNombre(
   a: { nombre: string; primerApellido: string; segundoApellido?: string | null },
   b: { nombre: string; primerApellido: string; segundoApellido?: string | null },

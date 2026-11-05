@@ -68,9 +68,9 @@ export function DifusionAdminMapaSection({
   const dirigentes = useMemo(() => dirigentesUnicos(registros), [registros]);
 
   const nombreDirigenteActivo =
-    dirigentes.find((d) => d.id === dirigenteId)?.nombre ??
-    registros.find((r) => r.dirigenteId === dirigenteId)?.dirigenteNombre ??
-    dirigenteNombreHint ||
+    (dirigentes.find((d) => d.id === dirigenteId)?.nombre ??
+      registros.find((r) => r.dirigenteId === dirigenteId)?.dirigenteNombre ??
+      dirigenteNombreHint) ||
     "";
 
   const busquedaMostrada = dirigenteId ? nombreDirigenteActivo : busquedaSinFiltro;

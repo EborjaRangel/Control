@@ -10,6 +10,9 @@ export function validarSeccionCapturaDirigente(
   seccionDirigente: string,
   seccionCaptura: string,
 ): string | null {
+  if (seccionDirigente === "0") {
+    return "Este perfil no registra detectados por sección electoral";
+  }
   if (!esSeccionValida(seccionCaptura)) {
     return "Sección electoral no válida para Coyoacán";
   }

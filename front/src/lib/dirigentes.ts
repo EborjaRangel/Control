@@ -1,12 +1,44 @@
-export const TIPOS_DIRIGENTE = ["D1", "D2", "D3", "D4", "TRANSVERSAL"] as const;
+export const TIPOS_DIRIGENTE_CAMPO = ["D1", "D2", "D3", "D4"] as const;
+export const TIPOS_DIRIGENTE_ORGANIZACION = [
+  "TRANSVERSAL",
+  "ADMINISTRATIVO",
+  "ENTIDAD",
+  "PARTIDO_POLITICO",
+] as const;
+
+export const TIPOS_DIRIGENTE = [
+  ...TIPOS_DIRIGENTE_CAMPO,
+  ...TIPOS_DIRIGENTE_ORGANIZACION,
+] as const;
 export type TipoDirigente = (typeof TIPOS_DIRIGENTE)[number];
+
+export const TIPOS_SECCION_ELECTORAL_CERO = [
+  "ADMINISTRATIVO",
+  "ENTIDAD",
+  "PARTIDO_POLITICO",
+] as const;
+
+export function tipoPermiteSeccionCero(tipo: string): boolean {
+  return (TIPOS_SECCION_ELECTORAL_CERO as readonly string[]).includes(tipo);
+}
+
+export const TIPOS_DIRIGENTE_FILTRO_GRUPOS: {
+  titulo: string;
+  tipos: readonly TipoDirigente[];
+}[] = [
+  { titulo: "Dirigente de campo", tipos: TIPOS_DIRIGENTE_CAMPO },
+  { titulo: "Organización", tipos: ["TRANSVERSAL", "ADMINISTRATIVO", "ENTIDAD", "PARTIDO_POLITICO"] },
+];
 
 export const TIPO_DIRIGENTE_LABEL: Record<TipoDirigente, string> = {
   D1: "D1 — Más experiencia",
   D2: "D2 — Avanzado",
   D3: "D3 — Intermedio",
   D4: "D4 — Principiante",
-  TRANSVERSAL: "Transversales",
+  TRANSVERSAL: "Transversal",
+  ADMINISTRATIVO: "Administrativo",
+  ENTIDAD: "Entidad",
+  PARTIDO_POLITICO: "Partido político",
 };
 
 export const TIPO_DIRIGENTE_CORTO: Record<TipoDirigente, string> = {
@@ -14,7 +46,10 @@ export const TIPO_DIRIGENTE_CORTO: Record<TipoDirigente, string> = {
   D2: "D2",
   D3: "D3",
   D4: "D4",
-  TRANSVERSAL: "Transversales",
+  TRANSVERSAL: "Transversal",
+  ADMINISTRATIVO: "Administrativo",
+  ENTIDAD: "Entidad",
+  PARTIDO_POLITICO: "Partido político",
 };
 
 export function etiquetaTipoDirigenteCorto(tipo: string): string {
@@ -44,7 +79,6 @@ export function numeroDirigenteVisible(d: {
   return Number.isFinite(n) && n > 0 && Number.isInteger(n) ? n : null;
 }
 
-/** Etiqueta para badge (#410). Si aún no hay ficha, muestra id técnico. */
 export function etiquetaNumeroDirigente(d: {
   id: string;
   numeroFicha?: number | null;
@@ -53,7 +87,6 @@ export function etiquetaNumeroDirigente(d: {
   return n != null ? String(n) : d.id;
 }
 
-/** Apellido paterno, apellido materno, nombre (para listados ordenados). */
 export function etiquetaApellidosNombre(d: {
   nombre: string;
   primerApellido: string;
@@ -65,7 +98,6 @@ export function etiquetaApellidosNombre(d: {
     .join(" ");
 }
 
-/** Orden alfabético: apellido paterno, apellido materno, nombre. */
 export function compararDirigentePorApellidosNombre(
   a: { nombre: string; primerApellido: string; segundoApellido?: string | null },
   b: { nombre: string; primerApellido: string; segundoApellido?: string | null },

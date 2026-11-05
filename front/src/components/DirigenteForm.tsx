@@ -21,8 +21,11 @@ import {
 } from "@/lib/secciones-electorales";
 import {
   TIPO_DIRIGENTE_LABEL,
-  TIPOS_DIRIGENTE,
+  TIPOS_DIRIGENTE_CAMPO,
+  TIPOS_DIRIGENTE_ORGANIZACION,
+  tipoPermiteSeccionCero,
 } from "@/lib/dirigentes";
+import { SECCION_ELECTORAL_NO_APLICA } from "@/lib/secciones-electorales";
 import { apiFetch } from "@/lib/api";
 import { etiquetaEstadoSubida, uploadImageFile, type UploadImageStatus } from "@/lib/upload-image";
 import type { UnidadTerritorialResumen } from "@/lib/unidades-territoriales";
@@ -95,8 +98,62 @@ type Props = {
   dirigenteId?: string;
 };
 
+function SincronizarTipoSeccion() {
+  const { values, setFieldValue } = useFormikContext<DirigenteFormValues>();
+
+  useEffect(() => {
+    if (tipoPermiteSeccionCero(values.tipo)) {
+      if (values.seccionElectoral !== SECCION_ELECTORAL_NO_APLICA) {
+        void setFieldValue("seccionElectoral", SECCION_ELECTORAL_NO_APLICA);
+      }
+      return;
+    }
+    if (values.seccionElectoral === SECCION_ELECTORAL_NO_APLICA) {
+      void setFieldValue("seccionElectoral", "");
+    }
+  }, [values.tipo, values.seccionElectoral, setFieldValue]);
+
+  return null;
+}
+
+function ClasificacionElectoralSection() {
+  return (
+    <section className="card-section space-y-4">
+      <h2 className="section-title">Clasificación electoral</h2>
+      <p className="text-sm text-ink-secondary">
+        Elige la categoría antes de capturar datos personales. Puedes cambiarla al editar (por ejemplo de
+        administrativo a dirigente de campo).
+      </p>
+      <FormSelect label="Tipo de dirigente" name="tipo">
+        <optgroup label="Dirigente de campo">
+          {TIPOS_DIRIGENTE_CAMPO.map((t) => (
+            <option key={t} value={t}>
+              {TIPO_DIRIGENTE_LABEL[t]}
+            </option>
+          ))}
+        </optgroup>
+        <optgroup label="Transversal y organización">
+          {TIPOS_DIRIGENTE_ORGANIZACION.map((t) => (
+            <option key={t} value={t}>
+              {TIPO_DIRIGENTE_LABEL[t]}
+            </option>
+          ))}
+        </optgroup>
+      </FormSelect>
+    </section>
+  );
+}
+
 function SeccionSelect() {
   const { values, setFieldValue } = useFormikContext<DirigenteFormValues>();
+
+  if (tipoPermiteSeccionCero(values.tipo)) {
+    return (
+      <FormSelect label="Sección electoral" name="seccionElectoral" disabled>
+        <option value={SECCION_ELECTORAL_NO_APLICA}>{etiquetaSeccion(SECCION_ELECTORAL_NO_APLICA)}</option>
+      </FormSelect>
+    );
+  }
   const [seccionesColonia, setSeccionesColonia] = useState<string[]>([]);
   const [filtrado, setFiltrado] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -520,7 +577,9 @@ export function DirigenteForm({
     >
       {({ isSubmitting, submitCount, errors, values }) => (
         <Form className="space-y-8">
+          <SincronizarTipoSeccion />
           <CredencialesAcceso modo={modo} />
+          <ClasificacionElectoralSection />
           <section className="card-section space-y-4">
             <h2 className="section-title">Datos personales</h2>
             <div className="grid gap-4 form-grid">
@@ -572,19 +631,6 @@ export function DirigenteForm({
           </section>
 
           <section className="card-section space-y-4">
-            <h2 className="section-title">Clasificación electoral</h2>
-            <div className="grid gap-4 form-grid">
-              <FormSelect label="Tipo de dirigente" name="tipo">
-                {TIPOS_DIRIGENTE.map((t) => (
-                  <option key={t} value={t}>
-                    {TIPO_DIRIGENTE_LABEL[t]}
-                  </option>
-                ))}
-              </FormSelect>
-            </div>
-          </section>
-
-          <section className="card-section space-y-4">
             <h2 className="section-title">Dirección (Coyoacán)</h2>
             <div className="grid gap-4 form-grid">
               <CodigoPostalColoniaFields modo={modo} />
@@ -600,10 +646,16 @@ export function DirigenteForm({
             <div className="grid gap-4 form-grid">
               <SeccionSelect />
             </div>
-            <SeccionElectoralMap
-              seccion={values.seccionElectoral}
-              colonia={values.colonia || undefined}
-            />
+            {values.seccionElectoral && values.seccionElectoral !== SECCION_ELECTORAL_NO_APLICA ? (
+              <SeccionElectoralMap
+                seccion={values.seccionElectoral}
+                colonia={values.colonia || undefined}
+              />
+            ) : (
+              <p className="text-sm text-ink-secondary">
+                No aplica mapa de sección para administrativo, entidad o partido político (sección 0).
+              </p>
+            )}
           </section>
 
           {(apiError || (submitCount > 0 && Object.keys(errors).length > 0)) ? (

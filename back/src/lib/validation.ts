@@ -1,7 +1,7 @@
 import * as Yup from "yup";
 import { TIPOS_DIRIGENTE } from "./dirigentes.js";
 import { COLONIAS_COYOACAN, coloniaCoincideConCp, CODIGOS_POSTALES_COYOACAN, esColoniaValida } from "./colonias.js";
-import { esSeccionValida } from "./secciones-electorales.js";
+import { esSeccionValidaParaDirigente } from "./secciones-electorales.js";
 import { credencialesCreateSchema, credencialesUpdateSchema } from "./auth-validation.js";
 import { fechaNacimientoApiSchema } from "./fecha-nacimiento.js";
 import { dirigenteExtraSchema } from "./validation-dirigente-extra.js";
@@ -43,11 +43,11 @@ export const dirigenteSchema = Yup.object({
     .required("El tipo de dirigente es obligatorio"),
   seccionElectoral: Yup.string()
     .required("La sección electoral es obligatoria")
-    .test(
-      "seccion-valida",
-      "Selecciona una sección electoral de Coyoacán",
-      (v) => Boolean(v && esSeccionValida(v)),
-    ),
+    .test("seccion-valida", "Selecciona una sección válida para este tipo", function (v) {
+      const { tipo } = this.parent as { tipo?: string };
+      if (!v || !tipo) return false;
+      return esSeccionValidaParaDirigente(tipo, v);
+    }),
 
   colonia: Yup.string()
     .required("La colonia es obligatoria")
