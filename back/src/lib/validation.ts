@@ -24,23 +24,28 @@ function cadenaNula(value: unknown): string | null {
 }
 
 export const dirigenteSchema = Yup.object({
+  tipo: Yup.string()
+    .oneOf([...TIPOS_DIRIGENTE], "Tipo de dirigente inválido")
+    .required("El tipo de dirigente es obligatorio"),
+
   nombre: Yup.string().trim().required("El nombre es obligatorio"),
   primerApellido: Yup.string().trim().required("El primer apellido es obligatorio"),
   segundoApellido: Yup.string().trim().nullable(),
   fechaNacimiento: fechaNacimientoApiSchema,
   telefonoCelular: Yup.string()
     .trim()
-    .when("tipo", ([tipo], schema) => {
-      if (tipoPermiteSeccionCero(String(tipo ?? ""))) {
-        return schema.test(
-          "celular-opcional",
-          "Si capturas celular, deben ser 10 dígitos",
-          (v) => !v || /^\d{10}$/.test(v),
-        );
+    .test("celular-segun-tipo", "Revisa el celular", function (v) {
+      const tipo = String((this.parent as { tipo?: string }).tipo ?? "");
+      if (tipoPermiteSeccionCero(tipo)) {
+        if (!v) return true;
+        return /^\d{10}$/.test(v)
+          ? true
+          : this.createError({ message: "Si capturas celular, deben ser 10 dígitos" });
       }
-      return schema
-        .matches(/^\d{10}$/, "El celular debe tener 10 dígitos")
-        .required("El celular es obligatorio");
+      if (!v) return this.createError({ message: "El celular es obligatorio" });
+      return /^\d{10}$/.test(v)
+        ? true
+        : this.createError({ message: "El celular debe tener 10 dígitos" });
     }),
   correo: Yup.string()
     .trim()
@@ -48,50 +53,66 @@ export const dirigenteSchema = Yup.object({
     .required("El correo es obligatorio"),
   fotoUrl: Yup.string().nullable(),
 
-  tipo: Yup.string()
-    .oneOf([...TIPOS_DIRIGENTE], "Tipo de dirigente inválido")
-    .required("El tipo de dirigente es obligatorio"),
-  seccionElectoral: Yup.string()
-    .required("La sección electoral es obligatoria")
-    .test("seccion-valida", "Selecciona una sección válida para este tipo", function (v) {
-      const { tipo } = this.parent as { tipo?: string };
-      if (!v || !tipo) return false;
+  seccionElectoral: Yup.string().test(
+    "seccion-valida",
+    "Selecciona una sección válida para este tipo",
+    function (v) {
+      const tipo = String((this.parent as { tipo?: string }).tipo ?? "");
+      if (!tipo) return false;
+      if (tipoPermiteSeccionCero(tipo)) {
+        return v === "0" || (!!v && esSeccionValidaParaDirigente(tipo, v));
+      }
+      if (!v) return this.createError({ message: "La sección electoral es obligatoria" });
       return esSeccionValidaParaDirigente(tipo, v);
-    }),
+    },
+  ),
 
-  colonia: Yup.string().when("tipo", ([tipo], schema) => {
-    const opcional = tipoPermiteSeccionCero(String(tipo ?? ""));
-    const conValidacion = schema
-      .test(
-        "colonia-valida",
-        "Selecciona una colonia de Coyoacán",
-        (v) => !v || esColoniaValida(v),
-      )
-      .test(
-        "colonia-coincide-cp",
-        "La colonia no corresponde al código postal seleccionado",
-        function (colonia) {
-          const { codigoPostal } = this.parent as { codigoPostal?: string };
-          if (!colonia || !codigoPostal) return true;
-          return coloniaCoincideConCp(colonia, codigoPostal);
-        },
-      );
-    return opcional ? conValidacion : conValidacion.required("La colonia es obligatoria");
-  }),
-  calle: Yup.string().trim().required("La calle es obligatoria"),
-  numeroExterior: Yup.string().trim().required("El número exterior es obligatorio"),
+  colonia: Yup.string()
+    .test("colonia-valida", "Selecciona una colonia de Coyoacán", function (v) {
+      const tipo = String((this.parent as { tipo?: string }).tipo ?? "");
+      if (!v) {
+        return tipoPermiteSeccionCero(tipo)
+          ? true
+          : this.createError({ message: "La colonia es obligatoria" });
+      }
+      return esColoniaValida(v);
+    })
+    .test(
+      "colonia-coincide-cp",
+      "La colonia no corresponde al código postal seleccionado",
+      function (colonia) {
+        const { codigoPostal } = this.parent as { codigoPostal?: string };
+        if (!colonia || !codigoPostal) return true;
+        return coloniaCoincideConCp(colonia, codigoPostal);
+      },
+    ),
+  calle: Yup.string()
+    .trim()
+    .test("calle-segun-tipo", "La calle es obligatoria", function (v) {
+      const tipo = String((this.parent as { tipo?: string }).tipo ?? "");
+      if (tipoPermiteSeccionCero(tipo)) return true;
+      return Boolean(v?.trim()) || this.createError({ message: "La calle es obligatoria" });
+    }),
+  numeroExterior: Yup.string()
+    .trim()
+    .test("num-ext-segun-tipo", "El número exterior es obligatorio", function (v) {
+      const tipo = String((this.parent as { tipo?: string }).tipo ?? "");
+      if (tipoPermiteSeccionCero(tipo)) return true;
+      return Boolean(v?.trim()) || this.createError({ message: "El número exterior es obligatorio" });
+    }),
   numeroInterior: Yup.string().trim().nullable(),
-  codigoPostal: Yup.string().when("tipo", ([tipo], schema) => {
-    if (tipoPermiteSeccionCero(String(tipo ?? ""))) {
-      return schema.test(
-        "cp-opcional",
-        "Selecciona un código postal de Coyoacán",
-        (v) => !v || (CODIGOS_POSTALES_COYOACAN as readonly string[]).includes(v),
-      );
+  codigoPostal: Yup.string().test("cp-segun-tipo", "Revisa el código postal", function (v) {
+    const tipo = String((this.parent as { tipo?: string }).tipo ?? "");
+    if (tipoPermiteSeccionCero(tipo)) {
+      if (!v) return true;
+      return (CODIGOS_POSTALES_COYOACAN as readonly string[]).includes(v)
+        ? true
+        : this.createError({ message: "Selecciona un código postal de Coyoacán" });
     }
-    return schema
-      .oneOf([...CODIGOS_POSTALES_COYOACAN], "Selecciona un código postal de Coyoacán")
-      .required("El código postal es obligatorio");
+    if (!v) return this.createError({ message: "El código postal es obligatorio" });
+    return (CODIGOS_POSTALES_COYOACAN as readonly string[]).includes(v)
+      ? true
+      : this.createError({ message: "Selecciona un código postal de Coyoacán" });
   }),
 
   unidadTerritorialId: Yup.string().transform(cadenaNula).nullable(),

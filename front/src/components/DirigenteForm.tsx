@@ -99,19 +99,18 @@ type Props = {
 };
 
 function SincronizarTipoSeccion() {
-  const { values, setFieldValue } = useFormikContext<DirigenteFormValues>();
+  const { values, setFieldValue, validateForm } = useFormikContext<DirigenteFormValues>();
 
   useEffect(() => {
     if (tipoPermiteSeccionCero(values.tipo)) {
       if (values.seccionElectoral !== SECCION_ELECTORAL_NO_APLICA) {
         void setFieldValue("seccionElectoral", SECCION_ELECTORAL_NO_APLICA);
       }
-      return;
-    }
-    if (values.seccionElectoral === SECCION_ELECTORAL_NO_APLICA) {
+    } else if (values.seccionElectoral === SECCION_ELECTORAL_NO_APLICA) {
       void setFieldValue("seccionElectoral", "");
     }
-  }, [values.tipo, values.seccionElectoral, setFieldValue]);
+    void validateForm();
+  }, [values.tipo, values.seccionElectoral, setFieldValue, validateForm]);
 
   return null;
 }
@@ -658,7 +657,8 @@ export function DirigenteForm({
             <h2 className="section-title">Dirección (Coyoacán)</h2>
             {tipoPermiteSeccionCero(values.tipo) ? (
               <p className="text-sm text-ink-secondary">
-                Colonia y código postal son opcionales para administrativo, entidad y partido político.
+                Colonia, código postal, calle y número exterior son opcionales para administrativo, entidad y
+                partido político.
               </p>
             ) : null}
             <div className="grid gap-4 form-grid">
