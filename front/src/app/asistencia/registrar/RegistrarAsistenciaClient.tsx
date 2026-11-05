@@ -27,7 +27,7 @@ type RespuestaEscaneo = {
   mensaje?: string;
   error?: string;
   codigo?: CodigoEscaneoAsistencia | CodigoEscaneoMaterial;
-  dirigente?: { id?: string; nombreCompleto?: string };
+  dirigente?: { id?: string; nombreCompleto?: string; numeroFicha?: number | null };
   evento?: EventoPase;
 };
 
