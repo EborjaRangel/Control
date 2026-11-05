@@ -116,6 +116,43 @@ function SincronizarTipoSeccion() {
   return null;
 }
 
+function DatosPersonalesSection() {
+  const { values } = useFormikContext<DirigenteFormValues>();
+  const perfilOrg = tipoPermiteSeccionCero(values.tipo);
+
+  return (
+    <section className="card-section space-y-4">
+      <h2 className="section-title">Datos personales</h2>
+      {perfilOrg ? (
+        <p className="text-sm text-ink-secondary">
+          Para administrativo, entidad o partido político el celular es opcional (sección electoral 0).
+        </p>
+      ) : null}
+      <div className="grid gap-4 form-grid">
+        <FormField label="Nombre(s)" name="nombre" nombrePersona autoComplete="given-name" />
+        <FormField label="Primer apellido" name="primerApellido" nombrePersona autoComplete="family-name" />
+        <FormField label="Segundo apellido" name="segundoApellido" nombrePersona autoComplete="family-name" />
+        <FormField
+          label="Fecha de nacimiento"
+          name="fechaNacimiento"
+          placeholder="DD/MM/AAAA"
+          inputMode="numeric"
+          maxLength={10}
+          fechaNacimiento
+          autoComplete="bday"
+        />
+        <FormField
+          label={perfilOrg ? "Celular (opcional, 10 dígitos)" : "Celular (10 dígitos)"}
+          name="telefonoCelular"
+          inputMode="numeric"
+        />
+        <FormField label="Correo electrónico" name="correo" type="email" autoComplete="email" />
+      </div>
+      <FotoUpload />
+    </section>
+  );
+}
+
 function ClasificacionElectoralSection() {
   return (
     <section className="card-section space-y-4">
@@ -231,6 +268,7 @@ function SeccionSelect() {
 
 function CodigoPostalColoniaFields({ modo }: { modo: "crear" | "editar" }) {
   const { values, setFieldValue } = useFormikContext<DirigenteFormValues>();
+  const perfilOrg = tipoPermiteSeccionCero(values.tipo);
   const [coloniasDistrito, setColoniasDistrito] = useState<string[]>([]);
   const [loadingColoniasDistrito, setLoadingColoniasDistrito] = useState(false);
 
@@ -284,7 +322,7 @@ function CodigoPostalColoniaFields({ modo }: { modo: "crear" | "editar" }) {
       return coloniasCp.map((c) => ({ nombre: c.nombre, cp: c.cp }));
     }
 
-    if (modo === "editar") {
+    if (modo === "editar" || perfilOrg) {
       return NOMBRES_COLONIAS_COYOACAN.map((nombre) => ({
         nombre,
         cp: cpDeColonia(nombre) ?? "",
@@ -295,9 +333,10 @@ function CodigoPostalColoniaFields({ modo }: { modo: "crear" | "editar" }) {
   })();
 
   const coloniaEditable =
-    !loadingColoniasDistrito &&
-    opcionesColonia.length > 0 &&
-    (modo === "editar" || Boolean(values.codigoPostal) || coloniasDistrito.length > 0);
+    perfilOrg ||
+    (!loadingColoniasDistrito &&
+      opcionesColonia.length > 0 &&
+      (modo === "editar" || Boolean(values.codigoPostal) || coloniasDistrito.length > 0));
 
   useEffect(() => {
     if (!coloniaActual) return;
@@ -319,7 +358,7 @@ function CodigoPostalColoniaFields({ modo }: { modo: "crear" | "editar" }) {
   return (
     <>
       <FormSelect
-        label="Código postal"
+        label={perfilOrg ? "Código postal (opcional)" : "Código postal"}
         name="codigoPostal"
         onChange={(e) => {
           const cp = e.target.value;
@@ -341,7 +380,7 @@ function CodigoPostalColoniaFields({ modo }: { modo: "crear" | "editar" }) {
 
       <div>
         <FormSelect
-          label="Colonia"
+          label={perfilOrg ? "Colonia (opcional)" : "Colonia"}
           name="colonia"
           disabled={!coloniaEditable || loadingColoniasDistrito}
           onChange={(e) => handleColoniaChange(e.target.value)}
@@ -350,8 +389,12 @@ function CodigoPostalColoniaFields({ modo }: { modo: "crear" | "editar" }) {
             {loadingColoniasDistrito
               ? "Cargando colonias del distrito…"
               : !coloniaEditable
-                ? "Primero elige un código postal"
-                : "Selecciona una colonia"}
+                ? perfilOrg
+                  ? "Sin colonia"
+                  : "Primero elige un código postal"
+                : perfilOrg
+                  ? "Sin colonia / elige una"
+                  : "Selecciona una colonia"}
           </option>
           {opcionesColonia.map((c) => (
             <option key={c.nombre} value={c.nombre}>
@@ -580,26 +623,7 @@ export function DirigenteForm({
           <SincronizarTipoSeccion />
           <CredencialesAcceso modo={modo} />
           <ClasificacionElectoralSection />
-          <section className="card-section space-y-4">
-            <h2 className="section-title">Datos personales</h2>
-            <div className="grid gap-4 form-grid">
-              <FormField label="Nombre(s)" name="nombre" nombrePersona autoComplete="given-name" />
-              <FormField label="Primer apellido" name="primerApellido" nombrePersona autoComplete="family-name" />
-              <FormField label="Segundo apellido" name="segundoApellido" nombrePersona autoComplete="family-name" />
-              <FormField
-                label="Fecha de nacimiento"
-                name="fechaNacimiento"
-                placeholder="DD/MM/AAAA"
-                inputMode="numeric"
-                maxLength={10}
-                fechaNacimiento
-                autoComplete="bday"
-              />
-              <FormField label="Celular (10 dígitos)" name="telefonoCelular" inputMode="numeric" />
-              <FormField label="Correo electrónico" name="correo" type="email" autoComplete="email" />
-            </div>
-            <FotoUpload />
-          </section>
+          <DatosPersonalesSection />
 
           <DirigenteExtraFields excludeReferenteId={dirigenteId} />
 
@@ -632,6 +656,11 @@ export function DirigenteForm({
 
           <section className="card-section space-y-4">
             <h2 className="section-title">Dirección (Coyoacán)</h2>
+            {tipoPermiteSeccionCero(values.tipo) ? (
+              <p className="text-sm text-ink-secondary">
+                Colonia y código postal son opcionales para administrativo, entidad y partido político.
+              </p>
+            ) : null}
             <div className="grid gap-4 form-grid">
               <CodigoPostalColoniaFields modo={modo} />
               <UnidadTerritorialSelect />

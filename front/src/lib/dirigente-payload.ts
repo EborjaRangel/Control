@@ -14,8 +14,11 @@ export function prepareDirigentePayload(
   values: DirigenteFormValues,
   modo: "crear" | "editar",
 ): DirigenteFormValues {
-  const colonia = nombreColoniaCatalogo(values.colonia.trim());
-  const codigoPostal = cpDeColonia(colonia) ?? values.codigoPostal.trim();
+  const coloniaRaw = values.colonia?.trim() ?? "";
+  const colonia = coloniaRaw ? nombreColoniaCatalogo(coloniaRaw) : "";
+  const codigoPostal = colonia
+    ? (cpDeColonia(colonia) ?? values.codigoPostal?.trim() ?? "")
+    : values.codigoPostal?.trim() ?? "";
 
   const payload: DirigenteFormValues = {
     ...values,
@@ -25,7 +28,7 @@ export function prepareDirigentePayload(
     fechaNacimiento: fechaNacimientoToIso(values.fechaNacimiento.trim()),
     alias: values.alias?.trim() || "",
     curp: values.curp?.trim().toUpperCase() || "",
-    telefonoCelular: values.telefonoCelular.trim(),
+    telefonoCelular: values.telefonoCelular?.trim() ?? "",
     correo: values.correo.trim(),
     colonia,
     codigoPostal,

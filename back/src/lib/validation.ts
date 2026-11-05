@@ -1,5 +1,5 @@
 import * as Yup from "yup";
-import { TIPOS_DIRIGENTE } from "./dirigentes.js";
+import { TIPOS_DIRIGENTE, tipoPermiteSeccionCero } from "./dirigentes.js";
 import { COLONIAS_COYOACAN, coloniaCoincideConCp, CODIGOS_POSTALES_COYOACAN, esColoniaValida } from "./colonias.js";
 import { esSeccionValidaParaDirigente } from "./secciones-electorales.js";
 import { credencialesCreateSchema, credencialesUpdateSchema } from "./auth-validation.js";
@@ -30,8 +30,18 @@ export const dirigenteSchema = Yup.object({
   fechaNacimiento: fechaNacimientoApiSchema,
   telefonoCelular: Yup.string()
     .trim()
-    .matches(/^\d{10}$/, "El celular debe tener 10 dígitos")
-    .required("El celular es obligatorio"),
+    .when("tipo", ([tipo], schema) => {
+      if (tipoPermiteSeccionCero(String(tipo ?? ""))) {
+        return schema.test(
+          "celular-opcional",
+          "Si capturas celular, deben ser 10 dígitos",
+          (v) => !v || /^\d{10}$/.test(v),
+        );
+      }
+      return schema
+        .matches(/^\d{10}$/, "El celular debe tener 10 dígitos")
+        .required("El celular es obligatorio");
+    }),
   correo: Yup.string()
     .trim()
     .email("Correo electrónico inválido")
@@ -49,28 +59,40 @@ export const dirigenteSchema = Yup.object({
       return esSeccionValidaParaDirigente(tipo, v);
     }),
 
-  colonia: Yup.string()
-    .required("La colonia es obligatoria")
-    .test(
-      "colonia-valida",
-      "Selecciona una colonia de Coyoacán",
-      (v) => Boolean(v && esColoniaValida(v)),
-    )
-    .test(
-      "colonia-coincide-cp",
-      "La colonia no corresponde al código postal seleccionado",
-      function (colonia) {
-        const { codigoPostal } = this.parent as { codigoPostal?: string };
-        if (!colonia || !codigoPostal) return true;
-        return coloniaCoincideConCp(colonia, codigoPostal);
-      },
-    ),
+  colonia: Yup.string().when("tipo", ([tipo], schema) => {
+    const opcional = tipoPermiteSeccionCero(String(tipo ?? ""));
+    const conValidacion = schema
+      .test(
+        "colonia-valida",
+        "Selecciona una colonia de Coyoacán",
+        (v) => !v || esColoniaValida(v),
+      )
+      .test(
+        "colonia-coincide-cp",
+        "La colonia no corresponde al código postal seleccionado",
+        function (colonia) {
+          const { codigoPostal } = this.parent as { codigoPostal?: string };
+          if (!colonia || !codigoPostal) return true;
+          return coloniaCoincideConCp(colonia, codigoPostal);
+        },
+      );
+    return opcional ? conValidacion : conValidacion.required("La colonia es obligatoria");
+  }),
   calle: Yup.string().trim().required("La calle es obligatoria"),
   numeroExterior: Yup.string().trim().required("El número exterior es obligatorio"),
   numeroInterior: Yup.string().trim().nullable(),
-  codigoPostal: Yup.string()
-    .oneOf([...CODIGOS_POSTALES_COYOACAN], "Selecciona un código postal de Coyoacán")
-    .required("El código postal es obligatorio"),
+  codigoPostal: Yup.string().when("tipo", ([tipo], schema) => {
+    if (tipoPermiteSeccionCero(String(tipo ?? ""))) {
+      return schema.test(
+        "cp-opcional",
+        "Selecciona un código postal de Coyoacán",
+        (v) => !v || (CODIGOS_POSTALES_COYOACAN as readonly string[]).includes(v),
+      );
+    }
+    return schema
+      .oneOf([...CODIGOS_POSTALES_COYOACAN], "Selecciona un código postal de Coyoacán")
+      .required("El código postal es obligatorio");
+  }),
 
   unidadTerritorialId: Yup.string().transform(cadenaNula).nullable(),
 })
