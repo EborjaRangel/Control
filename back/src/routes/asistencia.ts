@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { isAsistenciaRol, isConvocatoriaRol, requireAsistenciaOrStaff, requireAuth, requireEventosAsistenciaRead, requireStaff } from "../lib/auth.js";
 import { compararDirigentePorApellidosNombre, nombreCompleto } from "../lib/dirigentes.js";
 import {
+  cantidadMovilizacionDesdeCuerpo,
   cuerpoRespuestaEscaneo,
   inhabilitarUsuariosPaseLista,
   procesarEscaneoAsistencia,
@@ -116,6 +117,7 @@ router.post("/eventos", requireStaff, async (req, res) => {
 
     const evento = await prisma.eventoAsistencia.create({
       data: {
+        tipoOperacion: data.tipoOperacion as import("../generated/prisma/client.js").TipoOperacionEventoAsistencia,
         titulo: data.titulo,
         fecha: new Date(data.fecha),
         hora: data.hora,
@@ -216,13 +218,43 @@ router.get("/eventos/:id/pase", requireAsistenciaOrStaff, async (req, res) => {
       }),
     ]);
 
-    const asistioPorDirigente = new Map(registros.map((r) => [r.dirigenteId, r]));
+    const totalPorDirigente = new Map<string, number>();
+    const ultimoPorDirigente = new Map<
+      string,
+      {
+        registradoAt: Date;
+        registradoPor: {
+          id: string;
+          username: string;
+          rol: string;
+        } | null;
+      }
+    >();
+    for (const r of registros) {
+      const prev = totalPorDirigente.get(r.dirigenteId) ?? 0;
+      totalPorDirigente.set(r.dirigenteId, prev + (r.cantidad ?? 1));
+      const anterior = ultimoPorDirigente.get(r.dirigenteId);
+      if (!anterior || r.registradoAt >= anterior.registradoAt) {
+        ultimoPorDirigente.set(r.dirigenteId, {
+          registradoAt: r.registradoAt,
+          registradoPor: r.registradoPor
+            ? {
+                id: r.registradoPor.id,
+                username: r.registradoPor.username,
+                rol: r.registradoPor.rol,
+              }
+            : null,
+        });
+      }
+    }
+
     const listaOrdenada = [...elegibles].sort(compararDirigentePorApellidosNombre);
 
     res.json({
       evento: await enriquecerEvento(evento),
       lista: listaOrdenada.map((d) => {
-        const registro = asistioPorDirigente.get(d.id);
+        const totalMov = totalPorDirigente.get(d.id) ?? 0;
+        const ultimo = ultimoPorDirigente.get(d.id);
         return {
           id: d.id,
           nombreCompleto: nombreCompleto(d),
@@ -230,19 +262,15 @@ router.get("/eventos/:id/pase", requireAsistenciaOrStaff, async (req, res) => {
           colonia: d.colonia,
           seccionElectoral: d.seccionElectoral,
           codigoQr: d.codigoQr,
-          asistio: Boolean(registro),
-          registradoAt: registro?.registradoAt.toISOString() ?? null,
-          registradoPor: registro?.registradoPor
-            ? {
-                id: registro.registradoPor.id,
-                username: registro.registradoPor.username,
-                rol: registro.registradoPor.rol,
-              }
-            : null,
+          asistio: evento.tipoOperacion === "MOVILIZACION" ? totalMov > 0 : Boolean(ultimo),
+          totalMovilizados: evento.tipoOperacion === "MOVILIZACION" ? totalMov : null,
+          registradoAt: ultimo?.registradoAt.toISOString() ?? null,
+          registradoPor: ultimo?.registradoPor ?? null,
         };
       }),
       registros: registros.map((r) => ({
         id: r.id,
+        cantidad: r.cantidad,
         registradoAt: r.registradoAt.toISOString(),
         registradoPor: r.registradoPor
           ? {
@@ -357,10 +385,14 @@ router.post("/eventos/:id/cerrar", requireStaff, async (req, res) => {
 router.post("/eventos/:id/registrar", requireAsistenciaOrStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
+    const evento = await obtenerEvento(id);
+    const cantidad =
+      evento?.tipoOperacion === "MOVILIZACION" ? cantidadMovilizacionDesdeCuerpo(req.body) : undefined;
     const resultado = await procesarEscaneoAsistencia({
       raw: rawCodigoDesdeEscaneo(req),
       eventoId: id,
       registradoPorId: req.user?.sub ?? null,
+      cantidad,
       req,
     });
     res.status(resultado.status).json(cuerpoRespuestaEscaneo(resultado));

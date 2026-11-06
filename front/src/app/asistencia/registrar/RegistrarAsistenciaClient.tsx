@@ -8,7 +8,9 @@ type ModoPase = "asistencia" | "material";
 
 type CodigoEscaneoAsistencia =
   | "ASISTENCIA_TOMADA"
+  | "MOVILIZACION_REGISTRADA"
   | "ASISTENCIA_DUPLICADA"
+  | "CANTIDAD_INVALIDA"
   | "QR_INVALIDO"
   | "PASE_CERRADO"
   | "CLAVE_INCORRECTA";
@@ -21,12 +23,14 @@ type CodigoEscaneoMaterial =
   | "CLAVE_INCORRECTA"
   | "NO_CONVOCADO";
 
-type EventoPase = { id?: string; titulo?: string };
+type EventoPase = { id?: string; titulo?: string; tipoOperacion?: "PASE_LISTA" | "MOVILIZACION" };
 
 type RespuestaEscaneo = {
   mensaje?: string;
   error?: string;
   codigo?: CodigoEscaneoAsistencia | CodigoEscaneoMaterial;
+  cantidad?: number;
+  totalMovilizados?: number;
   dirigente?: { id?: string; nombreCompleto?: string; numeroFicha?: number | null };
   evento?: EventoPase;
 };
@@ -47,13 +51,18 @@ function visualDeCodigo(modo: ModoPase, codigo: string | undefined, ok: boolean)
     if (codigo === "MATERIAL_DUPLICADO") return "aviso";
     return "error";
   }
-  if (codigo === "ASISTENCIA_TOMADA") return "ok";
+  if (codigo === "ASISTENCIA_TOMADA" || codigo === "MOVILIZACION_REGISTRADA") return "ok";
   if (codigo === "PASE_CERRADO") return "cerrado";
   if (codigo === "ASISTENCIA_DUPLICADA") return "aviso";
+  if (codigo === "CANTIDAD_INVALIDA" || codigo === "CLAVE_INCORRECTA") return "formulario";
   return "error";
 }
 
-function cerrarPestanaTrasLectura() {
+/** Tras un escaneo exitoso de asistencia (pase de lista o movilización): mensaje breve antes de cerrar. */
+const MS_CIERRE_TRAS_ASISTENCIA_OK = 1000;
+const MS_CIERRE_TRAS_OTROS = 3500;
+
+function cerrarPestanaTrasLectura(delayMs: number) {
   window.setTimeout(() => {
     try {
       window.history.replaceState(null, "", "about:blank");
@@ -71,7 +80,7 @@ function cerrarPestanaTrasLectura() {
     } catch {
       /* ignore */
     }
-  }, 3500);
+  }, delayMs);
 }
 
 export default function RegistrarAsistenciaClient() {
@@ -79,11 +88,15 @@ export default function RegistrarAsistenciaClient() {
   const codigoQr = searchParams.get("c")?.trim() ?? "";
   const [modo, setModo] = useState<ModoPase>("asistencia");
   const [clave, setClave] = useState("");
+  const [cantidadMovilizacion, setCantidadMovilizacion] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [visual, setVisual] = useState<Visual>("cargando");
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [detalle, setDetalle] = useState<string | null>(null);
   const [eventoTitulo, setEventoTitulo] = useState<string | null>(null);
+  const [tipoOperacionEvento, setTipoOperacionEvento] = useState<"PASE_LISTA" | "MOVILIZACION" | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +110,7 @@ export default function RegistrarAsistenciaClient() {
         if (asistencia.abierto) {
           setModo("asistencia");
           setEventoTitulo(asistencia.evento?.titulo?.trim() || null);
+          setTipoOperacionEvento(asistencia.evento?.tipoOperacion ?? "PASE_LISTA");
           setVisual("formulario");
           return;
         }
@@ -104,6 +118,7 @@ export default function RegistrarAsistenciaClient() {
         if (material.abierto) {
           setModo("material");
           setEventoTitulo(material.evento?.titulo?.trim() || null);
+          setTipoOperacionEvento(null);
           setVisual("formulario");
           return;
         }
@@ -112,7 +127,8 @@ export default function RegistrarAsistenciaClient() {
         setVisual("cerrado");
         setMensaje(asistencia.mensaje ?? material.mensaje ?? "No hay pase de lista ni entrega de material abierta");
         setEventoTitulo(asistencia.evento?.titulo ?? material.evento?.titulo ?? null);
-        if (codigoQr) cerrarPestanaTrasLectura();
+        setTipoOperacionEvento(asistencia.evento?.tipoOperacion ?? null);
+        if (codigoQr) cerrarPestanaTrasLectura(MS_CIERRE_TRAS_OTROS);
       })
       .catch(() => {
         if (cancelled) return;
@@ -132,36 +148,88 @@ export default function RegistrarAsistenciaClient() {
 
     const endpoint = modo === "material" ? "/api/material/escanear" : "/api/asistencia/escanear";
 
+    let cantidadNum: number | undefined;
+    if (modo === "asistencia" && tipoOperacionEvento === "MOVILIZACION") {
+      const n = Number.parseInt(cantidadMovilizacion.trim(), 10);
+      if (!Number.isFinite(n) || n < 1) {
+        setEnviando(false);
+        setMensaje("Indica cuántas personas movilizas (número entero mayor que cero)");
+        setVisual("formulario");
+        return;
+      }
+      cantidadNum = n;
+    }
+
     try {
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ raw: codigoQr, clave: clave.trim() }),
+        body: JSON.stringify({
+          raw: codigoQr,
+          clave: clave.trim(),
+          ...(cantidadNum != null ? { cantidad: cantidadNum } : {}),
+        }),
       });
       const data = (await res.json()) as RespuestaEscaneo;
-      const texto = data.mensaje ?? data.error ?? "El QR es inválido";
-      setMensaje(texto);
-      if (modo === "material" && data.codigo === "NO_CONVOCADO" && data.dirigente?.id) {
-        setDetalle(
-          `${data.dirigente.nombreCompleto ?? "Dirigente"} — ID para convocar en Material: ${data.dirigente.numeroFicha ?? data.dirigente.id}`,
-        );
+      const nombreDir = data.dirigente?.nombreCompleto?.trim();
+      const cantidadEsteEscaneo = data.cantidad;
+      const exitoAsistencia =
+        modo === "asistencia" &&
+        res.ok &&
+        (data.codigo === "ASISTENCIA_TOMADA" || data.codigo === "MOVILIZACION_REGISTRADA");
+
+      if (exitoAsistencia) {
+        setMensaje("Éxito");
+        if (data.codigo === "MOVILIZACION_REGISTRADA" && nombreDir && cantidadEsteEscaneo != null) {
+          setDetalle(
+            `${nombreDir} · ${cantidadEsteEscaneo} ${cantidadEsteEscaneo === 1 ? "persona" : "personas"} en este escaneo`,
+          );
+        } else if (nombreDir) {
+          setDetalle(nombreDir);
+        } else {
+          setDetalle(null);
+        }
       } else {
-        setDetalle(data.dirigente?.nombreCompleto ?? null);
+        const texto = data.mensaje ?? data.error ?? "El QR es inválido";
+        setMensaje(texto);
+        if (modo === "material" && data.codigo === "NO_CONVOCADO" && data.dirigente?.id) {
+          setDetalle(
+            `${data.dirigente.nombreCompleto ?? "Dirigente"} — ID para convocar en Material: ${data.dirigente.numeroFicha ?? data.dirigente.id}`,
+          );
+        } else {
+          const partes: string[] = [];
+          if (data.dirigente?.nombreCompleto) partes.push(data.dirigente.nombreCompleto);
+          if (
+            data.codigo === "MOVILIZACION_REGISTRADA" &&
+            data.cantidad != null &&
+            data.totalMovilizados != null
+          ) {
+            partes.push(
+              `Esta vez: ${data.cantidad} · Acumulado por este dirigente: ${data.totalMovilizados}`,
+            );
+          }
+          setDetalle(partes.length > 0 ? partes.join(" — ") : null);
+        }
       }
       if (data.evento?.titulo) setEventoTitulo(data.evento.titulo);
+      if (data.evento?.tipoOperacion) setTipoOperacionEvento(data.evento.tipoOperacion);
 
-      if (data.codigo === "CLAVE_INCORRECTA") {
+      if (data.codigo === "CLAVE_INCORRECTA" || data.codigo === "CANTIDAD_INVALIDA") {
         setVisual("formulario");
         return;
       }
       const siguiente = visualDeCodigo(modo, data.codigo, res.ok);
       setVisual(siguiente);
-      if (siguiente !== "formulario") cerrarPestanaTrasLectura();
+      if (siguiente !== "formulario") {
+        const delay =
+          exitoAsistencia ? MS_CIERRE_TRAS_ASISTENCIA_OK : MS_CIERRE_TRAS_OTROS;
+        cerrarPestanaTrasLectura(delay);
+      }
     } catch {
       setVisual("error");
       setMensaje("El QR es inválido");
       setDetalle(null);
-      cerrarPestanaTrasLectura();
+      cerrarPestanaTrasLectura(MS_CIERRE_TRAS_OTROS);
     } finally {
       setEnviando(false);
     }
@@ -174,12 +242,17 @@ export default function RegistrarAsistenciaClient() {
         ? "alert-warning"
         : "alert-error";
 
-  const titulo = modo === "material" ? "Entrega de material" : "Pase de lista";
+  const esMovilizacion = modo === "asistencia" && tipoOperacionEvento === "MOVILIZACION";
+  const titulo =
+    modo === "material" ? "Entrega de material" : esMovilizacion ? "Movilización" : "Pase de lista";
   const instruccion =
     modo === "material"
       ? "Ingresa el código para registrar la entrega de material"
-      : "Ingresa el código para registrar la asistencia";
-  const boton = modo === "material" ? "Registrar entrega" : "Pasar lista";
+      : esMovilizacion
+        ? "Indica cuántas personas moviliza el dirigente e ingresa el código. Puedes escanear varias veces; los totales se suman."
+        : "Ingresa el código para registrar la asistencia (un solo registro por dirigente en este evento)";
+  const boton =
+    modo === "material" ? "Registrar entrega" : esMovilizacion ? "Registrar movilización" : "Pasar lista";
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col justify-center py-6 sm:py-12">
@@ -201,6 +274,23 @@ export default function RegistrarAsistenciaClient() {
         {visual === "formulario" ? (
           <form className="space-y-4" onSubmit={(event) => void enviar(event)}>
             {mensaje ? <div className="alert-error text-center font-semibold">{mensaje}</div> : null}
+
+            {esMovilizacion ? (
+              <label className="label">
+                Personas movilizadas en este escaneo
+                <input
+                  className="input"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={100000}
+                  step={1}
+                  value={cantidadMovilizacion}
+                  onChange={(event) => setCantidadMovilizacion(event.target.value)}
+                  required
+                />
+              </label>
+            ) : null}
 
             <label className="label">
               Código

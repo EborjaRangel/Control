@@ -343,6 +343,7 @@ export function snapshotEventoAsistencia(e: {
   fecha: Date;
   hora: string;
   lugar: string;
+  tipoOperacion?: string;
   alcance: string;
   estado: string;
   colonia: string | null;
@@ -357,6 +358,7 @@ export function snapshotEventoAsistencia(e: {
     fecha: e.fecha.toISOString().slice(0, 10),
     hora: e.hora,
     lugar: e.lugar,
+    tipoOperacion: e.tipoOperacion,
     alcance: e.alcance,
     estado: e.estado,
     colonia: e.colonia,

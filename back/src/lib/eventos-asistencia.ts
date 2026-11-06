@@ -119,6 +119,7 @@ export function serializeEvento(evento: EventoConRelaciones) {
     fecha: evento.fecha.toISOString().slice(0, 10),
     hora: evento.hora,
     lugar: evento.lugar,
+    tipoOperacion: evento.tipoOperacion,
     alcance: evento.alcance,
     colonia: evento.colonia,
     seccionElectoral: evento.seccionElectoral,
@@ -159,13 +160,25 @@ export async function obtenerEvento(id: string) {
 export async function enriquecerEvento(evento: EventoConRelaciones) {
   const totalElegibles = await contarElegibles(evento);
   const serialized = serializeEvento(evento);
+  const countReg = evento._count?.asistencias ?? 0;
+  let totalPersonasMovilizadas: number | null = null;
+  if (evento.tipoOperacion === "MOVILIZACION") {
+    const agg = await prisma.registroAsistencia.aggregate({
+      where: { eventoId: evento.id },
+      _sum: { cantidad: true },
+    });
+    totalPersonasMovilizadas = agg._sum.cantidad ?? 0;
+  }
   return {
     ...serialized,
     totalElegibles,
-    totalAsistencias: evento._count?.asistencias ?? 0,
+    totalAsistencias: evento.tipoOperacion === "MOVILIZACION" ? totalPersonasMovilizadas : countReg,
+    totalPersonasMovilizadas,
     totalFaltas:
       evento.estado === "CERRADO"
-        ? Math.max(0, totalElegibles - (evento._count?.asistencias ?? 0))
+        ? evento.tipoOperacion === "MOVILIZACION"
+          ? null
+          : Math.max(0, totalElegibles - countReg)
         : null,
   };
 }

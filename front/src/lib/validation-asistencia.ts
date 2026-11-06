@@ -16,7 +16,12 @@ export const ALCANCES_EVENTO = [
   "TODOS",
 ] as const satisfies readonly AlcanceEvento[];
 
+export const TIPOS_OPERACION_EVENTO = ["PASE_LISTA", "MOVILIZACION"] as const;
+
 export const eventoCreateSchema = Yup.object({
+  tipoOperacion: Yup.string()
+    .oneOf([...TIPOS_OPERACION_EVENTO], "Tipo de evento inválido")
+    .required("Selecciona el tipo de evento"),
   titulo: Yup.string().trim().required("El título del evento es obligatorio"),
   fecha: Yup.string()
     .required("La fecha es obligatoria")
@@ -91,6 +96,7 @@ export type EventoFormValues = Omit<
 export type RegistrarAsistenciaFormValues = Yup.InferType<typeof registrarAsistenciaSchema>;
 
 export const EMPTY_EVENTO: EventoFormValues = {
+  tipoOperacion: "PASE_LISTA",
   titulo: "",
   fecha: "",
   hora: "",
@@ -107,6 +113,7 @@ export function eventoFormToApiBody(
   values: EventoFormValues,
 ): Record<string, string | number | null> {
   const body: Record<string, string | number | null> = {
+    tipoOperacion: values.tipoOperacion,
     titulo: values.titulo.trim(),
     fecha: values.fecha,
     hora: values.hora,

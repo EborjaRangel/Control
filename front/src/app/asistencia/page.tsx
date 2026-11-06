@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import {
   ESTADO_EVENTO_LABEL,
+  TIPO_OPERACION_EVENTO_LABEL,
   badgeEstadoEvento,
   formatFechaEvento,
   type EventoAsistenciaDTO,
@@ -216,11 +217,22 @@ export default function AsistenciaPage() {
               <p className="mt-1 text-sm text-ink-secondary">
                 {formatFechaEvento(ev.fecha)} · {ev.hora} · {ev.lugar}
               </p>
-              <p className="mt-1 text-sm text-ink-secondary">{ev.alcanceLabel}</p>
+              <p className="mt-1 text-sm text-ink-secondary">
+                {TIPO_OPERACION_EVENTO_LABEL[ev.tipoOperacion]} · {ev.alcanceLabel}
+              </p>
               <p className="mt-2 text-xs text-ink-secondary">
-                Asistencias: {ev.totalAsistencias ?? 0}
-                {ev.totalElegibles != null ? ` / ${ev.totalElegibles} elegibles` : ""}
-                {ev.totalFaltas != null ? ` · Faltas: ${ev.totalFaltas}` : ""}
+                {ev.tipoOperacion === "MOVILIZACION" ? (
+                  <>
+                    Personas movilizadas: {ev.totalAsistencias ?? 0}
+                    {ev.totalElegibles != null ? ` · Dirigentes elegibles: ${ev.totalElegibles}` : ""}
+                  </>
+                ) : (
+                  <>
+                    Asistencias: {ev.totalAsistencias ?? 0}
+                    {ev.totalElegibles != null ? ` / ${ev.totalElegibles} elegibles` : ""}
+                    {ev.totalFaltas != null ? ` · Faltas: ${ev.totalFaltas}` : ""}
+                  </>
+                )}
               </p>
             </div>
             <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
@@ -231,7 +243,11 @@ export default function AsistenciaPage() {
                   disabled={accionandoId === ev.id}
                   onClick={() => void abrirPase(ev.id)}
                 >
-                  {accionandoId === ev.id ? "Iniciando…" : "Iniciar pase"}
+                  {accionandoId === ev.id
+                    ? "Iniciando…"
+                    : ev.tipoOperacion === "MOVILIZACION"
+                      ? "Iniciar movilización"
+                      : "Iniciar pase"}
                 </button>
               ) : null}
               {isStaff && ev.estado === "ABIERTO" ? (
@@ -248,7 +264,11 @@ export default function AsistenciaPage() {
                 href={`/asistencia/eventos/${ev.id}`}
                 className="btn-primary btn-sm btn-responsive"
               >
-                {ev.estado === "ABIERTO" ? "Pase de lista" : "Ver evento"}
+                {ev.estado === "ABIERTO"
+                  ? ev.tipoOperacion === "MOVILIZACION"
+                    ? "Registrar escaneos"
+                    : "Pase de lista"
+                  : "Ver evento"}
               </Link>
             </div>
           </article>

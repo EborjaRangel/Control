@@ -18,8 +18,14 @@ import { etiquetaUnidadTerritorial, type UnidadTerritorialResumen } from "@/lib/
 import {
   ALCANCES_EVENTO,
   eventoCreateSchema,
+  TIPOS_OPERACION_EVENTO,
   type EventoFormValues,
 } from "@/lib/validation-asistencia";
+
+const TIPO_OPERACION_LABEL: Record<string, string> = {
+  PASE_LISTA: "Pase de lista (un escaneo por dirigente)",
+  MOVILIZACION: "Movilización (escaneos ilimitados; se indica cuántas personas por escaneo)",
+};
 
 type Props = {
   initialValues: EventoFormValues;
@@ -178,6 +184,14 @@ export function EventoForm({
           </div>
 
           <FormField label="Lugar" name="lugar" />
+
+          <FormSelect label="Tipo de evento" name="tipoOperacion">
+            {TIPOS_OPERACION_EVENTO.map((t) => (
+              <option key={t} value={t}>
+                {TIPO_OPERACION_LABEL[t] ?? t}
+              </option>
+            ))}
+          </FormSelect>
 
           <AlcanceSelect />
           <AlcanceCampos uts={uts} />

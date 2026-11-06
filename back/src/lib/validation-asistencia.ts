@@ -17,7 +17,12 @@ export const ALCANCES_EVENTO = [
   "TODOS",
 ] as const;
 
+export const TIPOS_OPERACION_EVENTO = ["PASE_LISTA", "MOVILIZACION"] as const;
+
 export const eventoCreateSchema = Yup.object({
+  tipoOperacion: Yup.string()
+    .oneOf([...TIPOS_OPERACION_EVENTO], "Tipo de evento inválido")
+    .required("Selecciona el tipo de evento"),
   titulo: Yup.string().trim().required("El título del evento es obligatorio"),
   fecha: Yup.string()
     .required("La fecha es obligatoria")

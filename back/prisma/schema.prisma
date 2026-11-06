@@ -54,6 +54,12 @@ enum AlcanceEvento {
   TODOS
 }
 
+/// Pase de lista (un escaneo por dirigente) o movilización (escaneos ilimitados con cantidad por escaneo)
+enum TipoOperacionEventoAsistencia {
+  PASE_LISTA
+  MOVILIZACION
+}
+
 /// Ciclo de vida del pase de lista
 enum EstadoEvento {
   PROGRAMADO
@@ -738,6 +744,7 @@ model EventoAsistencia {
   fecha               DateTime       @db.Date
   hora                String
   lugar               String
+  tipoOperacion       TipoOperacionEventoAsistencia @default(PASE_LISTA)
   alcance             AlcanceEvento
   colonia             String?
   seccionElectoral     String?
@@ -774,13 +781,15 @@ model RegistroAsistencia {
   dirigenteId     String
   dirigente       Dirigente        @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
   registradoAt    DateTime         @default(now())
+  /// Personas en este escaneo (1 en pase de lista; N en movilización)
+  cantidad        Int              @default(1)
   /// Usuario que tomó el pase de lista (cuenta PASE_LISTA u operador del panel)
   registradoPorId String?
   registradoPor   Usuario?         @relation(fields: [registradoPorId], references: [id], onDelete: SetNull)
 
-  @@unique([eventoId, dirigenteId])
   @@index([eventoId])
   @@index([dirigenteId])
+  @@index([eventoId, dirigenteId])
   @@index([registradoPorId])
 }
 

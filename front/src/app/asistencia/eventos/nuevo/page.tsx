@@ -51,7 +51,9 @@ export default function NuevoEventoPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
         <h1 className="page-title">Nuevo evento</h1>
-        <p className="page-subtitle">Captura los datos del evento y define el alcance del pase de lista.</p>
+        <p className="page-subtitle">
+          Captura los datos del evento, elige si es pase de lista o movilización, y define el alcance.
+        </p>
       </div>
 
       <EventoForm

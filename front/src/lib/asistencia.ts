@@ -1,4 +1,5 @@
 export type EstadoEvento = "PROGRAMADO" | "ABIERTO" | "CERRADO";
+export type TipoOperacionEventoAsistencia = "PASE_LISTA" | "MOVILIZACION";
 export type AlcanceEvento =
   | "COLONIA"
   | "SECCION"
@@ -13,6 +14,7 @@ export type EventoAsistenciaDTO = {
   fecha: string;
   hora: string;
   lugar: string;
+  tipoOperacion: TipoOperacionEventoAsistencia;
   alcance: AlcanceEvento;
   colonia: string | null;
   seccionElectoral: string | null;
@@ -29,6 +31,7 @@ export type EventoAsistenciaDTO = {
   abiertoAt: string | null;
   cerradoAt: string | null;
   totalAsistencias: number | null;
+  totalPersonasMovilizadas?: number | null;
   totalElegibles?: number;
   totalFaltas?: number | null;
   createdAt: string;
@@ -56,6 +59,7 @@ export type PaseListaResponse = {
     seccionElectoral: string;
     codigoQr: string;
     asistio: boolean;
+    totalMovilizados?: number | null;
     registradoAt: string | null;
     registradoPor: {
       id: string;
@@ -65,6 +69,7 @@ export type PaseListaResponse = {
   }[];
   registros: {
     id: string;
+    cantidad: number;
     registradoAt: string;
     registradoPor: {
       id: string;
@@ -79,6 +84,11 @@ export type PaseListaResponse = {
       seccionElectoral: string;
     };
   }[];
+};
+
+export const TIPO_OPERACION_EVENTO_LABEL: Record<TipoOperacionEventoAsistencia, string> = {
+  PASE_LISTA: "Pase de lista",
+  MOVILIZACION: "Movilización",
 };
 
 export const ESTADO_EVENTO_LABEL: Record<EstadoEvento, string> = {

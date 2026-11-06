@@ -8,16 +8,24 @@ import { verifyPassword } from "./auth.js";
 import type { Request, Response } from "express";
 
 export const MENSAJE_QR_INVALIDO = "El QR es inválido";
-export const MENSAJE_ASISTENCIA_TOMADA = "Ya fue tomada la asistencia";
+export const MENSAJE_ASISTENCIA_TOMADA = "Asistencia registrada";
 export const MENSAJE_ASISTENCIA_DUPLICADA = "Es imposible registrar más de una asistencia";
+export const MENSAJE_MOVILIZACION_REGISTRADA = "Movilización registrada";
+export const MENSAJE_CANTIDAD_MOVILIZACION = "Indica cuántas personas movilizas (número entero mayor que cero)";
 export const MENSAJE_SIN_PASE_ABIERTO = "No hay un pase de lista abierto";
 export const MENSAJE_CLAVE_INCORRECTA = "Código incorrecto";
+
+const CANTIDAD_MOV_MAX = 100_000;
 
 export function mensajePaseCerrado(titulo: string) {
   return `Pase de lista ya cerrado del evento ${titulo}`;
 }
 
-export type EventoPaseResumen = { id: string; titulo: string };
+export type EventoPaseResumen = {
+  id: string;
+  titulo: string;
+  tipoOperacion: "PASE_LISTA" | "MOVILIZACION";
+};
 
 export type EstadoPaseLista = {
   abierto: boolean;
@@ -29,7 +37,7 @@ export type ResultadoEscaneoAsistencia =
   | {
       ok: true;
       status: 201;
-      codigo: "ASISTENCIA_TOMADA";
+      codigo: "ASISTENCIA_TOMADA" | "MOVILIZACION_REGISTRADA";
       mensaje: string;
       evento: { id: string; titulo: string };
       dirigente: {
@@ -40,11 +48,18 @@ export type ResultadoEscaneoAsistencia =
         seccionElectoral: string;
       };
       registradoAt: string;
+      cantidad?: number;
+      totalMovilizados?: number;
     }
   | {
       ok: false;
       status: 400 | 403 | 404 | 409;
-      codigo: "QR_INVALIDO" | "PASE_CERRADO" | "ASISTENCIA_DUPLICADA" | "CLAVE_INCORRECTA";
+      codigo:
+        | "QR_INVALIDO"
+        | "PASE_CERRADO"
+        | "ASISTENCIA_DUPLICADA"
+        | "CLAVE_INCORRECTA"
+        | "CANTIDAD_INVALIDA";
       mensaje: string;
       evento?: EventoPaseResumen;
       dirigente?: { id: string; nombreCompleto: string };
@@ -60,10 +75,7 @@ function resultadoInvalido(): ResultadoEscaneoAsistencia {
 }
 
 function resultadoDuplicado(
-  dirigente: {
-    id: string;
-    nombreCompleto: string;
-  },
+  dirigente: { id: string; nombreCompleto: string },
   evento?: EventoPaseResumen,
 ): ResultadoEscaneoAsistencia {
   return {
@@ -76,10 +88,25 @@ function resultadoDuplicado(
   };
 }
 
+export function cantidadMovilizacionDesdeCuerpo(body: unknown): number | undefined {
+  if (body == null || typeof body !== "object") return undefined;
+  const d = body as Record<string, unknown>;
+  for (const key of ["cantidad", "movilizados", "personas"]) {
+    const v = d[key];
+    if (typeof v === "number" && Number.isFinite(v)) return Math.trunc(v);
+    if (typeof v === "string" && v.trim() !== "") {
+      const n = Number.parseInt(v.trim(), 10);
+      if (Number.isFinite(n)) return n;
+    }
+  }
+  return undefined;
+}
+
 export async function procesarEscaneoAsistencia(input: {
   raw: string;
   eventoId?: string;
   registradoPorId?: string | null;
+  cantidad?: number;
   req?: Request;
 }): Promise<ResultadoEscaneoAsistencia> {
   const codigoQr = codigoQrDesdeTextoQr(input.raw);
@@ -109,7 +136,7 @@ export async function procesarEscaneoAsistencia(input: {
         status: 400,
         codigo: "PASE_CERRADO",
         mensaje: mensajePaseCerrado(evento.titulo),
-        evento: { id: evento.id, titulo: evento.titulo },
+        evento: { id: evento.id, titulo: evento.titulo, tipoOperacion: evento.tipoOperacion },
       };
     }
     if (!dirigenteEsElegible(dirigente, evento)) return resultadoInvalido();
@@ -132,18 +159,41 @@ export async function procesarEscaneoAsistencia(input: {
     if (!evento) return resultadoInvalido();
   }
 
-  const existente = await prisma.registroAsistencia.findUnique({
-    where: {
-      eventoId_dirigenteId: { eventoId: evento.id, dirigenteId: dirigente.id },
-    },
-  });
-  if (existente) return resultadoDuplicado(dirigenteResumen, { id: evento.id, titulo: evento.titulo });
+  let cantidadMov: number | undefined = input.cantidad;
+  if (evento.tipoOperacion === "MOVILIZACION") {
+    if (cantidadMov == null || !Number.isInteger(cantidadMov) || cantidadMov < 1 || cantidadMov > CANTIDAD_MOV_MAX) {
+      return {
+        ok: false,
+        status: 400,
+        codigo: "CANTIDAD_INVALIDA",
+        mensaje: MENSAJE_CANTIDAD_MOVILIZACION,
+        evento: { id: evento.id, titulo: evento.titulo, tipoOperacion: evento.tipoOperacion },
+        dirigente: dirigenteResumen,
+      };
+    }
+  }
+
+  if (evento.tipoOperacion === "PASE_LISTA") {
+    const existente = await prisma.registroAsistencia.findFirst({
+      where: { eventoId: evento.id, dirigenteId: dirigente.id },
+    });
+    if (existente) {
+      return resultadoDuplicado(dirigenteResumen, {
+        id: evento.id,
+        titulo: evento.titulo,
+        tipoOperacion: evento.tipoOperacion,
+      });
+    }
+  }
+
+  const cantidadRegistro = evento.tipoOperacion === "MOVILIZACION" ? cantidadMov! : 1;
 
   try {
     const registro = await prisma.registroAsistencia.create({
       data: {
         eventoId: evento.id,
         dirigenteId: dirigente.id,
+        cantidad: cantidadRegistro,
         registradoPorId: input.registradoPorId ?? null,
       },
       include: {
@@ -164,6 +214,15 @@ export async function procesarEscaneoAsistencia(input: {
       },
     });
 
+    let totalMovilizados: number | undefined;
+    if (evento.tipoOperacion === "MOVILIZACION") {
+      const sum = await prisma.registroAsistencia.aggregate({
+        where: { eventoId: evento.id, dirigenteId: dirigente.id },
+        _sum: { cantidad: true },
+      });
+      totalMovilizados = sum._sum.cantidad ?? cantidadRegistro;
+    }
+
     await registrarAuditoria(input.req, {
       accion: "CREATE",
       entidad: "RegistroAsistencia",
@@ -173,13 +232,36 @@ export async function procesarEscaneoAsistencia(input: {
       despues: {
         eventoId: evento.id,
         eventoTitulo: evento.titulo,
+        tipoOperacion: evento.tipoOperacion,
+        cantidad: cantidadRegistro,
+        totalMovilizadosDirigente: totalMovilizados,
         dirigenteId: registro.dirigente.id,
         dirigenteNombre: nombreCompleto(registro.dirigente),
         registradoPorId: registro.registradoPorId,
         registradoPorUsername: registro.registradoPor?.username ?? null,
-        origen: input.eventoId ? "pase_lista" : "camara_qr",
+        origen: input.eventoId ? "panel_asistencia" : "camara_qr",
       },
     });
+
+    if (evento.tipoOperacion === "MOVILIZACION") {
+      return {
+        ok: true,
+        status: 201,
+        codigo: "MOVILIZACION_REGISTRADA",
+        mensaje: MENSAJE_MOVILIZACION_REGISTRADA,
+        evento: { id: evento.id, titulo: evento.titulo },
+        dirigente: {
+          id: registro.dirigente.id,
+          nombreCompleto: nombreCompleto(registro.dirigente),
+          tipo: registro.dirigente.tipo,
+          colonia: registro.dirigente.colonia,
+          seccionElectoral: registro.dirigente.seccionElectoral,
+        },
+        registradoAt: registro.registradoAt.toISOString(),
+        cantidad: cantidadRegistro,
+        totalMovilizados,
+      };
+    }
 
     return {
       ok: true,
@@ -198,7 +280,11 @@ export async function procesarEscaneoAsistencia(input: {
     };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return resultadoDuplicado(dirigenteResumen, { id: evento.id, titulo: evento.titulo });
+      return resultadoDuplicado(dirigenteResumen, {
+        id: evento.id,
+        titulo: evento.titulo,
+        tipoOperacion: evento.tipoOperacion,
+      });
     }
     throw error;
   }
@@ -229,21 +315,33 @@ export async function estadoPaseLista(): Promise<EstadoPaseLista> {
   const abierto = await prisma.eventoAsistencia.findFirst({
     where: { estado: "ABIERTO" },
     orderBy: [{ abiertoAt: "desc" }, { createdAt: "desc" }],
-    select: { id: true, titulo: true },
+    select: { id: true, titulo: true, tipoOperacion: true },
   });
   if (abierto) {
-    return { abierto: true, evento: abierto, mensaje: null };
+    return {
+      abierto: true,
+      evento: {
+        id: abierto.id,
+        titulo: abierto.titulo,
+        tipoOperacion: abierto.tipoOperacion,
+      },
+      mensaje: null,
+    };
   }
 
   const cerrado = await prisma.eventoAsistencia.findFirst({
     where: { estado: "CERRADO" },
     orderBy: [{ cerradoAt: "desc" }, { createdAt: "desc" }],
-    select: { id: true, titulo: true },
+    select: { id: true, titulo: true, tipoOperacion: true },
   });
   if (cerrado) {
     return {
       abierto: false,
-      evento: cerrado,
+      evento: {
+        id: cerrado.id,
+        titulo: cerrado.titulo,
+        tipoOperacion: cerrado.tipoOperacion,
+      },
       mensaje: mensajePaseCerrado(cerrado.titulo),
     };
   }
@@ -304,9 +402,15 @@ export async function manejarEscaneoHttp(req: Request, res: Response) {
       return;
     }
 
+    const cantidad =
+      estado.evento?.tipoOperacion === "MOVILIZACION"
+        ? cantidadMovilizacionDesdeCuerpo(req.body)
+        : undefined;
+
     const resultado = await procesarEscaneoAsistencia({
       raw: rawCodigoDesdeEscaneo(req),
       registradoPorId: operador.id,
+      cantidad,
       req,
     });
     res.status(resultado.status).json(cuerpoRespuestaEscaneo(resultado));
@@ -327,6 +431,8 @@ export function cuerpoRespuestaEscaneo(resultado: ResultadoEscaneoAsistencia) {
       evento: resultado.evento,
       dirigente: resultado.dirigente,
       registradoAt: resultado.registradoAt,
+      ...(resultado.cantidad != null ? { cantidad: resultado.cantidad } : {}),
+      ...(resultado.totalMovilizados != null ? { totalMovilizados: resultado.totalMovilizados } : {}),
     };
   }
   return {
