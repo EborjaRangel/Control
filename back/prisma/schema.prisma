@@ -70,6 +70,7 @@ enum EstadoEvento {
 enum TipoTransporteUnidad {
   CAMION
   MICROBUS
+  VAN
 }
 
 enum TipoRecorridoTransporte {

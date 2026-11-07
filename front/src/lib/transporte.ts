@@ -18,7 +18,7 @@ export type RegistroTransporteDTO = {
   eventoFecha: string;
   lat: number;
   lng: number;
-  tipoUnidad: "CAMION" | "MICROBUS";
+  tipoUnidad: "CAMION" | "MICROBUS" | "VAN";
   tipoUnidadLabel: string;
   placas: string;
   nombreChofer: string;

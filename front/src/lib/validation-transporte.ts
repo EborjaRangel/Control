@@ -23,7 +23,7 @@ export const registroTransporteFormSchema = Yup.object({
   direccionMapa: Yup.string().optional(),
   eventoId: Yup.string().trim().required("Selecciona el evento"),
   tipoUnidad: Yup.string()
-    .oneOf(["CAMION", "MICROBUS"], "Selecciona el tipo de transporte")
+    .oneOf(["CAMION", "MICROBUS", "VAN"], "Selecciona el tipo de transporte")
     .required("Selecciona el tipo de transporte"),
   placas: Yup.string().trim().required("Placas requeridas").max(20),
   nombreChofer: Yup.string().trim().required("Nombre del chofer requerido").max(120),
@@ -59,7 +59,7 @@ export function resumenCamposFaltantesRegistroTransporte(
 
 export type RegistroTransporteFormValues = {
   eventoId: string;
-  tipoUnidad: "CAMION" | "MICROBUS";
+  tipoUnidad: "CAMION" | "MICROBUS" | "VAN";
   placas: string;
   nombreChofer: string;
   telefonoChofer: string;

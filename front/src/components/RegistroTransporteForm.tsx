@@ -164,6 +164,7 @@ export function RegistroTransporteForm({ eventos, onSuccess, onCancel }: Props) 
                   [
                     ["CAMION", "Camión"],
                     ["MICROBUS", "Microbús"],
+                    ["VAN", "Van"],
                   ] as const
                 ).map(([value, label]) => (
                   <label key={value} className="inline-flex items-center gap-2 text-sm">

@@ -10,7 +10,7 @@ const telefono10 = Yup.string()
 export const registroTransporteCreateSchema = Yup.object({
   eventoId: Yup.string().trim().required("Selecciona el evento"),
   tipoUnidad: Yup.string()
-    .oneOf(["CAMION", "MICROBUS"], "Tipo de transporte inválido")
+    .oneOf(["CAMION", "MICROBUS", "VAN"], "Tipo de transporte inválido")
     .required("Selecciona el tipo de transporte"),
   placas: Yup.string().trim().required("Placas requeridas").max(20),
   nombreChofer: Yup.string().trim().required("Nombre del chofer requerido").max(120),

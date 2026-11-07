@@ -10,6 +10,7 @@ import { nombreCompleto } from "./dirigentes.js";
 export const TIPO_TRANSPORTE_LABEL: Record<TipoTransporteUnidad, string> = {
   CAMION: "Camión",
   MICROBUS: "Microbús",
+  VAN: "Van",
 };
 
 export const TIPO_RECORRIDO_LABEL: Record<TipoRecorridoTransporte, string> = {
