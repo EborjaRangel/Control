@@ -26,6 +26,7 @@ export type EventoAsistenciaDTO = {
   } | null;
   distritoLocal: number | null;
   tipoDirigente: string | null;
+  tiposDirigente: string[];
   alcanceLabel: string;
   estado: EstadoEvento;
   abiertoAt: string | null;
@@ -117,8 +118,8 @@ export const ALCANCE_EVENTO_LABEL: Record<AlcanceEvento, string> = {
   SECCION: "Por sección electoral",
   UNIDAD_TERRITORIAL: "Por unidad territorial",
   DISTRITO: "Por distrito local",
-  TIPO_DIRIGENTE: "Por tipo de dirigente (D1–D4 y Transversales)",
-  TODOS: "Todos los dirigentes",
+  TIPO_DIRIGENTE: "Por tipo de dirigente (legacy)",
+  TODOS: "Todo Coyoacán (sin filtro territorial)",
 };
 
 export function badgeEstadoEvento(estado: EstadoEvento): string {

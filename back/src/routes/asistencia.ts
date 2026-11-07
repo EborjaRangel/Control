@@ -128,8 +128,8 @@ router.post("/eventos", requireStaff, async (req, res) => {
         unidadTerritorialId:
           data.alcance === "UNIDAD_TERRITORIAL" ? data.unidadTerritorialId! : null,
         distritoLocal: data.alcance === "DISTRITO" ? (data.distritoLocal ?? null) : null,
-        tipoDirigente:
-          data.alcance === "TIPO_DIRIGENTE" ? (data.tipoDirigente as import("../generated/prisma/client.js").TipoDirigente) : null,
+        tipoDirigente: null,
+        tiposDirigente: data.tiposDirigente as import("../generated/prisma/client.js").TipoDirigente[],
         creadoPorId: req.user!.sub,
       },
       include: {

@@ -8,13 +8,18 @@ import { TIPOS_DIRIGENTE } from "./dirigentes.js";
 
 const coloniaNombres = COLONIAS_COYOACAN.map((c) => c.nombre);
 
-export const ALCANCES_EVENTO = [
+/** Alcances admitidos al crear evento (geográficos + sin filtro territorial). */
+export const ALCANCES_EVENTO_GEO = [
+  "TODOS",
   "COLONIA",
   "SECCION",
   "UNIDAD_TERRITORIAL",
   "DISTRITO",
+] as const;
+
+export const ALCANCES_EVENTO = [
+  ...ALCANCES_EVENTO_GEO,
   "TIPO_DIRIGENTE",
-  "TODOS",
 ] as const;
 
 export const TIPOS_OPERACION_EVENTO = ["PASE_LISTA", "MOVILIZACION"] as const;
@@ -33,8 +38,12 @@ export const eventoCreateSchema = Yup.object({
     .matches(/^\d{2}:\d{2}$/, "Hora inválida (usa HH:MM)"),
   lugar: Yup.string().trim().required("El lugar es obligatorio"),
   alcance: Yup.string()
-    .oneOf([...ALCANCES_EVENTO], "Alcance inválido")
-    .required("Selecciona el alcance del evento"),
+    .oneOf([...ALCANCES_EVENTO_GEO], "Alcance territorial inválido")
+    .required("Selecciona el alcance territorial"),
+  tiposDirigente: Yup.array()
+    .of(Yup.string().oneOf([...TIPOS_DIRIGENTE], "Tipo de dirigente inválido"))
+    .min(1, "Marca al menos un tipo de dirigente para el escaneo")
+    .required(),
   colonia: Yup.string()
     .nullable()
     .when("alcance", {
@@ -69,15 +78,6 @@ export const eventoCreateSchema = Yup.object({
           .oneOf([...DISTRITOS_LOCALES_COYOACAN], "Distrito inválido")
           .nullable()
           .notRequired(),
-    }),
-  tipoDirigente: Yup.string()
-    .nullable()
-    .when("alcance", {
-      is: "TIPO_DIRIGENTE",
-      then: (s) =>
-        s
-          .oneOf([...TIPOS_DIRIGENTE], "Tipo de dirigente inválido")
-          .required("Selecciona el tipo de dirigente"),
     }),
 });
 

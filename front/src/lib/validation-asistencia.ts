@@ -7,13 +7,17 @@ import {
 } from "./secciones-electorales";
 import type { AlcanceEvento } from "./asistencia";
 
-export const ALCANCES_EVENTO = [
+export const ALCANCES_EVENTO_GEO = [
+  "TODOS",
   "COLONIA",
   "SECCION",
   "UNIDAD_TERRITORIAL",
   "DISTRITO",
+] as const satisfies readonly AlcanceEvento[];
+
+export const ALCANCES_EVENTO = [
+  ...ALCANCES_EVENTO_GEO,
   "TIPO_DIRIGENTE",
-  "TODOS",
 ] as const satisfies readonly AlcanceEvento[];
 
 export const TIPOS_OPERACION_EVENTO = ["PASE_LISTA", "MOVILIZACION"] as const;
@@ -32,8 +36,12 @@ export const eventoCreateSchema = Yup.object({
     .matches(/^\d{2}:\d{2}$/, "Hora inválida (usa HH:MM)"),
   lugar: Yup.string().trim().required("El lugar es obligatorio"),
   alcance: Yup.string()
-    .oneOf([...ALCANCES_EVENTO], "Alcance inválido")
-    .required("Selecciona el alcance del evento"),
+    .oneOf([...ALCANCES_EVENTO_GEO], "Alcance territorial inválido")
+    .required("Selecciona el alcance territorial"),
+  tiposDirigente: Yup.array()
+    .of(Yup.string().oneOf([...TIPOS_DIRIGENTE], "Tipo de dirigente inválido"))
+    .min(1, "Marca al menos un tipo de dirigente para el escaneo")
+    .required(),
   colonia: Yup.string()
     .nullable()
     .when("alcance", {
@@ -72,15 +80,6 @@ export const eventoCreateSchema = Yup.object({
             DISTRITOS_LOCALES_COYOACAN.map(String).includes(v),
         ),
     }),
-  tipoDirigente: Yup.string()
-    .nullable()
-    .when("alcance", {
-      is: "TIPO_DIRIGENTE",
-      then: (s) =>
-        s
-          .oneOf([...TIPOS_DIRIGENTE], "Tipo de dirigente inválido")
-          .required("Selecciona el tipo de dirigente"),
-    }),
 });
 
 export const registrarAsistenciaSchema = Yup.object({
@@ -101,24 +100,25 @@ export const EMPTY_EVENTO: EventoFormValues = {
   fecha: "",
   hora: "",
   lugar: "",
-  alcance: "",
+  alcance: "TODOS",
+  tiposDirigente: [...TIPOS_DIRIGENTE],
   colonia: "",
   seccionElectoral: "",
   unidadTerritorialId: "",
   distritoLocal: "",
-  tipoDirigente: "",
 };
 
 export function eventoFormToApiBody(
   values: EventoFormValues,
-): Record<string, string | number | null> {
-  const body: Record<string, string | number | null> = {
+): Record<string, string | number | string[] | null> {
+  const body: Record<string, string | number | string[] | null> = {
     tipoOperacion: values.tipoOperacion,
     titulo: values.titulo.trim(),
     fecha: values.fecha,
     hora: values.hora,
     lugar: values.lugar.trim(),
     alcance: values.alcance,
+    tiposDirigente: values.tiposDirigente as string[],
   };
   if (values.alcance === "COLONIA") body.colonia = values.colonia ?? null;
   if (values.alcance === "SECCION") body.seccionElectoral = values.seccionElectoral ?? null;
@@ -128,6 +128,5 @@ export function eventoFormToApiBody(
   if (values.alcance === "DISTRITO") {
     body.distritoLocal = values.distritoLocal ? Number(values.distritoLocal) : null;
   }
-  if (values.alcance === "TIPO_DIRIGENTE") body.tipoDirigente = values.tipoDirigente ?? null;
   return body;
 }

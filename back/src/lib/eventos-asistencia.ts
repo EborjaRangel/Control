@@ -6,7 +6,12 @@ import type {
   TipoDirigente,
 } from "../generated/prisma/client.js";
 import { prisma } from "./prisma.js";
-import { compararDirigentePorApellidosNombre, nombreCompleto, TIPOS_DIRIGENTE } from "./dirigentes.js";
+import {
+  compararDirigentePorApellidosNombre,
+  nombreCompleto,
+  TIPO_DIRIGENTE_LABEL,
+  TIPOS_DIRIGENTE,
+} from "./dirigentes.js";
 import { filtroEstatusListado } from "./filtro-dirigentes.js";
 import { distritoLocalDeSeccion, seccionesDeDistritoLocal } from "./secciones-electorales.js";
 import { etiquetaUnidadTerritorial } from "./unidades-territoriales.js";
@@ -19,7 +24,23 @@ export type EventoAlcanceFields = Pick<
   | "unidadTerritorialId"
   | "distritoLocal"
   | "tipoDirigente"
+  | "tiposDirigente"
 >;
+
+export function tiposElegiblesEvento(evento: EventoAlcanceFields): TipoDirigente[] {
+  if (evento.tiposDirigente?.length) {
+    return [...evento.tiposDirigente];
+  }
+  if (evento.alcance === "TIPO_DIRIGENTE" && evento.tipoDirigente) {
+    return [evento.tipoDirigente];
+  }
+  return [...TIPOS_DIRIGENTE];
+}
+
+function etiquetaTiposDirigenteEvento(tipos: TipoDirigente[]): string | null {
+  if (tipos.length === 0 || tipos.length >= TIPOS_DIRIGENTE.length) return null;
+  return `Tipos: ${tipos.map((t) => TIPO_DIRIGENTE_LABEL[t] ?? t).join(", ")}`;
+}
 
 export type DirigenteElegibleFields = Pick<
   Dirigente,
@@ -37,7 +58,11 @@ export type EventoConRelaciones = EventoAsistencia & {
 };
 
 export function filtroDirigentesElegibles(evento: EventoAlcanceFields): Prisma.DirigenteWhereInput {
-  const base: Prisma.DirigenteWhereInput = filtroEstatusListado(false);
+  const tipos = tiposElegiblesEvento(evento);
+  const base: Prisma.DirigenteWhereInput = {
+    ...filtroEstatusListado(false),
+    tipo: { in: tipos },
+  };
 
   switch (evento.alcance) {
     case "COLONIA":
@@ -53,9 +78,8 @@ export function filtroDirigentesElegibles(evento: EventoAlcanceFields): Prisma.D
         seccionElectoral: { in: seccionesDeDistritoLocal(evento.distritoLocal) },
       };
     case "TIPO_DIRIGENTE":
-      return { ...base, tipo: evento.tipoDirigente ?? undefined };
     case "TODOS":
-      return { ...base, tipo: { in: [...TIPOS_DIRIGENTE] } };
+      return base;
     default:
       return base;
   }
@@ -66,6 +90,8 @@ export function dirigenteEsElegible(
   evento: EventoAlcanceFields,
 ): boolean {
   if (!dirigente.activo || dirigente.status !== "ACTIVO") return false;
+  const tipos = tiposElegiblesEvento(evento);
+  if (!(tipos as readonly string[]).includes(dirigente.tipo)) return false;
   switch (evento.alcance) {
     case "COLONIA":
       return dirigente.colonia === evento.colonia;
@@ -77,9 +103,8 @@ export function dirigenteEsElegible(
       if (evento.distritoLocal == null) return true;
       return distritoLocalDeSeccion(dirigente.seccionElectoral) === evento.distritoLocal;
     case "TIPO_DIRIGENTE":
-      return dirigente.tipo === evento.tipoDirigente;
     case "TODOS":
-      return (TIPOS_DIRIGENTE as readonly string[]).includes(dirigente.tipo);
+      return true;
     default:
       return false;
   }
@@ -90,26 +115,36 @@ export function etiquetaAlcanceEvento(
     unidadTerritorial?: { clave: string; nombre: string } | null;
   },
 ): string {
+  let geo: string;
   switch (evento.alcance) {
     case "COLONIA":
-      return `Colonia: ${evento.colonia ?? "—"}`;
+      geo = `Colonia: ${evento.colonia ?? "—"}`;
+      break;
     case "SECCION":
-      return `Sección: ${evento.seccionElectoral ?? "—"}`;
+      geo = `Sección: ${evento.seccionElectoral ?? "—"}`;
+      break;
     case "UNIDAD_TERRITORIAL":
-      return evento.unidadTerritorial
+      geo = evento.unidadTerritorial
         ? `UT: ${etiquetaUnidadTerritorial(evento.unidadTerritorial)}`
         : "Unidad territorial";
+      break;
     case "DISTRITO":
-      return evento.distritoLocal == null
-        ? "Distrito: todos (Coyoacán)"
-        : `Distrito local ${evento.distritoLocal}`;
+      geo =
+        evento.distritoLocal == null
+          ? "Distrito: todos (Coyoacán)"
+          : `Distrito local ${evento.distritoLocal}`;
+      break;
     case "TIPO_DIRIGENTE":
-      return `Tipo dirigente: ${evento.tipoDirigente ?? "—"}`;
+      geo = `Tipo dirigente (legacy): ${evento.tipoDirigente ?? "—"}`;
+      break;
     case "TODOS":
-      return "Todos los dirigentes (D1–D4 y Transversales, estatus alta)";
+      geo = "Todo Coyoacán (sin filtro territorial)";
+      break;
     default:
-      return "—";
+      geo = "—";
   }
+  const tiposLbl = etiquetaTiposDirigenteEvento(tiposElegiblesEvento(evento));
+  return tiposLbl ? `${geo} · ${tiposLbl}` : geo;
 }
 
 export function serializeEvento(evento: EventoConRelaciones) {
@@ -133,6 +168,7 @@ export function serializeEvento(evento: EventoConRelaciones) {
       : null,
     distritoLocal: evento.distritoLocal,
     tipoDirigente: evento.tipoDirigente,
+    tiposDirigente: evento.tiposDirigente ?? [],
     alcanceLabel: etiquetaAlcanceEvento(evento),
     estado: evento.estado,
     abiertoAt: evento.abiertoAt?.toISOString() ?? null,

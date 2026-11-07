@@ -351,6 +351,7 @@ export function snapshotEventoAsistencia(e: {
   unidadTerritorialId: string | null;
   distritoLocal: number | null;
   tipoDirigente: string | null;
+  tiposDirigente?: string[];
 }) {
   return sanitizarObjeto({
     id: e.id,
@@ -366,6 +367,7 @@ export function snapshotEventoAsistencia(e: {
     unidadTerritorialId: e.unidadTerritorialId,
     distritoLocal: e.distritoLocal,
     tipoDirigente: e.tipoDirigente,
+    tiposDirigente: e.tiposDirigente,
   });
 }
 

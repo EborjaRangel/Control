@@ -752,8 +752,10 @@ model EventoAsistencia {
   unidadTerritorial   UnidadTerritorial? @relation(fields: [unidadTerritorialId], references: [id], onDelete: SetNull)
   /// Distrito local 26 o 30; null = ambos distritos (Coyoacán)
   distritoLocal       Int?
-  /// D1–D4 o Transversales cuando alcance = TIPO_DIRIGENTE
+  /// D1–D4 o Transversales cuando alcance = TIPO_DIRIGENTE (eventos legacy)
   tipoDirigente       TipoDirigente?
+  /// Tipos de dirigente incluidos en el escaneo (vacío = todos, legacy)
+  tiposDirigente      TipoDirigente[] @default([])
   estado              EstadoEvento   @default(PROGRAMADO)
   abiertoAt           DateTime?
   cerradoAt           DateTime?

@@ -52,7 +52,8 @@ export default function NuevoEventoPage() {
       <div>
         <h1 className="page-title">Nuevo evento</h1>
         <p className="page-subtitle">
-          Captura los datos del evento, elige si es pase de lista o movilización, y define el alcance.
+          Captura los datos del evento, elige pase de lista o movilización, el alcance territorial y los tipos de
+          dirigente que pueden escanear.
         </p>
       </div>
 

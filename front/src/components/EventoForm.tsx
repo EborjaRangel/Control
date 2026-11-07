@@ -1,6 +1,6 @@
 "use client";
 
-import { Form, Formik, useField, useFormikContext } from "formik";
+import { Form, Formik, useFormikContext } from "formik";
 import Link from "next/link";
 import { useState } from "react";
 import { AppIcon } from "@/components/AppIcon";
@@ -8,7 +8,13 @@ import { FormField, FormSelect } from "@/components/FormField";
 import { cn } from "@/lib/cn";
 import { ALCANCE_EVENTO_LABEL } from "@/lib/asistencia";
 import { NOMBRES_COLONIAS_COYOACAN } from "@/lib/colonias";
-import { TIPO_DIRIGENTE_LABEL, TIPOS_DIRIGENTE } from "@/lib/dirigentes";
+import {
+  TIPO_DIRIGENTE_LABEL,
+  TIPOS_DIRIGENTE,
+  TIPOS_DIRIGENTE_CAMPO,
+  TIPOS_DIRIGENTE_ORGANIZACION,
+  type TipoDirigente,
+} from "@/lib/dirigentes";
 import {
   DISTRITOS_LOCALES_COYOACAN,
   SECCIONES_ELECTORALES_COYOACAN,
@@ -16,7 +22,7 @@ import {
 } from "@/lib/secciones-electorales";
 import { etiquetaUnidadTerritorial, type UnidadTerritorialResumen } from "@/lib/unidades-territoriales";
 import {
-  ALCANCES_EVENTO,
+  ALCANCES_EVENTO_GEO,
   eventoCreateSchema,
   TIPOS_OPERACION_EVENTO,
   type EventoFormValues,
@@ -35,37 +41,114 @@ type Props = {
   uts?: UnidadTerritorialResumen[];
 };
 
-function AlcanceSelect() {
-  const { setFieldValue, submitCount } = useFormikContext<EventoFormValues>();
-  const [field, meta] = useField("alcance");
-  const hasError = Boolean(meta.error && (meta.touched || submitCount > 0));
+function AlcanceTerritorialRadios() {
+  const { values, setFieldValue, submitCount, errors, touched } = useFormikContext<EventoFormValues>();
+  const showError = Boolean(errors.alcance && (touched.alcance || submitCount > 0));
 
   return (
-    <label className="label">
-      Alcance del pase de lista
-      <select
-        {...field}
-        id="alcance"
-        className={cn("input", hasError && "input-error")}
-        onChange={(e) => {
-          const alcance = e.target.value;
-          void setFieldValue("alcance", alcance);
-          void setFieldValue("colonia", "");
-          void setFieldValue("seccionElectoral", "");
-          void setFieldValue("unidadTerritorialId", "");
-          void setFieldValue("distritoLocal", "");
-          void setFieldValue("tipoDirigente", "");
-        }}
-      >
-        <option value="">Selecciona alcance…</option>
-        {ALCANCES_EVENTO.map((a) => (
-          <option key={a} value={a}>
-            {ALCANCE_EVENTO_LABEL[a]}
-          </option>
+    <fieldset className="space-y-3">
+      <legend className="label">Alcance territorial</legend>
+      <p className="text-xs text-ink-secondary">
+        Define dónde viven o se ubican los dirigentes elegibles para escanear en este evento.
+      </p>
+      <div className="flex flex-col gap-2">
+        {ALCANCES_EVENTO_GEO.map((a) => (
+          <label
+            key={a}
+            className={cn(
+              "flex cursor-pointer items-start gap-3 rounded-lg border border-line px-3 py-2.5",
+              values.alcance === a && "border-pin bg-pin-light/30",
+            )}
+          >
+            <input
+              type="radio"
+              name="alcance"
+              className="mt-1"
+              checked={values.alcance === a}
+              onChange={() => {
+                void setFieldValue("alcance", a);
+                if (a !== "COLONIA") void setFieldValue("colonia", "");
+                if (a !== "SECCION") void setFieldValue("seccionElectoral", "");
+                if (a !== "UNIDAD_TERRITORIAL") void setFieldValue("unidadTerritorialId", "");
+                if (a !== "DISTRITO") void setFieldValue("distritoLocal", "");
+              }}
+            />
+            <span className="text-sm font-medium text-ink">{ALCANCE_EVENTO_LABEL[a]}</span>
+          </label>
         ))}
-      </select>
-      {hasError ? <p className="field-error">{meta.error}</p> : null}
-    </label>
+      </div>
+      {showError ? <p className="field-error">{errors.alcance}</p> : null}
+    </fieldset>
+  );
+}
+
+function TiposDirigenteCheckboxes() {
+  const { values, setFieldValue, submitCount, errors, touched } = useFormikContext<EventoFormValues>();
+  const showError = Boolean(errors.tiposDirigente && (touched.tiposDirigente || submitCount > 0));
+
+  function toggle(tipo: TipoDirigente) {
+    const set = new Set(values.tiposDirigente);
+    if (set.has(tipo)) set.delete(tipo);
+    else set.add(tipo);
+    void setFieldValue("tiposDirigente", [...set]);
+  }
+
+  function seleccionarTodos() {
+    void setFieldValue("tiposDirigente", [...TIPOS_DIRIGENTE]);
+  }
+
+  function quitarTodos() {
+    void setFieldValue("tiposDirigente", []);
+  }
+
+  const bloques = [
+    { titulo: "Dirigente de campo (D1–D4)", tipos: TIPOS_DIRIGENTE_CAMPO },
+    { titulo: "Organización", tipos: TIPOS_DIRIGENTE_ORGANIZACION },
+  ];
+
+  return (
+    <fieldset className="space-y-3">
+      <legend className="label">Tipos de dirigente incluidos en el escaneo</legend>
+      <p className="text-xs text-ink-secondary">
+        Marca cada categoría que pueda pasar lista o registrar movilización en este evento.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className="btn-ghost btn-sm" onClick={() => seleccionarTodos()}>
+          Marcar todos
+        </button>
+        <button type="button" className="btn-ghost btn-sm" onClick={() => quitarTodos()}>
+          Quitar todos
+        </button>
+      </div>
+      {bloques.map((bloque) => (
+        <div key={bloque.titulo} className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-secondary">{bloque.titulo}</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {bloque.tipos.map((tipo) => (
+              <label
+                key={tipo}
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm",
+                  values.tiposDirigente.includes(tipo) && "border-pin bg-pin-light/20",
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={values.tiposDirigente.includes(tipo)}
+                  onChange={() => toggle(tipo)}
+                />
+                <span className="text-ink">{TIPO_DIRIGENTE_LABEL[tipo]}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+      {showError ? (
+        <p className="field-error">
+          {typeof errors.tiposDirigente === "string" ? errors.tiposDirigente : "Selecciona al menos un tipo"}
+        </p>
+      ) : null}
+    </fieldset>
   );
 }
 
@@ -124,23 +207,10 @@ function AlcanceCampos({ uts }: { uts: UnidadTerritorialResumen[] }) {
     );
   }
 
-  if (values.alcance === "TIPO_DIRIGENTE") {
-    return (
-      <FormSelect label="Tipo de dirigente" name="tipoDirigente">
-        <option value="">Selecciona tipo…</option>
-        {TIPOS_DIRIGENTE.map((t) => (
-          <option key={t} value={t}>
-            {TIPO_DIRIGENTE_LABEL[t]}
-          </option>
-        ))}
-      </FormSelect>
-    );
-  }
-
   if (values.alcance === "TODOS") {
     return (
-      <p className="panel-pin text-sm text-pin-dark">
-        Incluye a todos los dirigentes D1, D2, D3, D4 y Transversales con estatus alta.
+      <p className="panel-soft text-sm text-ink-secondary">
+        Sin filtro por colonia, sección, UT ni distrito; solo aplican los tipos de dirigente marcados abajo.
       </p>
     );
   }
@@ -193,12 +263,13 @@ export function EventoForm({
             ))}
           </FormSelect>
 
-          <AlcanceSelect />
+          <AlcanceTerritorialRadios />
           <AlcanceCampos uts={uts} />
+          <TiposDirigenteCheckboxes />
 
           <p className="text-sm text-ink-secondary">
-            Después de crear el evento podrás redactar y enviar la convocatoria por correo, SMS y
-            WhatsApp desde la ficha del evento.
+            Después de crear el evento podrás redactar y enviar la convocatoria por correo, SMS y WhatsApp desde la
+            ficha del evento.
           </p>
 
           <div className="page-actions">
