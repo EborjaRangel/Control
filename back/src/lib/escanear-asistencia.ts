@@ -14,8 +14,7 @@ export const MENSAJE_MOVILIZACION_REGISTRADA = "Movilización registrada";
 export const MENSAJE_CANTIDAD_MOVILIZACION = "Indica cuántas personas movilizas (número entero mayor que cero)";
 export const MENSAJE_SIN_PASE_ABIERTO = "No hay un pase de lista abierto";
 export const MENSAJE_CLAVE_INCORRECTA = "Código incorrecto";
-export const MENSAJE_DIRIGENTE_NO_ELEGIBLE =
-  "Este dirigente no está en el alcance del evento (territorio o tipo de dirigente)";
+export const MENSAJE_DIRIGENTE_NO_ELEGIBLE = "Este dirigente no fue convocado a este evento.";
 export const MENSAJE_DIRIGENTE_INACTIVO = "El dirigente no está activo";
 
 const CANTIDAD_MOV_MAX = 100_000;
