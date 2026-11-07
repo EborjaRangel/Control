@@ -14,6 +14,9 @@ export const MENSAJE_MOVILIZACION_REGISTRADA = "Movilización registrada";
 export const MENSAJE_CANTIDAD_MOVILIZACION = "Indica cuántas personas movilizas (número entero mayor que cero)";
 export const MENSAJE_SIN_PASE_ABIERTO = "No hay un pase de lista abierto";
 export const MENSAJE_CLAVE_INCORRECTA = "Código incorrecto";
+export const MENSAJE_DIRIGENTE_NO_ELEGIBLE =
+  "Este dirigente no está en el alcance del evento (territorio o tipo de dirigente)";
+export const MENSAJE_DIRIGENTE_INACTIVO = "El dirigente no está activo";
 
 const CANTIDAD_MOV_MAX = 100_000;
 
@@ -59,7 +62,8 @@ export type ResultadoEscaneoAsistencia =
         | "PASE_CERRADO"
         | "ASISTENCIA_DUPLICADA"
         | "CLAVE_INCORRECTA"
-        | "CANTIDAD_INVALIDA";
+        | "CANTIDAD_INVALIDA"
+        | "DIRIGENTE_NO_ELEGIBLE";
       mensaje: string;
       evento?: EventoPaseResumen;
       dirigente?: { id: string; nombreCompleto: string };
@@ -71,6 +75,20 @@ function resultadoInvalido(): ResultadoEscaneoAsistencia {
     status: 404,
     codigo: "QR_INVALIDO",
     mensaje: MENSAJE_QR_INVALIDO,
+  };
+}
+
+function resultadoNoElegible(
+  dirigente: { id: string; nombreCompleto: string },
+  evento?: EventoPaseResumen,
+): ResultadoEscaneoAsistencia {
+  return {
+    ok: false,
+    status: 403,
+    codigo: "DIRIGENTE_NO_ELEGIBLE",
+    mensaje: MENSAJE_DIRIGENTE_NO_ELEGIBLE,
+    dirigente,
+    evento,
   };
 }
 
@@ -109,14 +127,22 @@ export async function procesarEscaneoAsistencia(input: {
   cantidad?: number;
   req?: Request;
 }): Promise<ResultadoEscaneoAsistencia> {
-  const codigoQr = codigoQrDesdeTextoQr(input.raw);
+  const raw = input.raw?.trim() ?? "";
+  const codigoQr = codigoQrDesdeTextoQr(raw) ?? (raw.length > 0 ? raw : null);
   if (!codigoQr) return resultadoInvalido();
 
   const dirigente = await prisma.dirigente.findUnique({
     where: { codigoQr },
   });
-  if (!dirigente || !dirigente.activo || dirigente.status !== "ACTIVO") {
-    return resultadoInvalido();
+  if (!dirigente) return resultadoInvalido();
+  if (!dirigente.activo || dirigente.status !== "ACTIVO") {
+    return {
+      ok: false,
+      status: 403,
+      codigo: "DIRIGENTE_NO_ELEGIBLE",
+      mensaje: MENSAJE_DIRIGENTE_INACTIVO,
+      dirigente: { id: dirigente.id, nombreCompleto: nombreCompleto(dirigente) },
+    };
   }
 
   const dirigenteResumen = {
@@ -139,7 +165,13 @@ export async function procesarEscaneoAsistencia(input: {
         evento: { id: evento.id, titulo: evento.titulo, tipoOperacion: evento.tipoOperacion },
       };
     }
-    if (!dirigenteEsElegible(dirigente, evento)) return resultadoInvalido();
+    if (!dirigenteEsElegible(dirigente, evento)) {
+      return resultadoNoElegible(dirigenteResumen, {
+        id: evento.id,
+        titulo: evento.titulo,
+        tipoOperacion: evento.tipoOperacion,
+      });
+    }
   } else {
     const abiertos = await prisma.eventoAsistencia.findMany({
       where: { estado: "ABIERTO" },
@@ -156,7 +188,15 @@ export async function procesarEscaneoAsistencia(input: {
       };
     }
     evento = abiertos.find((item) => dirigenteEsElegible(dirigente, item)) ?? null;
-    if (!evento) return resultadoInvalido();
+    if (!evento) {
+      const ref = abiertos[0];
+      return resultadoNoElegible(
+        dirigenteResumen,
+        ref
+          ? { id: ref.id, titulo: ref.titulo, tipoOperacion: ref.tipoOperacion }
+          : undefined,
+      );
+    }
   }
 
   let cantidadMov: number | undefined = input.cantidad;

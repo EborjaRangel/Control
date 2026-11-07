@@ -73,5 +73,9 @@ export function codigoQrDesdeTextoQr(texto: string): string | null {
   }
 
   if (/^[0-9a-f-]{36}$/i.test(trimmed)) return trimmed;
+
+  // Identificador tal cual (UUID, cuid u otro código guardado en Dirigente.codigoQr)
+  if (/^[A-Za-z0-9_-]{8,80}$/.test(trimmed)) return trimmed;
+
   return null;
 }

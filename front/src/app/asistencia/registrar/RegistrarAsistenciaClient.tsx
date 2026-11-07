@@ -1,6 +1,7 @@
 "use client";
 
 import { AxisLogo } from "@/components/AxisLogo";
+import { codigoQrDesdeTextoQr } from "@/lib/qr";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
@@ -13,7 +14,8 @@ type CodigoEscaneoAsistencia =
   | "CANTIDAD_INVALIDA"
   | "QR_INVALIDO"
   | "PASE_CERRADO"
-  | "CLAVE_INCORRECTA";
+  | "CLAVE_INCORRECTA"
+  | "DIRIGENTE_NO_ELEGIBLE";
 
 type CodigoEscaneoMaterial =
   | "MATERIAL_ENTREGADO"
@@ -53,13 +55,20 @@ function visualDeCodigo(modo: ModoPase, codigo: string | undefined, ok: boolean)
   }
   if (codigo === "ASISTENCIA_TOMADA" || codigo === "MOVILIZACION_REGISTRADA") return "ok";
   if (codigo === "PASE_CERRADO") return "cerrado";
-  if (codigo === "ASISTENCIA_DUPLICADA") return "aviso";
+  if (codigo === "ASISTENCIA_DUPLICADA" || codigo === "DIRIGENTE_NO_ELEGIBLE") return "aviso";
   if (codigo === "CANTIDAD_INVALIDA" || codigo === "CLAVE_INCORRECTA") return "formulario";
   return "error";
 }
 
+function textoQrParaEnviar(codigoDesdeQuery: string): string {
+  if (codigoDesdeQuery) return codigoDesdeQuery;
+  if (typeof window === "undefined") return "";
+  const href = window.location.href;
+  return codigoQrDesdeTextoQr(href) ?? href;
+}
+
 /** Tras un escaneo exitoso de asistencia (pase de lista o movilización): mensaje breve antes de cerrar. */
-const MS_CIERRE_TRAS_ASISTENCIA_OK = 1000;
+const MS_CIERRE_TRAS_ASISTENCIA_OK = 2000;
 const MS_CIERRE_TRAS_OTROS = 3500;
 
 function cerrarPestanaTrasLectura(delayMs: number) {
@@ -148,6 +157,14 @@ export default function RegistrarAsistenciaClient() {
 
     const endpoint = modo === "material" ? "/api/material/escanear" : "/api/asistencia/escanear";
 
+    const rawQr = textoQrParaEnviar(codigoQr);
+    if (!rawQr.trim()) {
+      setEnviando(false);
+      setMensaje("No se detectó el código del QR. Vuelve a escanear la credencial.");
+      setVisual("formulario");
+      return;
+    }
+
     let cantidadNum: number | undefined;
     if (modo === "asistencia" && tipoOperacionEvento === "MOVILIZACION") {
       const n = Number.parseInt(cantidadMovilizacion.trim(), 10);
@@ -165,7 +182,7 @@ export default function RegistrarAsistenciaClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          raw: codigoQr,
+          raw: rawQr,
           clave: clave.trim(),
           ...(cantidadNum != null ? { cantidad: cantidadNum } : {}),
         }),
@@ -190,7 +207,12 @@ export default function RegistrarAsistenciaClient() {
           setDetalle(null);
         }
       } else {
-        const texto = data.mensaje ?? data.error ?? "El QR es inválido";
+        const texto =
+          data.mensaje ??
+          data.error ??
+          (data.codigo === "QR_INVALIDO"
+            ? "El QR es inválido"
+            : "No se pudo registrar la asistencia.");
         setMensaje(texto);
         if (modo === "material" && data.codigo === "NO_CONVOCADO" && data.dirigente?.id) {
           setDetalle(
@@ -218,6 +240,11 @@ export default function RegistrarAsistenciaClient() {
         setVisual("formulario");
         return;
       }
+      if (data.codigo === "DIRIGENTE_NO_ELEGIBLE") {
+        setVisual("aviso");
+        cerrarPestanaTrasLectura(MS_CIERRE_TRAS_OTROS);
+        return;
+      }
       const siguiente = visualDeCodigo(modo, data.codigo, res.ok);
       setVisual(siguiente);
       if (siguiente !== "formulario") {
@@ -227,7 +254,7 @@ export default function RegistrarAsistenciaClient() {
       }
     } catch {
       setVisual("error");
-      setMensaje("El QR es inválido");
+      setMensaje("No se pudo registrar. Revisa la conexión e intenta de nuevo.");
       setDetalle(null);
       cerrarPestanaTrasLectura(MS_CIERRE_TRAS_OTROS);
     } finally {

@@ -12,7 +12,8 @@ import {
   TIPO_DIRIGENTE_LABEL,
   TIPOS_DIRIGENTE,
 } from "./dirigentes.js";
-import { filtroEstatusListado } from "./filtro-dirigentes.js";
+import { variantesColoniaParaBusqueda } from "./colonias.js";
+import { filtroColoniaDirigente, filtroEstatusListado } from "./filtro-dirigentes.js";
 import { distritoLocalDeSeccion, seccionesDeDistritoLocal } from "./secciones-electorales.js";
 import { etiquetaUnidadTerritorial } from "./unidades-territoriales.js";
 
@@ -65,8 +66,10 @@ export function filtroDirigentesElegibles(evento: EventoAlcanceFields): Prisma.D
   };
 
   switch (evento.alcance) {
-    case "COLONIA":
-      return { ...base, colonia: evento.colonia ?? undefined };
+    case "COLONIA": {
+      const col = evento.colonia ? filtroColoniaDirigente(evento.colonia) : undefined;
+      return col ? { ...base, ...col } : { ...base, colonia: evento.colonia ?? undefined };
+    }
     case "SECCION":
       return { ...base, seccionElectoral: evento.seccionElectoral ?? undefined };
     case "UNIDAD_TERRITORIAL":
@@ -93,8 +96,13 @@ export function dirigenteEsElegible(
   const tipos = tiposElegiblesEvento(evento);
   if (!(tipos as readonly string[]).includes(dirigente.tipo)) return false;
   switch (evento.alcance) {
-    case "COLONIA":
-      return dirigente.colonia === evento.colonia;
+    case "COLONIA": {
+      if (!evento.colonia) return false;
+      const variantes = variantesColoniaParaBusqueda(evento.colonia);
+      return variantes.length > 0
+        ? variantes.includes(dirigente.colonia)
+        : dirigente.colonia === evento.colonia;
+    }
     case "SECCION":
       return dirigente.seccionElectoral === evento.seccionElectoral;
     case "UNIDAD_TERRITORIAL":
