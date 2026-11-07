@@ -280,11 +280,20 @@ export async function procesarEscaneoAsistencia(input: {
     };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return resultadoDuplicado(dirigenteResumen, {
-        id: evento.id,
-        titulo: evento.titulo,
-        tipoOperacion: evento.tipoOperacion,
-      });
+      if (evento.tipoOperacion === "PASE_LISTA") {
+        return resultadoDuplicado(dirigenteResumen, {
+          id: evento.id,
+          titulo: evento.titulo,
+          tipoOperacion: evento.tipoOperacion,
+        });
+      }
+      console.error(
+        "Conflicto único en movilización (eventoId, dirigenteId): falta DROP INDEX RegistroAsistencia_eventoId_dirigenteId_key",
+        error,
+      );
+      throw new Error(
+        "Base de datos sin migración de movilización: índice único RegistroAsistencia_eventoId_dirigenteId_key",
+      );
     }
     throw error;
   }
@@ -402,23 +411,23 @@ export async function manejarEscaneoHttp(req: Request, res: Response) {
       return;
     }
 
-    const cantidad =
-      estado.evento?.tipoOperacion === "MOVILIZACION"
-        ? cantidadMovilizacionDesdeCuerpo(req.body)
-        : undefined;
-
     const resultado = await procesarEscaneoAsistencia({
       raw: rawCodigoDesdeEscaneo(req),
+      eventoId: estado.evento!.id,
       registradoPorId: operador.id,
-      cantidad,
+      cantidad: cantidadMovilizacionDesdeCuerpo(req.body),
       req,
     });
     res.status(resultado.status).json(cuerpoRespuestaEscaneo(resultado));
   } catch (error) {
     console.error(error);
+    const msg =
+      error instanceof Error && error.message.includes("RegistroAsistencia_eventoId_dirigenteId_key")
+        ? "Error de base de datos: falta aplicar la migración de movilización en el servidor."
+        : "Error al registrar asistencia";
     res.status(500).json({
-      error: "Error al registrar asistencia",
-      mensaje: "Error al registrar asistencia",
+      error: msg,
+      mensaje: msg,
     });
   }
 }
