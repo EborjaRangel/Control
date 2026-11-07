@@ -67,6 +67,17 @@ enum EstadoEvento {
   CERRADO
 }
 
+enum TipoTransporteUnidad {
+  CAMION
+  MICROBUS
+}
+
+enum TipoRecorridoTransporte {
+  IDA
+  VUELTA
+  IDA_Y_VUELTA
+}
+
 /// Canal de notificación a dirigentes
 enum CanalComunicacion {
   EMAIL
@@ -192,6 +203,7 @@ model Dirigente {
   participacionesEntregaMaterial EventoEntregaMaterialDirigente[]
   asignacionesMaterialEntrega   AsignacionMaterialEntrega[]
   entregasMaterial                RegistroEntregaMaterial[]
+  registrosTransporte             RegistroTransporte[]
   asistencias         RegistroAsistencia[]
   enviosComunicacion  EnvioComunicacion[]
   estudios            DirigenteEstudio[]
@@ -761,6 +773,7 @@ model EventoAsistencia {
   cerradoAt           DateTime?
   creadoPorId         String?
   asistencias         RegistroAsistencia[]
+  registrosTransporte RegistroTransporte[]
   enviosComunicacion  EnvioComunicacion[]
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
@@ -773,6 +786,44 @@ model EventoAsistencia {
   @@index([unidadTerritorialId])
   @@index([distritoLocal])
   @@index([tipoDirigente])
+}
+
+/// Captura de unidad de transporte (camión / microbús) en un evento de asistencia abierto
+model RegistroTransporte {
+  id            String                  @id @default(cuid())
+  eventoId      String
+  evento        EventoAsistencia        @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  dirigenteId   String
+  dirigente     Dirigente               @relation(fields: [dirigenteId], references: [id], onDelete: Cascade)
+  tipoUnidad    TipoTransporteUnidad
+  placas        String
+  nombreChofer  String
+  telefonoChofer String
+  tipoRecorrido TipoRecorridoTransporte
+  puntoEntrega  String
+  lat           Float
+  lng           Float
+  fotos         RegistroTransporteFoto[]
+  registradoAt  DateTime                @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventoId])
+  @@index([dirigenteId])
+  @@index([registradoAt])
+}
+
+model RegistroTransporteFoto {
+  id           String             @id @default(cuid())
+  registroId   String
+  registro     RegistroTransporte @relation(fields: [registroId], references: [id], onDelete: Cascade)
+  url          String
+  orden        Int                @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([registroId])
 }
 
 /// Registro de asistencia de un dirigente a un evento

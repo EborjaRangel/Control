@@ -65,6 +65,7 @@ import serviciosUrbanosRouter from "./servicios-urbanos.js";
 import asambleasRouter from "./asambleas.js";
 import difusionRouter from "./difusion.js";
 import materialRouter from "./material.js";
+import transporteRouter from "./transporte.js";
 import {
   manejarEscaneoMaterialHttp,
   manejarEstadoEntregaMaterialHttp,
@@ -287,6 +288,7 @@ router.use("/servicios-urbanos", serviciosUrbanosRouter);
 router.use("/asambleas", asambleasRouter);
 router.use("/difusion", difusionRouter);
 router.use("/material", materialRouter);
+router.use("/transporte", transporteRouter);
 router.use("/rc", rcRouter);
 router.use("/rg", rgRouter);
 router.use("/notificaciones", notificacionesRouter);

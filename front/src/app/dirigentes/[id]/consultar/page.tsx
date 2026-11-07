@@ -102,6 +102,14 @@ export default function ConsultarDirigentePage() {
               <AppIcon name="megaphone" className="size-4 shrink-0" />
               Difusión
             </Link>
+            <Link href={`/material/dirigentes/${id}`} className="btn-secondary btn-responsive">
+              <AppIcon name="clipboard" className="size-4 shrink-0" />
+              Material entregado
+            </Link>
+            <Link href={`/transporte/dirigentes/${id}`} className="btn-secondary btn-responsive">
+              <AppIcon name="map" className="size-4 shrink-0" />
+              Transporte
+            </Link>
             <Link href={enlaceRc(id, user?.rcId)} className="btn-secondary btn-responsive">
               <AppIcon name="flag" className="size-4 shrink-0" />
               Mis RC
