@@ -9,6 +9,7 @@ import type { EventoTransporteResumenDTO } from "@/lib/transporte";
 import {
   MAX_FOTOS_TRANSPORTE,
   registroTransporteFormSchema,
+  resumenCamposFaltantesRegistroTransporte,
   type RegistroTransporteFormValues,
 } from "@/lib/validation-transporte";
 
@@ -63,6 +64,7 @@ function UbicacionDispositivo() {
 
 export function RegistroTransporteForm({ eventos, onSuccess, onCancel }: Props) {
   const [error, setError] = useState<string | null>(null);
+  const [exito, setExito] = useState(false);
 
   return (
     <Formik<RegistroTransporteFormValues>
@@ -71,25 +73,49 @@ export function RegistroTransporteForm({ eventos, onSuccess, onCancel }: Props) 
       validationSchema={registroTransporteFormSchema}
       onSubmit={async (values, { setSubmitting }) => {
         setError(null);
-        setSubmitting(true);
+        setExito(false);
+        if (values.lat == null || values.lng == null) {
+          setError("Falta la ubicación. Permite el GPS o marca el punto en el mapa.");
+          setSubmitting(false);
+          return;
+        }
+        if (!values.fotos?.length) {
+          setError("Sube al menos una foto de la unidad (espera a que termine de subir).");
+          setSubmitting(false);
+          return;
+        }
         try {
           const res = await apiFetch("/api/transporte/registros", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              ...values,
-              lat: values.lat!,
-              lng: values.lng!,
+              eventoId: values.eventoId,
+              tipoUnidad: values.tipoUnidad,
+              placas: values.placas,
+              nombreChofer: values.nombreChofer,
+              telefonoChofer: values.telefonoChofer,
+              tipoRecorrido: values.tipoRecorrido,
+              puntoEntrega: values.puntoEntrega,
+              lat: values.lat,
+              lng: values.lng,
+              fotos: values.fotos,
             }),
           });
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+            detalles?: string[];
+          };
           if (!res.ok) {
-            const data = (await res.json()) as { error?: string; detalles?: string[] };
-            throw new Error(data.error ?? data.detalles?.join(" ") ?? "Error al guardar");
+            const detalle = data.detalles?.filter(Boolean).join(" ");
+            throw new Error(
+              [data.error, detalle].filter(Boolean).join(" — ") ||
+                `No se pudo guardar (código ${res.status}). Intenta de nuevo.`,
+            );
           }
-          onSuccess();
+          setExito(true);
+          window.setTimeout(() => onSuccess(), 1400);
         } catch (err) {
           setError(err instanceof Error ? err.message : "Error al guardar");
-        } finally {
           setSubmitting(false);
         }
       }}
@@ -98,9 +124,21 @@ export function RegistroTransporteForm({ eventos, onSuccess, onCancel }: Props) 
         const fotos = values.fotos ?? [];
         const puedeAgregarFoto = fotos.length < MAX_FOTOS_TRANSPORTE;
         const mostrarErrores = submitCount > 0;
+        const resumenFaltantes = mostrarErrores
+          ? resumenCamposFaltantesRegistroTransporte(errors)
+          : null;
+        const ubicacionLista = values.lat != null && values.lng != null;
 
         return (
           <Form className="card-section space-y-5">
+            {exito ? (
+              <div className="alert-success text-center text-lg font-semibold">
+                Transporte registrado correctamente
+              </div>
+            ) : null}
+            {resumenFaltantes ? (
+              <div className="alert-error text-sm font-medium">{resumenFaltantes}</div>
+            ) : null}
             <label className="block">
               <span className="label">Evento</span>
               <select
@@ -226,7 +264,14 @@ export function RegistroTransporteForm({ eventos, onSuccess, onCancel }: Props) 
             </label>
 
             <section className="space-y-3">
-              <h2 className="section-title">Ubicación de la captura</h2>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="section-title">Ubicación de la captura</h2>
+                {ubicacionLista ? (
+                  <span className="badge-pin text-xs">Ubicación capturada</span>
+                ) : (
+                  <span className="text-xs text-ink-secondary">Pendiente</span>
+                )}
+              </div>
               <UbicacionDispositivo />
               <ServicioUrbanoMapPicker
                 lat={values.lat}
@@ -293,8 +338,12 @@ export function RegistroTransporteForm({ eventos, onSuccess, onCancel }: Props) 
               <button type="button" className="btn-secondary btn-responsive" onClick={onCancel}>
                 Cancelar
               </button>
-              <button type="submit" className="btn-primary btn-responsive" disabled={isSubmitting}>
-                {isSubmitting ? "Registrando…" : "Registrar transporte"}
+              <button
+                type="submit"
+                className="btn-primary btn-responsive"
+                disabled={isSubmitting || exito}
+              >
+                {exito ? "Listo" : isSubmitting ? "Registrando…" : "Registrar transporte"}
               </button>
             </div>
           </Form>

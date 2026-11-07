@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AppIcon } from "@/components/AppIcon";
 import { UploadImage } from "@/components/UploadImage";
@@ -15,6 +15,8 @@ import {
 
 export default function DirigenteTransportePage() {
   const { dirigenteId } = useParams<{ dirigenteId: string }>();
+  const searchParams = useSearchParams();
+  const acabaDeRegistrar = searchParams.get("registrado") === "1";
   const { isStaff, user } = useAuth();
   const canAccess = isStaff || canViewOwnDirigente(user, dirigenteId);
   const esPropio = user?.dirigenteId === dirigenteId;
@@ -77,6 +79,12 @@ export default function DirigenteTransportePage() {
           Volver
         </Link>
       </div>
+
+      {acabaDeRegistrar ? (
+        <div className="alert-success font-medium">
+          El transporte quedó registrado. Aparece en el historial de abajo.
+        </div>
+      ) : null}
 
       {puedeRegistrar ? (
         <Link

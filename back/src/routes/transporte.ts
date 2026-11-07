@@ -144,7 +144,11 @@ router.post("/registros", async (req, res) => {
       return;
     }
     console.error(error);
-    res.status(500).json({ error: "Error al registrar transporte" });
+    const msg =
+      error && typeof error === "object" && "code" in error && (error as { code?: string }).code === "P2021"
+        ? "Base de datos sin migración de transporte. Contacta al administrador."
+        : "Error al registrar transporte";
+    res.status(500).json({ error: msg });
   }
 });
 

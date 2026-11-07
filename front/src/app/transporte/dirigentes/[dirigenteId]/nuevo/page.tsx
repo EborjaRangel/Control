@@ -58,7 +58,9 @@ export default function NuevoRegistroTransportePage() {
       </div>
       <RegistroTransporteForm
         eventos={panel.eventosAbiertos}
-        onSuccess={() => router.push(`/transporte/dirigentes/${dirigenteId}`)}
+        onSuccess={() =>
+          router.push(`/transporte/dirigentes/${dirigenteId}?registrado=1`)
+        }
         onCancel={() => router.push(`/transporte/dirigentes/${dirigenteId}`)}
       />
     </div>

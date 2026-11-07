@@ -40,6 +40,23 @@ export const registroTransporteFormSchema = Yup.object({
     .max(MAX_FOTOS_TRANSPORTE, `Máximo ${MAX_FOTOS_TRANSPORTE} fotografías`),
 });
 
+export function resumenCamposFaltantesRegistroTransporte(
+  errors: Partial<Record<keyof RegistroTransporteFormValues, string | string[]>>,
+): string | null {
+  const faltantes: string[] = [];
+  if (errors.eventoId) faltantes.push("evento");
+  if (errors.tipoUnidad) faltantes.push("tipo de transporte");
+  if (errors.placas) faltantes.push("placas");
+  if (errors.nombreChofer) faltantes.push("nombre del chofer");
+  if (errors.telefonoChofer) faltantes.push("teléfono del chofer (10 dígitos)");
+  if (errors.tipoRecorrido) faltantes.push("tipo de recorrido");
+  if (errors.puntoEntrega) faltantes.push("punto de entrega");
+  if (errors.lat || errors.lng) faltantes.push("ubicación (GPS o mapa)");
+  if (errors.fotos) faltantes.push("al menos una foto de la unidad");
+  if (!faltantes.length) return null;
+  return `Completa o corrige: ${faltantes.join(", ")}.`;
+}
+
 export type RegistroTransporteFormValues = {
   eventoId: string;
   tipoUnidad: "CAMION" | "MICROBUS";
