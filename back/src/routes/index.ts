@@ -38,6 +38,7 @@ import {
   validarSeccionParaColonia,
   validarUnidadTerritorialParaColonia,
 } from "../lib/unidades-territoriales.js";
+import { tipoPermiteSeccionCero } from "../lib/dirigentes.js";
 import { mapaDeSeccion, geojsonAlcaldiaCoyoacan, geojsonSeccionesCoyoacan } from "../lib/seccion-mapa.js";
 import { coberturaSeccionesCoyoacan } from "../lib/seccion-cobertura.js";
 import {
@@ -707,27 +708,31 @@ router.post("/dirigentes", requireStaff, async (req, res) => {
       stripUnknown: true,
     });
 
-    const utError = await validarUnidadTerritorialParaColonia(
-      data.colonia,
-      data.unidadTerritorialId ?? null,
-    );
-    if (utError) {
-      res.status(400).json({ error: utError });
-      return;
-    }
-    const unidadTerritorialId = await resolverUnidadTerritorialId(
-      data.colonia,
-      data.unidadTerritorialId ?? null,
-    );
+    const perfilOrg = tipoPermiteSeccionCero(data.tipo);
+    let unidadTerritorialId: string | null = null;
+    if (!perfilOrg) {
+      const utError = await validarUnidadTerritorialParaColonia(
+        data.colonia,
+        data.unidadTerritorialId ?? null,
+      );
+      if (utError) {
+        res.status(400).json({ error: utError });
+        return;
+      }
+      unidadTerritorialId = await resolverUnidadTerritorialId(
+        data.colonia,
+        data.unidadTerritorialId ?? null,
+      );
 
-    const seccionError = await validarSeccionParaColonia(
-      data.colonia,
-      data.seccionElectoral,
-      unidadTerritorialId,
-    );
-    if (seccionError) {
-      res.status(400).json({ error: seccionError });
-      return;
+      const seccionError = await validarSeccionParaColonia(
+        data.colonia,
+        data.seccionElectoral,
+        unidadTerritorialId,
+      );
+      if (seccionError) {
+        res.status(400).json({ error: seccionError });
+        return;
+      }
     }
 
     const guardado = normalizarDirigenteParaGuardado(data);
@@ -858,27 +863,31 @@ router.put("/dirigentes/:id", requireStaff, async (req, res) => {
     const password = data.password?.trim() || undefined;
     const usernameActual = existing.usuario?.username ?? null;
 
-    const utError = await validarUnidadTerritorialParaColonia(
-      data.colonia,
-      data.unidadTerritorialId ?? null,
-    );
-    if (utError) {
-      res.status(400).json({ error: utError });
-      return;
-    }
-    const unidadTerritorialId = await resolverUnidadTerritorialId(
-      data.colonia,
-      data.unidadTerritorialId ?? null,
-    );
+    const perfilOrg = tipoPermiteSeccionCero(data.tipo);
+    let unidadTerritorialId: string | null = null;
+    if (!perfilOrg) {
+      const utError = await validarUnidadTerritorialParaColonia(
+        data.colonia,
+        data.unidadTerritorialId ?? null,
+      );
+      if (utError) {
+        res.status(400).json({ error: utError });
+        return;
+      }
+      unidadTerritorialId = await resolverUnidadTerritorialId(
+        data.colonia,
+        data.unidadTerritorialId ?? null,
+      );
 
-    const seccionError = await validarSeccionParaColonia(
-      data.colonia,
-      data.seccionElectoral,
-      unidadTerritorialId,
-    );
-    if (seccionError) {
-      res.status(400).json({ error: seccionError });
-      return;
+      const seccionError = await validarSeccionParaColonia(
+        data.colonia,
+        data.seccionElectoral,
+        unidadTerritorialId,
+      );
+      if (seccionError) {
+        res.status(400).json({ error: seccionError });
+        return;
+      }
     }
 
     if (data.referenteId && data.referenteId === id) {

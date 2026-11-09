@@ -1,6 +1,8 @@
 import type { DirigenteFormPayload } from "./validation-dirigente-extra.js";
 import type { NominaPayload } from "./nomina-db.js";
 import { distritoFederalDeSeccion } from "./casillas-electorales.js";
+import { tipoPermiteSeccionCero } from "./dirigentes.js";
+import { SECCION_ELECTORAL_NO_APLICA } from "./secciones-electorales.js";
 import {
   normalizarTextoGuardado,
   normalizarTextoGuardadoNullable,
@@ -18,10 +20,15 @@ function normalizarCadena(value: string | null | undefined): string {
 }
 
 export function normalizarDirigenteParaGuardado<T extends DirigenteConNomina>(data: T): T {
-  const seccionElectoral = normalizarCadena(data.seccionElectoral);
-  const distritoFederalCatalogo = seccionElectoral
-    ? distritoFederalDeSeccion(seccionElectoral)
-    : null;
+  const perfilOrg = tipoPermiteSeccionCero(data.tipo);
+  const seccionElectoral = perfilOrg
+    ? SECCION_ELECTORAL_NO_APLICA
+    : normalizarCadena(data.seccionElectoral);
+  const distritoFederalCatalogo = perfilOrg
+    ? null
+    : seccionElectoral
+      ? distritoFederalDeSeccion(seccionElectoral)
+      : null;
 
   return {
     ...data,

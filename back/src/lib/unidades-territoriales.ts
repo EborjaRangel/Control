@@ -1,6 +1,6 @@
 import { prisma } from "./prisma.js";
 import { cpsDeColonia, nombreColoniaCatalogo, variantesColoniaParaBusqueda } from "./colonias.js";
-import { esSeccionValida } from "./secciones-electorales.js";
+import { esSeccionValida, SECCION_ELECTORAL_NO_APLICA } from "./secciones-electorales.js";
 import { utsParaColonia } from "./unidades-territoriales-match.js";
 
 export type UnidadTerritorialResumen = {
@@ -124,6 +124,7 @@ export async function validarSeccionParaColonia(
   seccionElectoral: string,
   unidadTerritorialId?: string | null,
 ): Promise<string | null> {
+  if (seccionElectoral === SECCION_ELECTORAL_NO_APLICA) return null;
   const permitidas = await seccionesPorColonia(coloniaNombre, unidadTerritorialId);
   if (permitidas === null) return null;
   if (permitidas.length === 0) return null;
