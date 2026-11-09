@@ -76,7 +76,7 @@ function textoQrParaEnviar(codigoDesdeQuery: string): string {
 }
 
 /** Tiempo visible del mensaje tras escanear (éxito, aviso o error) antes de cerrar la pestaña. */
-const MS_VISIBLE_TRAS_ESCANEO = 2000;
+const MS_VISIBLE_TRAS_ESCANEO = 3000;
 
 function cerrarPestanaTrasLectura(delayMs: number) {
   window.setTimeout(() => {
