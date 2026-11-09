@@ -75,9 +75,8 @@ function textoQrParaEnviar(codigoDesdeQuery: string): string {
   return codigoQrDesdeTextoQr(href) ?? href;
 }
 
-/** Tras un escaneo exitoso de asistencia (pase de lista o movilización): mensaje breve antes de cerrar. */
-const MS_CIERRE_TRAS_ASISTENCIA_OK = 2000;
-const MS_CIERRE_TRAS_OTROS = 3500;
+/** Tiempo visible del mensaje tras escanear (éxito, aviso o error) antes de cerrar la pestaña. */
+const MS_VISIBLE_TRAS_ESCANEO = 2000;
 
 function cerrarPestanaTrasLectura(delayMs: number) {
   window.setTimeout(() => {
@@ -116,6 +115,20 @@ export default function RegistrarAsistenciaClient() {
   );
   const [eventosAbiertos, setEventosAbiertos] = useState<EventoPase[]>([]);
   const [eventoIdSeleccionado, setEventoIdSeleccionado] = useState("");
+  const [solicitudesCierreTrasMensaje, setSolicitudesCierreTrasMensaje] = useState(0);
+
+  function solicitarCierreTrasMensaje() {
+    setSolicitudesCierreTrasMensaje((n) => n + 1);
+  }
+
+  useEffect(() => {
+    if (solicitudesCierreTrasMensaje === 0) return;
+    if (visual === "formulario" || visual === "cargando") return;
+    const timer = window.setTimeout(() => {
+      cerrarPestanaTrasLectura(0);
+    }, MS_VISIBLE_TRAS_ESCANEO);
+    return () => window.clearTimeout(timer);
+  }, [solicitudesCierreTrasMensaje, visual]);
 
   const eventoSeleccionado = useMemo(
     () => eventosAbiertos.find((e) => e.id === eventoIdSeleccionado) ?? null,
@@ -160,7 +173,7 @@ export default function RegistrarAsistenciaClient() {
         setMensaje(asistencia.mensaje ?? material.mensaje ?? "No hay pase de lista ni entrega de material abierta");
         setEventoTitulo(asistencia.evento?.titulo ?? material.evento?.titulo ?? null);
         setTipoOperacionEvento(asistencia.evento?.tipoOperacion ?? null);
-        if (codigoQr) cerrarPestanaTrasLectura(MS_CIERRE_TRAS_OTROS);
+        if (codigoQr) solicitarCierreTrasMensaje();
       })
       .catch(() => {
         if (cancelled) return;
@@ -275,21 +288,19 @@ export default function RegistrarAsistenciaClient() {
       }
       if (data.codigo === "DIRIGENTE_NO_ELEGIBLE") {
         setVisual("aviso");
-        cerrarPestanaTrasLectura(MS_CIERRE_TRAS_OTROS);
+        solicitarCierreTrasMensaje();
         return;
       }
       const siguiente = visualDeCodigo(modo, data.codigo, res.ok);
       setVisual(siguiente);
       if (siguiente !== "formulario") {
-        const delay =
-          exitoAsistencia ? MS_CIERRE_TRAS_ASISTENCIA_OK : MS_CIERRE_TRAS_OTROS;
-        cerrarPestanaTrasLectura(delay);
+        solicitarCierreTrasMensaje();
       }
     } catch {
       setVisual("error");
       setMensaje("No se pudo registrar. Revisa la conexión e intenta de nuevo.");
       setDetalle(null);
-      cerrarPestanaTrasLectura(MS_CIERRE_TRAS_OTROS);
+      solicitarCierreTrasMensaje();
     } finally {
       setEnviando(false);
     }
