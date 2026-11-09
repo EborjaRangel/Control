@@ -6,7 +6,7 @@ import { compararDirigentePorApellidosNombre, nombreCompleto } from "../lib/diri
 import {
   cantidadMovilizacionDesdeCuerpo,
   cuerpoRespuestaEscaneo,
-  inhabilitarUsuariosPaseLista,
+  inhabilitarUsuariosPaseListaSiSinEventosAbiertos,
   procesarEscaneoAsistencia,
   rawCodigoDesdeEscaneo,
 } from "../lib/escanear-asistencia.js";
@@ -363,7 +363,7 @@ router.post("/eventos/:id/cerrar", requireStaff, async (req, res) => {
       },
     });
 
-    await inhabilitarUsuariosPaseLista();
+    await inhabilitarUsuariosPaseListaSiSinEventosAbiertos();
 
     await registrarAuditoria(req, {
       accion: "STATE_CHANGE",

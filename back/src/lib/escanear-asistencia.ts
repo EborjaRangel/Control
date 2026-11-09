@@ -12,7 +12,9 @@ export const MENSAJE_ASISTENCIA_TOMADA = "Asistencia registrada";
 export const MENSAJE_ASISTENCIA_DUPLICADA = "Es imposible registrar más de una asistencia";
 export const MENSAJE_MOVILIZACION_REGISTRADA = "Movilización registrada";
 export const MENSAJE_CANTIDAD_MOVILIZACION = "Indica cuántas personas movilizas (número entero mayor que cero)";
-export const MENSAJE_SIN_PASE_ABIERTO = "No hay un pase de lista abierto";
+export const MENSAJE_SIN_PASE_ABIERTO = "No hay eventos de asistencia abiertos";
+export const MENSAJE_EVENTO_ESCANEO_REQUERIDO =
+  "Hay varios eventos abiertos. Selecciona en cuál quieres registrar el escaneo.";
 export const MENSAJE_CLAVE_INCORRECTA = "Código incorrecto";
 export const MENSAJE_DIRIGENTE_NO_ELEGIBLE = "Este dirigente no fue convocado a este evento.";
 export const MENSAJE_DIRIGENTE_INACTIVO = "El dirigente no está activo";
@@ -31,7 +33,9 @@ export type EventoPaseResumen = {
 
 export type EstadoPaseLista = {
   abierto: boolean;
+  /** Un solo evento abierto; si hay varios, null y usa `eventos`. */
   evento: EventoPaseResumen | null;
+  eventos: EventoPaseResumen[];
   mensaje: string | null;
 };
 
@@ -186,15 +190,21 @@ export async function procesarEscaneoAsistencia(input: {
         evento: estado.evento ?? undefined,
       };
     }
-    evento = abiertos.find((item) => dirigenteEsElegible(dirigente, item)) ?? null;
-    if (!evento) {
-      const ref = abiertos[0];
-      return resultadoNoElegible(
-        dirigenteResumen,
-        ref
-          ? { id: ref.id, titulo: ref.titulo, tipoOperacion: ref.tipoOperacion }
-          : undefined,
-      );
+    if (abiertos.length > 1) {
+      return {
+        ok: false,
+        status: 400,
+        codigo: "PASE_CERRADO",
+        mensaje: MENSAJE_EVENTO_ESCANEO_REQUERIDO,
+      };
+    }
+    evento = abiertos[0];
+    if (!dirigenteEsElegible(dirigente, evento)) {
+      return resultadoNoElegible(dirigenteResumen, {
+        id: evento.id,
+        titulo: evento.titulo,
+        tipoOperacion: evento.tipoOperacion,
+      });
     }
   }
 
@@ -348,6 +358,15 @@ export function claveDesdeEscaneo(req: Request) {
   return typeof req.query.clave === "string" ? req.query.clave.trim() : "";
 }
 
+export function eventoIdDesdeEscaneo(req: Request): string {
+  const body = req.body as unknown;
+  if (body && typeof body === "object") {
+    const data = body as Record<string, unknown>;
+    if (typeof data.eventoId === "string") return data.eventoId.trim();
+  }
+  return typeof req.query.eventoId === "string" ? req.query.eventoId.trim() : "";
+}
+
 export function rawCodigoDesdeEscaneo(req: Request) {
   const body = req.body as unknown;
   if (body && typeof body === "object") {
@@ -359,21 +378,34 @@ export function rawCodigoDesdeEscaneo(req: Request) {
   return typeof req.query.c === "string" ? req.query.c : "";
 }
 
-export async function estadoPaseLista(): Promise<EstadoPaseLista> {
-  const abierto = await prisma.eventoAsistencia.findFirst({
+function mapEventoPaseResumen(e: {
+  id: string;
+  titulo: string;
+  tipoOperacion: "PASE_LISTA" | "MOVILIZACION";
+}): EventoPaseResumen {
+  return { id: e.id, titulo: e.titulo, tipoOperacion: e.tipoOperacion };
+}
+
+export async function listarEventosAsistenciaAbiertos(): Promise<EventoPaseResumen[]> {
+  const rows = await prisma.eventoAsistencia.findMany({
     where: { estado: "ABIERTO" },
     orderBy: [{ abiertoAt: "desc" }, { createdAt: "desc" }],
     select: { id: true, titulo: true, tipoOperacion: true },
   });
-  if (abierto) {
+  return rows.map(mapEventoPaseResumen);
+}
+
+export async function estadoPaseLista(): Promise<EstadoPaseLista> {
+  const abiertos = await listarEventosAsistenciaAbiertos();
+  if (abiertos.length > 0) {
     return {
       abierto: true,
-      evento: {
-        id: abierto.id,
-        titulo: abierto.titulo,
-        tipoOperacion: abierto.tipoOperacion,
-      },
-      mensaje: null,
+      eventos: abiertos,
+      evento: abiertos.length === 1 ? abiertos[0]! : null,
+      mensaje:
+        abiertos.length > 1
+          ? "Hay varios eventos abiertos. El operador debe elegir en cuál escanear."
+          : null,
     };
   }
 
@@ -385,16 +417,13 @@ export async function estadoPaseLista(): Promise<EstadoPaseLista> {
   if (cerrado) {
     return {
       abierto: false,
-      evento: {
-        id: cerrado.id,
-        titulo: cerrado.titulo,
-        tipoOperacion: cerrado.tipoOperacion,
-      },
+      eventos: [],
+      evento: mapEventoPaseResumen(cerrado),
       mensaje: mensajePaseCerrado(cerrado.titulo),
     };
   }
 
-  return { abierto: false, evento: null, mensaje: MENSAJE_SIN_PASE_ABIERTO };
+  return { abierto: false, evento: null, eventos: [], mensaje: MENSAJE_SIN_PASE_ABIERTO };
 }
 
 export async function inhabilitarUsuariosPaseLista() {
@@ -402,6 +431,14 @@ export async function inhabilitarUsuariosPaseLista() {
     where: { rol: "PASE_LISTA", activo: true },
     data: { activo: false },
   });
+}
+
+/** Solo inhabilita operadores de pase si ya no queda ningún evento de asistencia abierto. */
+export async function inhabilitarUsuariosPaseListaSiSinEventosAbiertos() {
+  const abiertos = await prisma.eventoAsistencia.count({ where: { estado: "ABIERTO" } });
+  if (abiertos === 0) {
+    await inhabilitarUsuariosPaseLista();
+  }
 }
 
 async function usuarioPaseListaPorClave(clave: string) {
@@ -428,16 +465,45 @@ export async function manejarEstadoPaseHttp(_req: Request, res: Response) {
 
 export async function manejarEscaneoHttp(req: Request, res: Response) {
   try {
-    const estado = await estadoPaseLista();
-    if (!estado.abierto) {
+    const abiertos = await listarEventosAsistenciaAbiertos();
+    if (abiertos.length === 0) {
+      const estado = await estadoPaseLista();
       res.status(400).json({
         error: estado.mensaje ?? MENSAJE_SIN_PASE_ABIERTO,
         mensaje: estado.mensaje ?? MENSAJE_SIN_PASE_ABIERTO,
         codigo: "PASE_CERRADO",
         evento: estado.evento,
+        eventos: [],
       });
       return;
     }
+
+    const eventoIdBody = eventoIdDesdeEscaneo(req);
+    let eventoId: string;
+    if (eventoIdBody) {
+      if (!abiertos.some((e) => e.id === eventoIdBody)) {
+        res.status(400).json({
+          error: "El evento seleccionado no está abierto",
+          mensaje: "El evento seleccionado no está abierto",
+          codigo: "PASE_CERRADO",
+          eventos: abiertos,
+        });
+        return;
+      }
+      eventoId = eventoIdBody;
+    } else if (abiertos.length === 1) {
+      eventoId = abiertos[0]!.id;
+    } else {
+      res.status(400).json({
+        error: MENSAJE_EVENTO_ESCANEO_REQUERIDO,
+        mensaje: MENSAJE_EVENTO_ESCANEO_REQUERIDO,
+        codigo: "PASE_CERRADO",
+        eventos: abiertos,
+      });
+      return;
+    }
+
+    const eventoRef = abiertos.find((e) => e.id === eventoId);
 
     const operador = await usuarioPaseListaPorClave(claveDesdeEscaneo(req));
     if (!operador) {
@@ -445,14 +511,14 @@ export async function manejarEscaneoHttp(req: Request, res: Response) {
         error: MENSAJE_CLAVE_INCORRECTA,
         mensaje: MENSAJE_CLAVE_INCORRECTA,
         codigo: "CLAVE_INCORRECTA",
-        evento: estado.evento,
+        evento: eventoRef ?? null,
       });
       return;
     }
 
     const resultado = await procesarEscaneoAsistencia({
       raw: rawCodigoDesdeEscaneo(req),
-      eventoId: estado.evento!.id,
+      eventoId,
       registradoPorId: operador.id,
       cantidad: cantidadMovilizacionDesdeCuerpo(req.body),
       req,

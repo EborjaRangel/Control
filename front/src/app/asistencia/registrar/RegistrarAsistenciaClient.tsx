@@ -1,9 +1,10 @@
 "use client";
 
 import { AxisLogo } from "@/components/AxisLogo";
+import { TIPO_OPERACION_EVENTO_LABEL } from "@/lib/asistencia";
 import { codigoQrDesdeTextoQr } from "@/lib/qr";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type ModoPase = "asistencia" | "material";
 
@@ -40,8 +41,15 @@ type RespuestaEscaneo = {
 type EstadoPase = {
   abierto: boolean;
   evento: EventoPase | null;
+  eventos?: EventoPase[];
   mensaje: string | null;
 };
+
+function eventosAsistenciaDesdeEstado(asistencia: EstadoPase): EventoPase[] {
+  if (asistencia.eventos?.length) return asistencia.eventos;
+  if (asistencia.evento?.id) return [asistencia.evento];
+  return [];
+}
 
 type Visual = "cargando" | "formulario" | "ok" | "aviso" | "error" | "cerrado";
 
@@ -106,6 +114,18 @@ export default function RegistrarAsistenciaClient() {
   const [tipoOperacionEvento, setTipoOperacionEvento] = useState<"PASE_LISTA" | "MOVILIZACION" | null>(
     null,
   );
+  const [eventosAbiertos, setEventosAbiertos] = useState<EventoPase[]>([]);
+  const [eventoIdSeleccionado, setEventoIdSeleccionado] = useState("");
+
+  const eventoSeleccionado = useMemo(
+    () => eventosAbiertos.find((e) => e.id === eventoIdSeleccionado) ?? null,
+    [eventosAbiertos, eventoIdSeleccionado],
+  );
+
+  function aplicarEventoSeleccionado(ev: EventoPase | null) {
+    setEventoTitulo(ev?.titulo?.trim() || null);
+    setTipoOperacionEvento(ev?.tipoOperacion ?? null);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -118,8 +138,11 @@ export default function RegistrarAsistenciaClient() {
 
         if (asistencia.abierto) {
           setModo("asistencia");
-          setEventoTitulo(asistencia.evento?.titulo?.trim() || null);
-          setTipoOperacionEvento(asistencia.evento?.tipoOperacion ?? "PASE_LISTA");
+          const lista = eventosAsistenciaDesdeEstado(asistencia);
+          setEventosAbiertos(lista);
+          const idInicial = lista.length === 1 ? (lista[0]?.id ?? "") : "";
+          setEventoIdSeleccionado(idInicial);
+          aplicarEventoSeleccionado(lista.length === 1 ? (lista[0] ?? null) : null);
           setVisual("formulario");
           return;
         }
@@ -165,6 +188,13 @@ export default function RegistrarAsistenciaClient() {
       return;
     }
 
+    if (modo === "asistencia" && eventosAbiertos.length > 1 && !eventoIdSeleccionado) {
+      setEnviando(false);
+      setMensaje("Selecciona el evento en el que quieres registrar este escaneo.");
+      setVisual("formulario");
+      return;
+    }
+
     let cantidadNum: number | undefined;
     if (modo === "asistencia" && tipoOperacionEvento === "MOVILIZACION") {
       const n = Number.parseInt(cantidadMovilizacion.trim(), 10);
@@ -184,6 +214,9 @@ export default function RegistrarAsistenciaClient() {
         body: JSON.stringify({
           raw: rawQr,
           clave: clave.trim(),
+          ...(modo === "asistencia" && eventoIdSeleccionado
+            ? { eventoId: eventoIdSeleccionado }
+            : {}),
           ...(cantidadNum != null ? { cantidad: cantidadNum } : {}),
         }),
       });
@@ -301,6 +334,37 @@ export default function RegistrarAsistenciaClient() {
         {visual === "formulario" ? (
           <form className="space-y-4" onSubmit={(event) => void enviar(event)}>
             {mensaje ? <div className="alert-error text-center font-semibold">{mensaje}</div> : null}
+
+            {modo === "asistencia" && eventosAbiertos.length > 1 ? (
+              <label className="label block">
+                Evento
+                <select
+                  className="input mt-1"
+                  value={eventoIdSeleccionado}
+                  onChange={(event) => {
+                    const id = event.target.value;
+                    setEventoIdSeleccionado(id);
+                    const ev = eventosAbiertos.find((item) => item.id === id) ?? null;
+                    aplicarEventoSeleccionado(ev);
+                    setCantidadMovilizacion("");
+                  }}
+                  required
+                >
+                  <option value="">Selecciona el evento</option>
+                  {eventosAbiertos.map((ev) => (
+                    <option key={ev.id} value={ev.id!}>
+                      {ev.titulo} ·{" "}
+                      {ev.tipoOperacion
+                        ? TIPO_OPERACION_EVENTO_LABEL[ev.tipoOperacion]
+                        : "Asistencia"}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-ink-secondary">
+                  Hay {eventosAbiertos.length} eventos abiertos; elige en cuál registrar este QR.
+                </p>
+              </label>
+            ) : null}
 
             {esMovilizacion ? (
               <label className="label">

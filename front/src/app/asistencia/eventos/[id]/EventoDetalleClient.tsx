@@ -121,7 +121,7 @@ export default function EventoDetalleClient() {
   async function cerrarPase() {
     if (
       !confirm(
-        "¿Cerrar el evento? Ya no se podrán registrar más movimientos y los usuarios de pase de lista quedarán inhabilitados.",
+        "¿Cerrar este evento? Ya no se podrán registrar más escaneos en él. Los usuarios de pase de lista solo se inhabilitan si no queda otro evento abierto.",
       )
     ) {
       return;
@@ -133,7 +133,7 @@ export default function EventoDetalleClient() {
       const res = await apiFetch(`/api/asistencia/eventos/${id}/cerrar`, { method: "POST" });
       const body = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(body.error ?? "No se pudo cerrar");
-      setMensaje("Evento cerrado. Los usuarios de pase de lista quedaron inhabilitados.");
+      setMensaje("Evento cerrado.");
       setMensajeOk(true);
       await load({ silent: true });
     } catch (err) {

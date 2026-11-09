@@ -91,7 +91,7 @@ export default function AsistenciaPage() {
   async function cerrarPase(eventoId: string) {
     if (
       !confirm(
-        "¿Cerrar el evento? Ya no se podrán registrar más asistencias y los usuarios de pase de lista quedarán inhabilitados.",
+        "¿Cerrar este evento? Ya no se podrán registrar más escaneos en él. Los usuarios de pase de lista solo se inhabilitan si no queda ningún otro evento abierto.",
       )
     ) {
       return;
@@ -102,7 +102,7 @@ export default function AsistenciaPage() {
       const res = await apiFetch(`/api/asistencia/eventos/${eventoId}/cerrar`, { method: "POST" });
       const body = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(body.error ?? "No se pudo cerrar el evento");
-      setMensaje("Evento cerrado. Los usuarios de pase de lista quedaron inhabilitados.");
+      setMensaje("Evento cerrado.");
       await load();
     } catch (err) {
       setMensaje(err instanceof Error ? err.message : "Error");
