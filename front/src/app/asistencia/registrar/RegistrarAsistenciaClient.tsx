@@ -315,15 +315,14 @@ export default function RegistrarAsistenciaClient() {
 
   const esMovilizacion = modo === "asistencia" && tipoOperacionEvento === "MOVILIZACION";
   const titulo =
-    modo === "material" ? "Entrega de material" : esMovilizacion ? "Movilización" : "Pase de lista";
+    modo === "material" ? "Entrega de material" : "Pase de lista";
   const instruccion =
     modo === "material"
       ? "Ingresa el código para registrar la entrega de material"
       : esMovilizacion
-        ? "Indica cuántas personas moviliza el dirigente e ingresa el código. Puedes escanear varias veces; los totales se suman."
+        ? "Indica cuántas personas trae el dirigente e ingresa el código. Puedes escanear varias veces; los totales se suman."
         : "Ingresa el código para registrar la asistencia (un solo registro por dirigente en este evento)";
-  const boton =
-    modo === "material" ? "Registrar entrega" : esMovilizacion ? "Registrar movilización" : "Pasar lista";
+  const boton = modo === "material" ? "Registrar entrega" : esMovilizacion ? "REGIST" : "Pasar lista";
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col justify-center py-6 sm:py-12">
@@ -364,10 +363,13 @@ export default function RegistrarAsistenciaClient() {
                   <option value="">Selecciona el evento</option>
                   {eventosAbiertos.map((ev) => (
                     <option key={ev.id} value={ev.id!}>
-                      {ev.titulo} ·{" "}
-                      {ev.tipoOperacion
-                        ? TIPO_OPERACION_EVENTO_LABEL[ev.tipoOperacion]
-                        : "Asistencia"}
+                      {ev.tipoOperacion === "MOVILIZACION"
+                        ? ev.titulo
+                        : `${ev.titulo} · ${
+                            ev.tipoOperacion
+                              ? TIPO_OPERACION_EVENTO_LABEL[ev.tipoOperacion]
+                              : "Asistencia"
+                          }`}
                     </option>
                   ))}
                 </select>
@@ -379,7 +381,7 @@ export default function RegistrarAsistenciaClient() {
 
             {esMovilizacion ? (
               <label className="label">
-                Personas movilizadas en este escaneo
+                Personas en este escaneo
                 <input
                   className="input"
                   type="number"
