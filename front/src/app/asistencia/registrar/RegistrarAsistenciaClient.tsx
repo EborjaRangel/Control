@@ -322,7 +322,7 @@ export default function RegistrarAsistenciaClient() {
       : esMovilizacion
         ? "Indica cuántas personas trae el dirigente e ingresa el código. Puedes escanear varias veces; los totales se suman."
         : "Ingresa el código para registrar la asistencia (un solo registro por dirigente en este evento)";
-  const boton = modo === "material" ? "Registrar entrega" : esMovilizacion ? "REGIST" : "Pasar lista";
+  const boton = modo === "material" ? "Registrar entrega" : esMovilizacion ? "Registrar" : "Pasar lista";
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col justify-center py-6 sm:py-12">
