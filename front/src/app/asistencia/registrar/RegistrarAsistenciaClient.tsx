@@ -314,14 +314,11 @@ export default function RegistrarAsistenciaClient() {
         : "alert-error";
 
   const esMovilizacion = modo === "asistencia" && tipoOperacionEvento === "MOVILIZACION";
-  const titulo =
-    modo === "material" ? "Entrega de material" : "Pase de lista";
+  const titulo = modo === "material" ? "Entrega de material" : "Pase de lista";
   const instruccion =
     modo === "material"
       ? "Ingresa el código para registrar la entrega de material"
-      : esMovilizacion
-        ? "Indica cuántas personas trae el dirigente e ingresa el código. Puedes escanear varias veces; los totales se suman."
-        : "Ingresa el código para registrar la asistencia (un solo registro por dirigente en este evento)";
+      : "Ingresa el código para registrar la asistencia (un solo registro por dirigente en este evento)";
   const boton = modo === "material" ? "Registrar entrega" : esMovilizacion ? "Registrar" : "Pasar lista";
 
   return (
@@ -329,9 +326,23 @@ export default function RegistrarAsistenciaClient() {
       <div className="card space-y-6 p-5 sm:p-8">
         <div className="space-y-3 text-center">
           <AxisLogo size={160} badge mode="idle" accent="green" className="mx-auto" />
-          <h1 className="page-title">{titulo}</h1>
-          {eventoTitulo ? <p className="text-base font-semibold text-ink">{eventoTitulo}</p> : null}
-          {visual === "formulario" ? <p className="text-sm text-ink-secondary">{instruccion}</p> : null}
+          {esMovilizacion ? (
+            <>
+              <h1 className="page-title">{eventoTitulo ?? "Evento"}</h1>
+              <p className="text-lg font-bold tracking-wide text-pin">ESTADIO BANORTE</p>
+              <p className="text-base font-semibold leading-snug text-pin">
+                Domingo 15 de noviembre de 2026 · 11:00 a. m.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="page-title">{titulo}</h1>
+              {eventoTitulo ? <p className="text-base font-semibold text-ink">{eventoTitulo}</p> : null}
+              {visual === "formulario" ? (
+                <p className="text-sm text-ink-secondary">{instruccion}</p>
+              ) : null}
+            </>
+          )}
         </div>
 
         {visual === "cargando" ? (
@@ -381,7 +392,7 @@ export default function RegistrarAsistenciaClient() {
 
             {esMovilizacion ? (
               <label className="label">
-                Personas en este escaneo
+                Cantidad
                 <input
                   className="input"
                   type="number"
