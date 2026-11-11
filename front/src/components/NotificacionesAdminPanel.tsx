@@ -300,11 +300,21 @@ export function NotificacionesAdminPanel() {
             {resultado.destinatarios} usuario(s) en la web · {resultado.alcanceLabel}
           </p>
           {resultado.whatsapp ? (
-            <p className="text-ink-secondary">
-              WhatsApp: {resultado.whatsapp.enviados} enviados, {resultado.whatsapp.fallidos}{" "}
-              fallidos, {resultado.whatsapp.omitidos} omitidos (sin celular, sin usuario activo o
-              canal no configurado)
-            </p>
+            <div className="space-y-1 text-ink-secondary">
+              <p>
+                WhatsApp: {resultado.whatsapp.enviados} enviados, {resultado.whatsapp.fallidos}{" "}
+                fallidos, {resultado.whatsapp.omitidos} omitidos
+                {resultado.whatsapp.configurado === false ? " (canal no configurado en servidor)" : ""}
+              </p>
+              {resultado.whatsapp.ultimoError ? (
+                <p className="text-warning-text">Último error WhatsApp: {resultado.whatsapp.ultimoError}</p>
+              ) : null}
+              {resultado.whatsapp.enviados === 0 &&
+              resultado.whatsapp.fallidos === 0 &&
+              resultado.whatsapp.omitidos > 0 ? (
+                <p>Revisa celular en ficha del dirigente y configuración WhatsApp en Railway.</p>
+              ) : null}
+            </div>
           ) : null}
           {resultado.enviadoAt ? (
             <p className="text-ink-secondary">{formatFechaNotificacion(resultado.enviadoAt)}</p>

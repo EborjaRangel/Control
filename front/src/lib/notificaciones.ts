@@ -58,6 +58,8 @@ export type ResumenWhatsAppNotificacion = {
   enviados: number;
   fallidos: number;
   omitidos: number;
+  ultimoError?: string | null;
+  configurado?: boolean;
 };
 
 export type NotificacionEnviarResultado = {

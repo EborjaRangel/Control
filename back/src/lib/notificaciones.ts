@@ -12,6 +12,7 @@ import {
   TIPOS_SECCION_ELECTORAL_CERO,
 } from "./dirigentes.js";
 import {
+  dirigenteIdsDesdeUsuariosNotificacion,
   enviarWhatsAppNotificacionDirigentes,
   resumenWhatsAppVacio,
   type ResumenWhatsApp,
@@ -261,7 +262,7 @@ export async function enviarNotificacion(input: EnviarNotificacionInput) {
     },
   });
 
-  const dirigenteIdsWhatsApp = await dirigenteIdsConUsuarioActivoPlataforma(dirigenteIds);
+  const dirigenteIdsWhatsApp = await dirigenteIdsDesdeUsuariosNotificacion(usuarioIds);
   const whatsapp = await enviarWhatsAppNotificacionDirigentes({
     dirigenteIds: dirigenteIdsWhatsApp,
     mensaje: notificacion.mensaje,
