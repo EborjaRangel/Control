@@ -74,8 +74,11 @@ async function metaPost(body: Record<string, unknown>): Promise<ResultadoEnvio> 
   const data = (await res.json()) as MetaSendResponse & MetaError;
   if (!res.ok) {
     const msg = data.error?.message ?? `Meta HTTP ${res.status}`;
-    console.error("[convocatoria][meta-whatsapp]", msg, data.error?.code);
-    return { ok: false, error: mensajeErrorMeta(msg, data.error?.code) };
+    const code = data.error?.code;
+    const detalle =
+      code != null ? `${mensajeErrorMeta(msg, code)} (código ${code})` : mensajeErrorMeta(msg, code);
+    console.error("[meta-whatsapp]", msg, code);
+    return { ok: false, error: detalle };
   }
 
   return { ok: true, proveedorId: data.messages?.[0]?.id };
@@ -91,27 +94,33 @@ function payloadTexto(to: string, body: string): Record<string, unknown> {
   };
 }
 
+function sanitizarTextoPlantilla(body: string): string {
+  return body.replace(/\s+/g, " ").trim().slice(0, 900);
+}
+
 function payloadPlantilla(to: string, body: string): Record<string, unknown> | null {
   const name = process.env.WHATSAPP_CLOUD_TEMPLATE_NAME?.trim();
   if (!name) return null;
 
   const lang = process.env.WHATSAPP_CLOUD_TEMPLATE_LANGUAGE?.trim() || "es_MX";
   const paramKey = process.env.WHATSAPP_CLOUD_TEMPLATE_BODY_PARAM?.trim() || "1";
+  const texto = sanitizarTextoPlantilla(body);
 
   const parameters: Array<{ type: "text"; text: string }> = [];
   const extraVars = process.env.WHATSAPP_CLOUD_TEMPLATE_VARIABLES?.trim();
   if (extraVars) {
     try {
-      const vars = JSON.parse(extraVars) as Record<string, string>;
+      const vars = { ...(JSON.parse(extraVars) as Record<string, string>) };
+      vars[paramKey] = texto;
       const keys = Object.keys(vars).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
       for (const key of keys) {
         parameters.push({ type: "text", text: vars[key] ?? "" });
       }
     } catch {
-      parameters.push({ type: "text", text: body });
+      parameters.push({ type: "text", text: texto });
     }
   } else {
-    parameters.push({ type: "text", text: body });
+    parameters.push({ type: "text", text: texto });
   }
 
   if (parameters.length === 0) {
@@ -135,6 +144,8 @@ function payloadPlantilla(to: string, body: string): Record<string, unknown> | n
 export async function enviarWhatsAppCloud(input: {
   telefono: string;
   body: string;
+  /** Notificaciones: intentar plantilla antes que texto libre (fuera de ventana 24 h). */
+  plantillaPrimero?: boolean;
 }): Promise<ResultadoEnvio> {
   const to = telefonoWhatsAppCloud(input.telefono);
   if (!to) {
@@ -143,16 +154,25 @@ export async function enviarWhatsAppCloud(input: {
 
   const forzarPlantilla = process.env.WHATSAPP_CLOUD_SOLO_PLANTILLA === "true";
   const plantilla = payloadPlantilla(to, input.body);
+  const tienePlantilla = Boolean(plantilla && process.env.WHATSAPP_CLOUD_TEMPLATE_NAME?.trim());
+
+  if (tienePlantilla && (forzarPlantilla || input.plantillaPrimero)) {
+    const rPlantilla = await metaPost(plantilla!);
+    if (rPlantilla.ok) return rPlantilla;
+    const texto = await metaPost(payloadTexto(to, input.body));
+    if (texto.ok) return texto;
+    return rPlantilla;
+  }
 
   if (forzarPlantilla && plantilla) {
     return metaPost(plantilla);
   }
 
-  if (plantilla && process.env.WHATSAPP_CLOUD_TEMPLATE_NAME?.trim()) {
+  if (tienePlantilla) {
     const texto = await metaPost(payloadTexto(to, input.body));
     if (texto.ok) return texto;
     if (/24 h|131047|re-engagement/i.test(texto.error ?? "")) {
-      return metaPost(plantilla);
+      return metaPost(plantilla!);
     }
     return texto;
   }

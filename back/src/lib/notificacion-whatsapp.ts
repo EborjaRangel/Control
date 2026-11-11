@@ -65,8 +65,8 @@ export function cuerpoWhatsAppNotificacionPlantilla(
   mensaje: string,
 ): string {
   const nombre = nombreCompleto(dirigente);
-  const resumen = mensaje.trim().replace(/\s+/g, " ").slice(0, 240);
-  return `Hola ${nombre}. Nueva información en ${APP_BRAND}: ${resumen}. Entra: ${urlNotificacionesApp()}`;
+  const resumen = mensaje.trim().replace(/\s+/g, " ").slice(0, 320);
+  return `Hola ${nombre}. Hay nueva información en ${APP_BRAND}: ${resumen}. Revisa la aplicación.`;
 }
 
 async function enviarWhatsAppNotificacionCanal(input: {
@@ -74,18 +74,17 @@ async function enviarWhatsAppNotificacionCanal(input: {
   bodyLargo: string;
   bodyPlantilla: string;
 }): Promise<{ ok: boolean; error?: string; proveedorId?: string }> {
-  const usaPlantillaMeta = Boolean(
-    whatsAppProveedor() === "meta" && process.env.WHATSAPP_CLOUD_TEMPLATE_NAME?.trim(),
-  );
-  const soloPlantilla = process.env.WHATSAPP_CLOUD_SOLO_PLANTILLA === "true";
-
-  if (usaPlantillaMeta) {
+  if (whatsAppProveedor() === "meta") {
     const plantilla = await enviarWhatsAppCloud({
       telefono: input.telefono,
       body: input.bodyPlantilla,
+      plantillaPrimero: true,
     });
-    if (plantilla.ok || soloPlantilla) return plantilla;
-    return enviarWhatsApp({ telefono: input.telefono, body: input.bodyLargo });
+    if (plantilla.ok) return plantilla;
+    return enviarWhatsAppCloud({
+      telefono: input.telefono,
+      body: input.bodyLargo,
+    });
   }
 
   return enviarWhatsApp({ telefono: input.telefono, body: input.bodyLargo });
