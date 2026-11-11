@@ -1,17 +1,28 @@
 import * as Yup from "yup";
-import { USERNAME_REGEX } from "./auth-validation.js";
+import {
+  CREDENTIAL_ALPHANUMERIC_MSG,
+  CREDENTIAL_ALPHANUMERIC_REGEX,
+  USERNAME_REGEX,
+} from "./auth-validation.js";
 import { PANEL_USER_ROLES, ROLES_ASIGNABLES_NUEVOS } from "./usuarios-permisos.js";
 
 export const staffUserCreateSchema = Yup.object({
   username: Yup.string()
     .trim()
-    .matches(USERNAME_REGEX, "Usuario: 3–32 caracteres (letras, números, . _ -)")
+    .matches(CREDENTIAL_ALPHANUMERIC_REGEX, "Usuario: 4–32 caracteres alfanuméricos")
     .required("El usuario es obligatorio"),
   password: Yup.string()
+    .trim()
     .when("rol", {
       is: "PASE_LISTA",
-      then: (schema) => schema.min(3, "Mínimo 3 caracteres").required("La contraseña es el código del pase de lista"),
-      otherwise: (schema) => schema.min(6, "Mínimo 6 caracteres").required("La contraseña es obligatoria"),
+      then: (schema) =>
+        schema
+          .matches(CREDENTIAL_ALPHANUMERIC_REGEX, CREDENTIAL_ALPHANUMERIC_MSG)
+          .required("La contraseña es el código del pase de lista"),
+      otherwise: (schema) =>
+        schema.matches(CREDENTIAL_ALPHANUMERIC_REGEX, CREDENTIAL_ALPHANUMERIC_MSG).required(
+          "La contraseña es obligatoria",
+        ),
     }),
   rol: Yup.string()
     .oneOf([...ROLES_ASIGNABLES_NUEVOS], "Rol inválido")
@@ -21,15 +32,19 @@ export const staffUserCreateSchema = Yup.object({
 export const staffUserUpdateSchema = Yup.object({
   username: Yup.string()
     .trim()
-    .matches(USERNAME_REGEX, "Usuario: 3–32 caracteres (letras, números, . _ -)")
+    .test(
+      "username",
+      "Usuario: 4–32 caracteres alfanuméricos",
+      (v) => !v || CREDENTIAL_ALPHANUMERIC_REGEX.test(v) || USERNAME_REGEX.test(v),
+    )
     .optional(),
   password: Yup.string()
     .transform((value) => (value === "" || value == null ? undefined : value))
-    .when("rol", {
-      is: "PASE_LISTA",
-      then: (schema) => schema.min(3, "Mínimo 3 caracteres").optional(),
-      otherwise: (schema) => schema.min(6, "Mínimo 6 caracteres").optional(),
-    }),
+    .test(
+      "password-alfanumerica",
+      CREDENTIAL_ALPHANUMERIC_MSG,
+      (v) => v == null || CREDENTIAL_ALPHANUMERIC_REGEX.test(v),
+    ),
   rol: Yup.string().oneOf([...PANEL_USER_ROLES], "Rol inválido").optional(),
   activo: Yup.boolean().optional(),
 });

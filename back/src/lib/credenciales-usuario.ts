@@ -1,5 +1,5 @@
 import type { prisma as prismaClient } from "./prisma.js";
-import { USERNAME_REGEX } from "./auth-validation.js";
+import { CREDENTIAL_ALPHANUMERIC_REGEX, USERNAME_REGEX } from "./auth-validation.js";
 
 export const PASSWORD_DEFECTO_USUARIO = "123456";
 
@@ -60,8 +60,10 @@ export async function resolverUsernameUnico(
   if (!base) {
     throw new Error("VALIDACION:Indica nombre y apellido paterno para generar el usuario");
   }
-  if (!USERNAME_REGEX.test(base) && !opts?.sufijo) {
-    throw new Error("VALIDACION:El usuario generado no cumple el formato requerido");
+  const formatoOk =
+    CREDENTIAL_ALPHANUMERIC_REGEX.test(base) || USERNAME_REGEX.test(base);
+  if (!formatoOk && !opts?.sufijo) {
+    throw new Error("VALIDACION:El usuario generado no cumple el formato requerido (mín. 4 alfanuméricos)");
   }
 
   const raiz = opts?.sufijo ? `${base}${opts.sufijo}` : base;

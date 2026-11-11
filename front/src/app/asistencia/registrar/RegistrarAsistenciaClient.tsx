@@ -412,8 +412,11 @@ export default function RegistrarAsistenciaClient() {
               <input
                 className="input"
                 type="password"
-                inputMode="numeric"
-                autoComplete="one-time-code"
+                inputMode="text"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                autoComplete="off"
                 value={clave}
                 onChange={(event) => setClave(event.target.value)}
                 required

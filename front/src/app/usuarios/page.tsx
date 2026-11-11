@@ -7,7 +7,11 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
-import { USERNAME_REGEX } from "@/lib/auth";
+import {
+  CREDENTIAL_ALPHANUMERIC_MSG,
+  CREDENTIAL_ALPHANUMERIC_REGEX,
+  USERNAME_REGEX,
+} from "@/lib/auth";
 import {
   STAFF_ROL_LABEL,
   puedeAsignarRolStaff,
@@ -28,12 +32,18 @@ type FormValues = {
 const createSchema = Yup.object({
   username: Yup.string()
     .trim()
-    .matches(USERNAME_REGEX, "Usuario: 3–32 caracteres (letras, números, . _ -)")
+    .matches(CREDENTIAL_ALPHANUMERIC_REGEX, "Usuario: 4–32 caracteres alfanuméricos")
     .required("El usuario es obligatorio"),
   password: Yup.string().when("rol", {
     is: "PASE_LISTA",
-    then: (schema) => schema.min(3, "Mínimo 3 caracteres").required("La contraseña es el código del pase de lista"),
-    otherwise: (schema) => schema.min(6, "Mínimo 6 caracteres").required("La contraseña es obligatoria"),
+    then: (schema) =>
+      schema
+        .matches(CREDENTIAL_ALPHANUMERIC_REGEX, CREDENTIAL_ALPHANUMERIC_MSG)
+        .required("La contraseña es el código del pase de lista"),
+    otherwise: (schema) =>
+      schema
+        .matches(CREDENTIAL_ALPHANUMERIC_REGEX, CREDENTIAL_ALPHANUMERIC_MSG)
+        .required("La contraseña es obligatoria"),
   }),
   rol: Yup.string()
     .oneOf(["ADMIN", "COORDINADOR", "SUPERVISOR", "CONVOCATORIA", "PASE_LISTA"])
@@ -43,15 +53,19 @@ const createSchema = Yup.object({
 const editSchema = Yup.object({
   username: Yup.string()
     .trim()
-    .matches(USERNAME_REGEX, "Usuario: 3–32 caracteres (letras, números, . _ -)")
+    .test(
+      "username",
+      "Usuario: 4–32 caracteres alfanuméricos",
+      (v) => !v || CREDENTIAL_ALPHANUMERIC_REGEX.test(v) || USERNAME_REGEX.test(v),
+    )
     .required("El usuario es obligatorio"),
   password: Yup.string()
     .transform((v) => (v === "" || v == null ? undefined : v))
-    .when("rol", {
-      is: "PASE_LISTA",
-      then: (schema) => schema.min(3, "Mínimo 3 caracteres").optional(),
-      otherwise: (schema) => schema.min(6, "Mínimo 6 caracteres").optional(),
-    }),
+    .test(
+      "password-alfanumerica",
+      CREDENTIAL_ALPHANUMERIC_MSG,
+      (v) => v == null || CREDENTIAL_ALPHANUMERIC_REGEX.test(v),
+    ),
   rol: Yup.string()
     .oneOf(["ADMIN", "COORDINADOR", "SUPERVISOR", "ASISTENCIA", "CONVOCATORIA", "PASE_LISTA"])
     .required(),
@@ -313,7 +327,15 @@ export default function UsuariosPage() {
                     <label className="label" htmlFor="username">
                       Usuario
                     </label>
-                    <Field id="username" name="username" className="input" autoComplete="off" />
+                    <Field
+                      id="username"
+                      name="username"
+                      className="input"
+                      autoComplete="off"
+                      inputMode="text"
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                    />
                     {errors.username && touched.username ? (
                       <p className="field-error">{errors.username}</p>
                     ) : null}
@@ -333,6 +355,9 @@ export default function UsuariosPage() {
                       type="text"
                       className="input"
                       autoComplete="new-password"
+                      inputMode="text"
+                      autoCapitalize="off"
+                      autoCorrect="off"
                       placeholder={
                         values.rol === "PASE_LISTA"
                           ? editing
@@ -340,12 +365,13 @@ export default function UsuariosPage() {
                             : "Código del pase de lista"
                           : editing
                             ? "Sin cambios"
-                            : "Mínimo 6 caracteres"
+                            : "Mínimo 4 caracteres alfanuméricos"
                       }
                     />
                     {values.rol === "PASE_LISTA" ? (
                       <p className="mt-1 text-xs text-ink-secondary">
-                        Este código se pide en el teléfono al pasar lista. Al cerrar el evento, estas cuentas quedan inhabilitadas.
+                        Código de mínimo 4 caracteres alfanuméricos (letras y números). Se pide en el
+                        teléfono al escanear. Al cerrar el evento, estas cuentas quedan inhabilitadas.
                       </p>
                     ) : null}
                     {errors.password && touched.password ? (

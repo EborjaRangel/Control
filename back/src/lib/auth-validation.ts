@@ -1,6 +1,29 @@
 import * as Yup from "yup";
 
+/** Inicio de sesión: acepta cuentas anteriores (desde 3 caracteres). */
 export const USERNAME_REGEX = /^[a-zA-Z0-9._-]{3,32}$/;
+
+/** Alta de usuarios: solo alfanumérico, mínimo 4. */
+export const CREDENTIAL_ALPHANUMERIC_REGEX = /^[a-zA-Z0-9]{4,32}$/;
+export const CREDENTIAL_ALPHANUMERIC_MSG = "Mínimo 4 caracteres alfanuméricos";
+
+const yupPasswordAlfanumericaOpcional = () =>
+  Yup.string()
+    .transform((value) => (value === "" || value == null ? undefined : value))
+    .test(
+      "password-alfanumerica",
+      CREDENTIAL_ALPHANUMERIC_MSG,
+      (v) => v == null || CREDENTIAL_ALPHANUMERIC_REGEX.test(v),
+    );
+
+const yupUsuarioNuevoOpcional = () =>
+  Yup.string()
+    .trim()
+    .test(
+      "usuario",
+      "Usuario: 4–32 caracteres alfanuméricos",
+      (v) => !v || CREDENTIAL_ALPHANUMERIC_REGEX.test(v),
+    );
 
 export const loginSchema = Yup.object({
   username: Yup.string()
@@ -28,29 +51,11 @@ export const restablecerContrasenaSchema = Yup.object({
 });
 
 export const credencialesCreateSchema = Yup.object({
-  usuario: Yup.string()
-    .trim()
-    .test(
-      "usuario",
-      "Usuario: 3–32 caracteres (letras, números, . _ -)",
-      (v) => !v || USERNAME_REGEX.test(v),
-    ),
-  password: Yup.string()
-    .transform((value) => (value === "" || value == null ? undefined : value))
-    .min(6, "Mínimo 6 caracteres")
-    .optional(),
+  usuario: yupUsuarioNuevoOpcional(),
+  password: yupPasswordAlfanumericaOpcional(),
 });
 
 export const credencialesUpdateSchema = Yup.object({
-  usuario: Yup.string()
-    .trim()
-    .test(
-      "usuario",
-      "Usuario: 3–32 caracteres (letras, números, . _ -)",
-      (v) => !v || USERNAME_REGEX.test(v),
-    ),
-  password: Yup.string()
-    .transform((value) => (value === "" || value == null ? undefined : value))
-    .min(6, "Mínimo 6 caracteres")
-    .optional(),
+  usuario: yupUsuarioNuevoOpcional(),
+  password: yupPasswordAlfanumericaOpcional(),
 });
