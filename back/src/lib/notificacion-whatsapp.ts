@@ -22,15 +22,6 @@ function urlNotificacionesApp(): string {
   return `${base}/notificaciones`;
 }
 
-function dirigenteTieneRedWhatsApp(
-  redes: ReadonlyArray<{ descripcion: string; cuenta: string }>,
-): boolean {
-  return redes.some((r) => {
-    const tipo = r.descripcion.trim().toLowerCase();
-    return tipo === "whatsapp" && r.cuenta.trim().length > 0;
-  });
-}
-
 export function cuerpoWhatsAppNotificacion(
   dirigente: {
     nombre: string;
@@ -50,7 +41,7 @@ export function cuerpoWhatsAppNotificacion(
   return completo.length <= 1550 ? completo : `${saludo}\n\n${cuerpo.slice(0, 900)}…${pie}`;
 }
 
-/** WhatsApp a dirigentes con celular válido y red social WhatsApp en su ficha. */
+/** WhatsApp a dirigentes activos con celular válido (misma población que recibe aviso web). */
 export async function enviarWhatsAppNotificacionDirigentes(input: {
   dirigenteIds: string[];
   mensaje: string;
@@ -73,7 +64,6 @@ export async function enviarWhatsAppNotificacionDirigentes(input: {
       primerApellido: true,
       segundoApellido: true,
       telefonoCelular: true,
-      redesSociales: { select: { descripcion: true, cuenta: true } },
     },
   });
 
@@ -82,11 +72,6 @@ export async function enviarWhatsAppNotificacionDirigentes(input: {
   for (const d of dirigentes) {
     const celular = d.telefonoCelular?.trim() ?? "";
     const digits = telefonoMexico10Digitos(celular);
-
-    if (!dirigenteTieneRedWhatsApp(d.redesSociales)) {
-      resumen.omitidos++;
-      continue;
-    }
 
     if (!digits) {
       resumen.omitidos++;

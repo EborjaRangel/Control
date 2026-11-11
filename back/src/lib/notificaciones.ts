@@ -112,23 +112,52 @@ export async function contarDestinatariosNotificacion(fields: NotificacionAlcanc
   return { dirigentes: ids.length, usuarios: usuarios.length };
 }
 
+const filtroUsuarioActivoParaDirigentes = (
+  dirigenteIds: string[],
+): Prisma.UsuarioWhereInput => ({
+  activo: true,
+  rol: { not: "DETECTADO" },
+  OR: [
+    { dirigenteId: { in: dirigenteIds } },
+    { rc: { dirigenteId: { in: dirigenteIds }, activo: true } },
+    { rg: { dirigenteId: { in: dirigenteIds }, activo: true } },
+  ],
+});
+
 export async function usuariosParaDirigentes(dirigenteIds: string[]): Promise<string[]> {
   if (dirigenteIds.length === 0) return [];
 
   const usuarios = await prisma.usuario.findMany({
-    where: {
-      activo: true,
-      rol: { not: "DETECTADO" },
-      OR: [
-        { dirigenteId: { in: dirigenteIds } },
-        { rc: { dirigenteId: { in: dirigenteIds }, activo: true } },
-        { rg: { dirigenteId: { in: dirigenteIds }, activo: true } },
-      ],
-    },
+    where: filtroUsuarioActivoParaDirigentes(dirigenteIds),
     select: { id: true },
   });
 
   return [...new Set(usuarios.map((u) => u.id))];
+}
+
+/** Dirigentes del alcance que tienen al menos un usuario activo en la plataforma (mismo criterio que el aviso web). */
+export async function dirigenteIdsConUsuarioActivoPlataforma(
+  dirigenteIds: string[],
+): Promise<string[]> {
+  if (dirigenteIds.length === 0) return [];
+
+  const alcance = new Set(dirigenteIds);
+  const usuarios = await prisma.usuario.findMany({
+    where: filtroUsuarioActivoParaDirigentes(dirigenteIds),
+    select: {
+      dirigenteId: true,
+      rc: { select: { dirigenteId: true } },
+      rg: { select: { dirigenteId: true } },
+    },
+  });
+
+  const ids = new Set<string>();
+  for (const u of usuarios) {
+    if (u.dirigenteId && alcance.has(u.dirigenteId)) ids.add(u.dirigenteId);
+    if (u.rc?.dirigenteId && alcance.has(u.rc.dirigenteId)) ids.add(u.rc.dirigenteId);
+    if (u.rg?.dirigenteId && alcance.has(u.rg.dirigenteId)) ids.add(u.rg.dirigenteId);
+  }
+  return [...ids];
 }
 
 export type EnviarNotificacionInput = NotificacionAlcanceFields & {
@@ -216,8 +245,9 @@ export async function enviarNotificacion(input: EnviarNotificacionInput) {
     },
   });
 
+  const dirigenteIdsWhatsApp = await dirigenteIdsConUsuarioActivoPlataforma(dirigenteIds);
   const whatsapp = await enviarWhatsAppNotificacionDirigentes({
-    dirigenteIds,
+    dirigenteIds: dirigenteIdsWhatsApp,
     mensaje: notificacion.mensaje,
   });
 
