@@ -164,6 +164,7 @@ router.post("/enviar", requireStaff, async (req, res) => {
         alcance: data.alcance,
         destinatarios: resultado.destinatarios,
         dirigentes: resultado.dirigentes,
+        whatsapp: resultado.whatsapp,
       },
     });
 

@@ -7,6 +7,13 @@ import { prisma } from "./prisma.js";
 import { normalizarTextoGuardado } from "./normalizar-texto.js";
 import { seccionesDeDistritoLocal } from "./secciones-electorales.js";
 import { etiquetaUnidadTerritorial } from "./unidades-territoriales.js";
+import {
+  enviarWhatsAppNotificacionDirigentes,
+  resumenWhatsAppVacio,
+  type ResumenWhatsApp,
+} from "./notificacion-whatsapp.js";
+
+export type { ResumenWhatsApp };
 
 export type NotificacionAlcanceFields = {
   alcance: AlcanceNotificacion;
@@ -179,6 +186,7 @@ export async function enviarNotificacion(input: EnviarNotificacionInput) {
       alcanceLabel: "",
       dirigentes: 0,
       destinatarios: 0,
+      whatsapp: resumenWhatsAppVacio(),
       error: "No hay usuarios activos para el alcance seleccionado",
     };
   }
@@ -208,12 +216,18 @@ export async function enviarNotificacion(input: EnviarNotificacionInput) {
     },
   });
 
+  const whatsapp = await enviarWhatsAppNotificacionDirigentes({
+    dirigenteIds,
+    mensaje: notificacion.mensaje,
+  });
+
   return {
     notificacionId: notificacion.id,
     alcanceLabel: etiquetaAlcanceNotificacion(notificacion),
     dirigentes: dirigenteIds.length,
     destinatarios: usuarioIds.length,
     enviadoAt: notificacion.enviadoAt.toISOString(),
+    whatsapp,
     error: null as string | null,
   };
 }

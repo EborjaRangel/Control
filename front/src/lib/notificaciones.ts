@@ -48,12 +48,19 @@ export function contarNoLeidas(items: ReadonlyArray<{ leida: boolean }>) {
   return items.filter((n) => !n.leida).length;
 }
 
+export type ResumenWhatsAppNotificacion = {
+  enviados: number;
+  fallidos: number;
+  omitidos: number;
+};
+
 export type NotificacionEnviarResultado = {
   notificacionId: string | null;
   alcanceLabel: string;
   dirigentes: number;
   destinatarios: number;
   enviadoAt?: string;
+  whatsapp?: ResumenWhatsAppNotificacion;
   error?: string | null;
 };
 

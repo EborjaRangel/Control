@@ -169,7 +169,8 @@ export function NotificacionesAdminPanel() {
         <h2 className="section-title">Notificaciones en la web</h2>
         <p className="mt-1 text-sm text-ink-secondary">
           El mensaje y las imágenes aparecerán en el panel web de cada usuario destinatario.
-          Queda guardado hasta que lo marquen como visto.
+          También se envía por WhatsApp a dirigentes del alcance que tengan celular registrado y
+          la red social WhatsApp en su ficha (mismo canal que las convocatorias).
         </p>
       </div>
 
@@ -286,11 +287,18 @@ export function NotificacionesAdminPanel() {
       {error ? <div className="alert-error">{error}</div> : null}
 
       {resultado ? (
-        <div className="panel-pin text-sm">
+        <div className="panel-pin space-y-2 text-sm">
           <p className="font-semibold text-pin-dark">Notificación enviada</p>
           <p>
-            {resultado.destinatarios} usuario(s) · {resultado.alcanceLabel}
+            {resultado.destinatarios} usuario(s) en la web · {resultado.alcanceLabel}
           </p>
+          {resultado.whatsapp ? (
+            <p className="text-ink-secondary">
+              WhatsApp: {resultado.whatsapp.enviados} enviados, {resultado.whatsapp.fallidos}{" "}
+              fallidos, {resultado.whatsapp.omitidos} omitidos (sin celular, sin red WhatsApp o
+              canal no configurado)
+            </p>
+          ) : null}
           {resultado.enviadoAt ? (
             <p className="text-ink-secondary">{formatFechaNotificacion(resultado.enviadoAt)}</p>
           ) : null}
