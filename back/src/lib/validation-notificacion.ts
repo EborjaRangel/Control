@@ -28,7 +28,9 @@ export function normalizarImagenesNotificacion(value: unknown): string[] {
 }
 
 export const ALCANCES_NOTIFICACION = [
-  "TODOS",
+  "DIRIGENTES_CAMPO",
+  "TRANSVERSALES",
+  "PERFIL_ORGANIZACION",
   "DIRIGENTES_SELECCION",
   "TIPO_DIRIGENTE",
   "DISTRITO_FEDERAL",

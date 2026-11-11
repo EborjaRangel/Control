@@ -6,7 +6,10 @@ import { FormSelect, FormTextarea } from "@/components/FormField";
 import { cn } from "@/lib/cn";
 import { apiFetch } from "@/lib/api";
 import { NOMBRES_COLONIAS_COYOACAN } from "@/lib/colonias";
-import { TIPO_DIRIGENTE_LABEL, TIPOS_DIRIGENTE } from "@/lib/dirigentes";
+import {
+  TIPO_DIRIGENTE_LABEL,
+  TIPOS_DIRIGENTE_FILTRO_GRUPOS,
+} from "@/lib/dirigentes";
 import {
   ALCANCE_NOTIFICACION_LABEL,
   type NotificacionEnviarResultado,
@@ -133,10 +136,14 @@ function AlcanceCampos({ uts }: { uts: UnidadTerritorialResumen[] }) {
     return (
       <FormSelect label="Tipo de dirigente" name="tipoDirigente">
         <option value="">Selecciona tipo…</option>
-        {TIPOS_DIRIGENTE.map((t) => (
-          <option key={t} value={t}>
-            {TIPO_DIRIGENTE_LABEL[t]}
-          </option>
+        {TIPOS_DIRIGENTE_FILTRO_GRUPOS.map((grupo) => (
+          <optgroup key={grupo.titulo} label={grupo.titulo}>
+            {grupo.tipos.map((t) => (
+              <option key={t} value={t}>
+                {TIPO_DIRIGENTE_LABEL[t]}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </FormSelect>
     );

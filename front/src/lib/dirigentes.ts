@@ -27,7 +27,11 @@ export const TIPOS_DIRIGENTE_FILTRO_GRUPOS: {
   tipos: readonly TipoDirigente[];
 }[] = [
   { titulo: "Dirigente de campo", tipos: TIPOS_DIRIGENTE_CAMPO },
-  { titulo: "Organización", tipos: ["TRANSVERSAL", "ADMINISTRATIVO", "ENTIDAD", "PARTIDO_POLITICO"] },
+  { titulo: "Transversal", tipos: ["TRANSVERSAL"] },
+  {
+    titulo: "Administrativo, entidad y partido",
+    tipos: ["ADMINISTRATIVO", "ENTIDAD", "PARTIDO_POLITICO"],
+  },
 ];
 
 export const TIPO_DIRIGENTE_LABEL: Record<TipoDirigente, string> = {

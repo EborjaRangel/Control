@@ -107,6 +107,11 @@ enum AuditAccion {
 /// Alcance de una notificación in-app
 enum AlcanceNotificacion {
   TODOS
+  /// D1–D4 (dirigentes de campo)
+  DIRIGENTES_CAMPO
+  TRANSVERSALES
+  /// Administrativo, entidad y partido político
+  PERFIL_ORGANIZACION
   TIPO_DIRIGENTE
   DISTRITO_FEDERAL
   DISTRITO_LOCAL

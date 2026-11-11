@@ -1,5 +1,8 @@
 export type AlcanceNotificacion =
   | "TODOS"
+  | "DIRIGENTES_CAMPO"
+  | "TRANSVERSALES"
+  | "PERFIL_ORGANIZACION"
   | "DIRIGENTES_SELECCION"
   | "TIPO_DIRIGENTE"
   | "DISTRITO_FEDERAL"
@@ -9,7 +12,10 @@ export type AlcanceNotificacion =
   | "SECCION";
 
 export const ALCANCE_NOTIFICACION_LABEL: Record<AlcanceNotificacion, string> = {
-  TODOS: "Todos los dirigentes (D1–D4 y Transversales)",
+  TODOS: "Todos los perfiles (histórico)",
+  DIRIGENTES_CAMPO: "Dirigentes de campo (D1–D4)",
+  TRANSVERSALES: "Transversales",
+  PERFIL_ORGANIZACION: "Administrativo, entidad y partido político",
   DIRIGENTES_SELECCION: "Seleccionar dirigentes (checkbox)",
   TIPO_DIRIGENTE: "Por tipo de dirigente",
   DISTRITO_FEDERAL: "Por distrito federal",

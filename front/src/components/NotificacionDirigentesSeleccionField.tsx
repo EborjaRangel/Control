@@ -4,8 +4,7 @@ import { useFormikContext } from "formik";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import {
-  TIPO_DIRIGENTE_LABEL,
-  TIPOS_DIRIGENTE,
+  TIPOS_DIRIGENTE_FILTRO_GRUPOS,
   compararDirigentePorApellidosNombre,
   etiquetaApellidosNombre,
 } from "@/lib/dirigentes";
@@ -34,10 +33,11 @@ export function NotificacionDirigentesSeleccionField() {
       ? dirigentes.filter((d) => etiquetaApellidosNombre(d).toLowerCase().includes(q))
       : dirigentes;
 
-    return TIPOS_DIRIGENTE.map((tipo) => ({
-      tipo,
-      label: TIPO_DIRIGENTE_LABEL[tipo],
-      items: filtrados.filter((d) => d.tipo === tipo).sort(compararDirigentePorApellidosNombre),
+    return TIPOS_DIRIGENTE_FILTRO_GRUPOS.map((grupo) => ({
+      titulo: grupo.titulo,
+      items: filtrados
+        .filter((d) => (grupo.tipos as readonly string[]).includes(d.tipo))
+        .sort(compararDirigentePorApellidosNombre),
     })).filter((g) => g.items.length > 0);
   }, [dirigentes, buscar]);
 
@@ -85,9 +85,9 @@ export function NotificacionDirigentesSeleccionField() {
             const idsGrupo = grupo.items.map((d) => d.id);
             const todosMarcados = idsGrupo.every((id) => seleccionados.includes(id));
             return (
-              <section key={grupo.tipo} className="space-y-2">
+              <section key={grupo.titulo} className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-1">
-                  <h4 className="text-sm font-bold text-pin-dark">{grupo.label}</h4>
+                  <h4 className="text-sm font-bold text-pin-dark">{grupo.titulo}</h4>
                   <button
                     type="button"
                     className="text-xs font-semibold text-pin hover:text-pin-hover"

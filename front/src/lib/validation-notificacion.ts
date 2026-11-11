@@ -14,7 +14,9 @@ const IMAGEN_NOTIFICACION_URL =
   /^\/uploads\/[a-f0-9-]+\.(jpg|jpeg|png|webp|gif)$/i;
 
 export const ALCANCES_NOTIFICACION = [
-  "TODOS",
+  "DIRIGENTES_CAMPO",
+  "TRANSVERSALES",
+  "PERFIL_ORGANIZACION",
   "DIRIGENTES_SELECCION",
   "TIPO_DIRIGENTE",
   "DISTRITO_FEDERAL",

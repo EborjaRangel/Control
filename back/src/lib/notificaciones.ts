@@ -8,6 +8,10 @@ import { normalizarTextoGuardado } from "./normalizar-texto.js";
 import { seccionesDeDistritoLocal } from "./secciones-electorales.js";
 import { etiquetaUnidadTerritorial } from "./unidades-territoriales.js";
 import {
+  TIPOS_DIRIGENTE_CAMPO,
+  TIPOS_SECCION_ELECTORAL_CERO,
+} from "./dirigentes.js";
+import {
   enviarWhatsAppNotificacionDirigentes,
   resumenWhatsAppVacio,
   type ResumenWhatsApp,
@@ -35,6 +39,12 @@ export function filtroDirigentesNotificacion(
   switch (fields.alcance) {
     case "TODOS":
       return base;
+    case "DIRIGENTES_CAMPO":
+      return { ...base, tipo: { in: [...TIPOS_DIRIGENTE_CAMPO] } };
+    case "TRANSVERSALES":
+      return { ...base, tipo: "TRANSVERSAL" };
+    case "PERFIL_ORGANIZACION":
+      return { ...base, tipo: { in: [...TIPOS_SECCION_ELECTORAL_CERO] } };
     case "TIPO_DIRIGENTE":
       return { ...base, tipo: fields.tipoDirigente ?? undefined };
     case "DISTRITO_FEDERAL":
@@ -72,7 +82,13 @@ export function etiquetaAlcanceNotificacion(
 ): string {
   switch (n.alcance) {
     case "TODOS":
-      return "Todos los dirigentes (D1–D4 y Transversales)";
+      return "Todos los perfiles (histórico)";
+    case "DIRIGENTES_CAMPO":
+      return "Dirigentes de campo (D1–D4)";
+    case "TRANSVERSALES":
+      return "Transversales";
+    case "PERFIL_ORGANIZACION":
+      return "Administrativo, entidad y partido político";
     case "TIPO_DIRIGENTE":
       return `Tipo dirigente: ${n.tipoDirigente ?? "—"}`;
     case "DISTRITO_FEDERAL":
