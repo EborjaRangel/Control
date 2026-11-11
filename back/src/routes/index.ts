@@ -89,7 +89,8 @@ import {
 } from "../lib/filtro-dirigentes.js";
 import { generarCodigoQr } from "../lib/codigo-qr.js";
 import { manejarEscaneoHttp, manejarEstadoPaseHttp } from "../lib/escanear-asistencia.js";
-import { nominaCreateData, nominaInclude } from "../lib/nomina-db.js";
+import { nominaCreateData, nominaInclude, type NominaPayload } from "../lib/nomina-db.js";
+import type { DirigenteFormPayload } from "../lib/validation-dirigente-extra.js";
 import { recalcularResumenGlobalNomina } from "../lib/nomina-resumen.js";
 import { normalizarDirigenteParaGuardado } from "../lib/normalizar-dirigente.js";
 import { normalizarTextoGuardado } from "../lib/normalizar-texto.js";
@@ -98,6 +99,9 @@ import {
   dirigenteScalarData,
   syncDirigenteRelaciones,
 } from "../lib/dirigente-db.js";
+
+type DirigenteRequestBody = DirigenteFormPayload &
+  NominaPayload & { usuario?: string; password?: string | null };
 
 const router = Router();
 
@@ -711,8 +715,10 @@ router.post("/dirigentes", requireStaff, async (req, res) => {
     const perfilOrg = tipoPermiteSeccionCero(data.tipo);
     let unidadTerritorialId: string | null = null;
     if (!perfilOrg) {
+      const colonia = data.colonia ?? "";
+      const seccionElectoral = data.seccionElectoral ?? "";
       const utError = await validarUnidadTerritorialParaColonia(
-        data.colonia,
+        colonia,
         data.unidadTerritorialId ?? null,
       );
       if (utError) {
@@ -720,13 +726,13 @@ router.post("/dirigentes", requireStaff, async (req, res) => {
         return;
       }
       unidadTerritorialId = await resolverUnidadTerritorialId(
-        data.colonia,
+        colonia,
         data.unidadTerritorialId ?? null,
       );
 
       const seccionError = await validarSeccionParaColonia(
-        data.colonia,
-        data.seccionElectoral,
+        colonia,
+        seccionElectoral,
         unidadTerritorialId,
       );
       if (seccionError) {
@@ -735,7 +741,7 @@ router.post("/dirigentes", requireStaff, async (req, res) => {
       }
     }
 
-    const guardado = normalizarDirigenteParaGuardado(data);
+    const guardado = normalizarDirigenteParaGuardado(data as DirigenteRequestBody);
     const credenciales = resolverCredencialesCrear({
       usuario: data.usuario,
       password: data.password,
@@ -866,8 +872,10 @@ router.put("/dirigentes/:id", requireStaff, async (req, res) => {
     const perfilOrg = tipoPermiteSeccionCero(data.tipo);
     let unidadTerritorialId: string | null = null;
     if (!perfilOrg) {
+      const colonia = data.colonia ?? "";
+      const seccionElectoral = data.seccionElectoral ?? "";
       const utError = await validarUnidadTerritorialParaColonia(
-        data.colonia,
+        colonia,
         data.unidadTerritorialId ?? null,
       );
       if (utError) {
@@ -875,13 +883,13 @@ router.put("/dirigentes/:id", requireStaff, async (req, res) => {
         return;
       }
       unidadTerritorialId = await resolverUnidadTerritorialId(
-        data.colonia,
+        colonia,
         data.unidadTerritorialId ?? null,
       );
 
       const seccionError = await validarSeccionParaColonia(
-        data.colonia,
-        data.seccionElectoral,
+        colonia,
+        seccionElectoral,
         unidadTerritorialId,
       );
       if (seccionError) {
@@ -895,7 +903,7 @@ router.put("/dirigentes/:id", requireStaff, async (req, res) => {
       return;
     }
 
-    const guardado = normalizarDirigenteParaGuardado(data);
+    const guardado = normalizarDirigenteParaGuardado(data as DirigenteRequestBody);
     const antesDirigente = snapshotDirigenteBasico(existing);
     const credencialesNuevo = resolverCredencialesCrear({
       usuario: data.usuario,
