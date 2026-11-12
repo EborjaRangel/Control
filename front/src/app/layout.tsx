@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import { AuthProvider } from "@/components/AuthProvider";
+import { WebPushActivation } from "@/components/WebPushActivation";
 import { APP_DESCRIPTION, APP_TITLE, appMetadataBase } from "@/lib/site";
 import "./globals.css";
 
@@ -20,6 +21,7 @@ export const metadata: Metadata = {
   title: APP_TITLE,
   description: APP_DESCRIPTION,
   applicationName: APP_TITLE,
+  manifest: "/manifest.webmanifest",
   openGraph: {
     title: APP_TITLE,
     description: APP_DESCRIPTION,
@@ -53,6 +55,7 @@ export default function RootLayout({
       <body className="flex min-h-dvh min-w-0 flex-col overflow-x-hidden font-sans has-navbar">
         <AuthProvider>
           <AppShell>{children}</AppShell>
+          <WebPushActivation />
         </AuthProvider>
       </body>
     </html>

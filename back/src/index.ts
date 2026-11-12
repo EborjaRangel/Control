@@ -15,6 +15,7 @@ import {
   whatsAppProveedor,
 } from "./lib/comunicacion/config.js";
 import { resendConfigurado } from "./lib/comunicacion/email-resend.js";
+import { pushWebConfigurado, pushWebPublicKey } from "./lib/push-web.js";
 
 const app = express();
 const uploadDir = ensureUploadDir();
@@ -84,6 +85,10 @@ app.get("/health", async (_req, res) => {
     sms: {
       habilitado: config.sms.habilitado,
       from: config.sms.from,
+    },
+    pushWeb: {
+      habilitado: pushWebConfigurado(),
+      publicKey: pushWebPublicKey() ? "configured" : null,
     },
   });
 });

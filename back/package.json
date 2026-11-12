@@ -45,6 +45,7 @@
     "twilio:test": "tsx scripts/test-twilio-whatsapp.ts",
     "whatsapp:test": "tsx scripts/test-whatsapp.ts",
     "whatsapp:verify": "tsx scripts/test-whatsapp-cloud.ts",
+    "push:generate-vapid-keys": "tsx scripts/generate-vapid-keys.ts",
     "uploads:sync-to-production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-uploads-to-production.ps1",
     "postinstall": "prisma generate"
   },
@@ -72,6 +73,7 @@
     "shapefile": "^0.6.6",
     "tsx": "^4.22.4",
     "twilio": "^6.0.2",
+    "web-push": "^3.6.7",
     "xlsx": "^0.18.5",
     "yup": "^1.7.1"
   },
@@ -86,6 +88,7 @@
     "@types/node": "^20",
     "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.20.0",
+    "@types/web-push": "^3.6.4",
     "typescript": "^5"
   }
 }

@@ -669,6 +669,7 @@ model Usuario {
   rgId         String?    @unique
   rg           ResponsableGeneral? @relation(fields: [rgId], references: [id], onDelete: Cascade)
   notificacionesRecibidas NotificacionDestinatario[]
+  pushSubscriptions       PushSubscription[]
   passwordResetTokens     PasswordResetToken[]
   asistenciasRegistradas  RegistroAsistencia[]
   entregasMaterialRegistradas RegistroEntregaMaterial[]
@@ -677,6 +678,20 @@ model Usuario {
 
   @@index([rol])
   @@index([activo])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([usuarioId])
 }
 
 model PasswordResetToken {

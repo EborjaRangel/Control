@@ -14,6 +14,7 @@ import {
 } from "@/lib/notificaciones";
 import { NotificacionImagenes } from "@/components/NotificacionImagenes";
 import { NotificacionMensaje } from "@/components/NotificacionMensaje";
+import { WebPushAvisosEnCelular } from "@/components/WebPushAvisosEnCelular";
 
 export default function NotificacionesPage() {
   const { user } = useAuth();
@@ -83,6 +84,8 @@ export default function NotificacionesPage() {
       </div>
 
       {error ? <div className="alert-error">{error}</div> : null}
+
+      <WebPushAvisosEnCelular />
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-ink-secondary">

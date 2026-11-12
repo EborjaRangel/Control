@@ -316,6 +316,15 @@ export function NotificacionesAdminPanel() {
               ) : null}
             </div>
           ) : null}
+          {resultado.pushWeb ? (
+            <p className="text-ink-secondary">
+              Push en celular: {resultado.pushWeb.enviados} enviados, {resultado.pushWeb.fallidos} fallidos,{" "}
+              {resultado.pushWeb.omitidos} sin suscripción
+              {resultado.pushWeb.configurado === false
+                ? " (falta VAPID en el servidor)"
+                : ""}
+            </p>
+          ) : null}
           {resultado.enviadoAt ? (
             <p className="text-ink-secondary">{formatFechaNotificacion(resultado.enviadoAt)}</p>
           ) : null}

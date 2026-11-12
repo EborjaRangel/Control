@@ -17,8 +17,9 @@ import {
   resumenWhatsAppVacio,
   type ResumenWhatsApp,
 } from "./notificacion-whatsapp.js";
+import { enviarPushWebAUsuarios, type PushWebResumen } from "./push-web.js";
 
-export type { ResumenWhatsApp };
+export type { ResumenWhatsApp, PushWebResumen };
 
 export type NotificacionAlcanceFields = {
   alcance: AlcanceNotificacion;
@@ -212,6 +213,12 @@ export async function notificarUsuariosDirectos(input: {
     },
   });
 
+  void enviarPushWebAUsuarios({
+    usuarioIds,
+    mensaje: normalizarMensajeNotificacion(input.mensaje),
+    notificacionId: notificacion.id,
+  }).catch((err) => console.error("[notificacion][push-web]", err));
+
   return {
     notificacionId: notificacion.id,
     destinatarios: usuarioIds.length,
@@ -233,6 +240,12 @@ export async function enviarNotificacion(input: EnviarNotificacionInput) {
       dirigentes: 0,
       destinatarios: 0,
       whatsapp: resumenWhatsAppVacio(),
+      pushWeb: {
+        enviados: 0,
+        fallidos: 0,
+        omitidos: 0,
+        configurado: false,
+      } satisfies PushWebResumen,
       error: "No hay usuarios activos para el alcance seleccionado",
     };
   }
@@ -262,11 +275,17 @@ export async function enviarNotificacion(input: EnviarNotificacionInput) {
     },
   });
 
-  const dirigenteIdsWhatsApp = await dirigenteIdsDesdeUsuariosNotificacion(usuarioIds);
-  const whatsapp = await enviarWhatsAppNotificacionDirigentes({
-    dirigenteIds: dirigenteIdsWhatsApp,
-    mensaje: notificacion.mensaje,
-  });
+  const [whatsapp, pushWeb] = await Promise.all([
+    enviarWhatsAppNotificacionDirigentes({
+      dirigenteIds: await dirigenteIdsDesdeUsuariosNotificacion(usuarioIds),
+      mensaje: notificacion.mensaje,
+    }),
+    enviarPushWebAUsuarios({
+      usuarioIds,
+      mensaje: notificacion.mensaje,
+      notificacionId: notificacion.id,
+    }),
+  ]);
 
   return {
     notificacionId: notificacion.id,
@@ -275,6 +294,7 @@ export async function enviarNotificacion(input: EnviarNotificacionInput) {
     destinatarios: usuarioIds.length,
     enviadoAt: notificacion.enviadoAt.toISOString(),
     whatsapp,
+    pushWeb,
     error: null as string | null,
   };
 }

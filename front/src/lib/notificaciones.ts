@@ -62,6 +62,13 @@ export type ResumenWhatsAppNotificacion = {
   configurado?: boolean;
 };
 
+export type ResumenPushWebNotificacion = {
+  enviados: number;
+  fallidos: number;
+  omitidos: number;
+  configurado: boolean;
+};
+
 export type NotificacionEnviarResultado = {
   notificacionId: string | null;
   alcanceLabel: string;
@@ -69,6 +76,7 @@ export type NotificacionEnviarResultado = {
   destinatarios: number;
   enviadoAt?: string;
   whatsapp?: ResumenWhatsAppNotificacion;
+  pushWeb?: ResumenPushWebNotificacion;
   error?: string | null;
 };
 

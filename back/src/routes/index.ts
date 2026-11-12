@@ -60,6 +60,7 @@ import detectadosRouter from "./detectados.js";
 import rcRouter from "./rc.js";
 import rgRouter from "./rg.js";
 import notificacionesRouter from "./notificaciones.js";
+import pushWebRouter from "./push-web.js";
 import usuariosRouter from "./usuarios.js";
 import auditoriaRouter from "./auditoria.js";
 import serviciosUrbanosRouter from "./servicios-urbanos.js";
@@ -297,6 +298,7 @@ router.use("/transporte", transporteRouter);
 router.use("/rc", rcRouter);
 router.use("/rg", rgRouter);
 router.use("/notificaciones", notificacionesRouter);
+router.use("/push-web", pushWebRouter);
 router.use("/usuarios", usuariosRouter);
 router.use("/auditoria", auditoriaRouter);
 
