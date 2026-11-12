@@ -126,6 +126,9 @@ export function faltantesWhatsApp(): string[] {
     if (!process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID?.trim()) {
       faltantes.push("WHATSAPP_CLOUD_PHONE_NUMBER_ID");
     }
+    if (!process.env.WHATSAPP_CLOUD_TEMPLATE_NAME?.trim()) {
+      faltantes.push("WHATSAPP_CLOUD_TEMPLATE_NAME");
+    }
     return faltantes;
   }
   if (prov === "twilio") {
@@ -160,6 +163,29 @@ export function faltantesConfigConvocatoria(): string[] {
 
 export function whatsAppListo(): boolean {
   return faltantesWhatsApp().length === 0;
+}
+
+/** Aviso operativo (sandbox Twilio, plantilla, etc.) para /health y paneles. */
+export function avisoWhatsApp(): string | null {
+  const prov = whatsAppProveedor();
+  if (prov === "twilio") {
+    const from = process.env.TWILIO_WHATSAPP_FROM?.trim() ?? "";
+    if (/\+1555|sandbox/i.test(from)) {
+      return (
+        "WhatsApp vía Twilio en número de prueba (+1555…). Cada destinatario debe unirse al sandbox " +
+        "(código «join …» desde ese remitente) y la plantilla TWILIO_WHATSAPP_CONTENT_SID debe estar aprobada."
+      );
+    }
+    if (!process.env.TWILIO_WHATSAPP_CONTENT_SID?.trim()) {
+      return "Falta TWILIO_WHATSAPP_CONTENT_SID (plantilla aprobada) para convocatorias masivas.";
+    }
+  }
+  if (prov === "meta") {
+    if (!process.env.WHATSAPP_CLOUD_TEMPLATE_NAME?.trim()) {
+      return "Falta WHATSAPP_CLOUD_TEMPLATE_NAME (plantilla aprobada en Meta) para enviar fuera de 24 h.";
+    }
+  }
+  return null;
 }
 
 export function convocatoriaListaParaEnvio(): boolean {

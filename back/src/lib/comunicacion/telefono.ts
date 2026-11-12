@@ -22,6 +22,18 @@ function mensajeErrorTwilio(raw: string, canal: "SMS" | "WHATSAPP"): string {
       );
     }
   }
+  if (/63027|Content Sid|content template|not found/i.test(raw)) {
+    return (
+      "WhatsApp: la plantilla Twilio (TWILIO_WHATSAPP_CONTENT_SID) no existe, no está aprobada " +
+      "en Meta o no corresponde a esa cuenta."
+    );
+  }
+  if (/63033|ContentVariables|invalid.*variable/i.test(raw)) {
+    return (
+      "WhatsApp: variables de plantilla incorrectas. Revisa TWILIO_WHATSAPP_CONTENT_VARIABLES " +
+      "(debe coincidir con los {{n}} de la plantilla)."
+    );
+  }
   if (/63007|63009|Channel/i.test(raw)) {
     return "Twilio WhatsApp no está activo en esta cuenta o falta TWILIO_WHATSAPP_FROM.";
   }
@@ -60,7 +72,8 @@ async function twilioEnviar(input: {
     if (vars) {
       params.set("ContentVariables", vars);
     } else {
-      params.set("ContentVariables", JSON.stringify({ "1": input.body }));
+      const texto = input.body.replace(/\s+/g, " ").trim().slice(0, 900);
+      params.set("ContentVariables", JSON.stringify({ "1": texto }));
     }
   }
 
@@ -131,7 +144,8 @@ export async function enviarWhatsApp(input: {
   }
 
   if (whatsAppProveedor() === "meta") {
-    return enviarWhatsAppCloud(input);
+    const plantillaPrimero = Boolean(process.env.WHATSAPP_CLOUD_TEMPLATE_NAME?.trim());
+    return enviarWhatsAppCloud({ ...input, plantillaPrimero });
   }
 
   const e164 = telefonoE164Mexico(input.telefono);

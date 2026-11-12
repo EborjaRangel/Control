@@ -7,12 +7,14 @@ export type ConvocatoriaEstado = {
   email: boolean;
   sms: boolean;
   whatsapp: boolean;
+  whatsappAviso?: string | null;
   notificaciones: boolean;
 };
 export type ResumenCanalConvocatoria = {
   enviados: number;
   fallidos: number;
   omitidos: number;
+  ultimoError?: string | null;
 };
 
 export type ResumenConvocatoriaEvento = {

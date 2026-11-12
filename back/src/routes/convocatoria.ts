@@ -2,6 +2,7 @@ import { Router } from "express";
 import { ValidationError } from "yup";
 import { requireAuth, requireConvocatoriaOrStaff } from "../lib/auth.js";
 import {
+  avisoWhatsApp,
   convocatoriaListaParaEnvio,
   faltantesConfigConvocatoria,
   faltantesWhatsApp,
@@ -37,6 +38,7 @@ router.get("/estado", requireConvocatoriaOrStaff, (_req, res) => {
     sms: config.sms.habilitado,
     whatsapp: config.whatsapp.habilitado,
     whatsappProveedor: whatsAppProveedor(),
+    whatsappAviso: avisoWhatsApp(),
     notificaciones: true,
   });
 });

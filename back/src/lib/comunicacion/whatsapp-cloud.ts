@@ -33,6 +33,17 @@ export function telefonoWhatsAppCloud(telefono: string): string | null {
   return e164.replace(/\D/g, "");
 }
 
+/**
+ * Campo `to` en Graph API. México: la lista de prueba de Meta guarda 52 + 10 dígitos;
+ * enviar 521… provoca error 131030 aunque el número esté autorizado.
+ */
+export function metaDestinoWhatsApp(digits: string): string {
+  if (/^521\d{10}$/.test(digits)) {
+    return `52${digits.slice(3)}`;
+  }
+  return digits;
+}
+
 function mensajeErrorMeta(raw: string, code?: number): string {
   if (/131047|re-engagement|24 hour|outside/i.test(raw)) {
     return (
@@ -46,8 +57,36 @@ function mensajeErrorMeta(raw: string, code?: number): string {
   if (/190|OAuth|Invalid OAuth|token/i.test(raw) || code === 190) {
     return "WhatsApp (Meta): token inválido o expirado. Renueva WHATSAPP_CLOUD_ACCESS_TOKEN.";
   }
+  if (code === 10 || (/permission|does not have permission/i.test(raw) && code === 10)) {
+    return (
+      "WhatsApp (Meta): la app no tiene permiso para enviar (código 10). " +
+      "Regenera el token con whatsapp_business_messaging en el Explorador de la API Graph, " +
+      "o publica la app / acceso avanzado en Meta. En modo prueba, agrega el celular destino en la API de WhatsApp."
+    );
+  }
   if (/100|permission|does not exist/i.test(raw) && code === 100) {
     return "WhatsApp (Meta): revisa WHATSAPP_CLOUD_PHONE_NUMBER_ID y permisos del token.";
+  }
+  if (code === 132000 || /132000|number of parameters/i.test(raw)) {
+    return (
+      "WhatsApp (Meta): la plantilla no coincide con los parámetros. Revisa WHATSAPP_CLOUD_TEMPLATE_NAME, " +
+      "WHATSAPP_CLOUD_TEMPLATE_LANGUAGE y WHATSAPP_CLOUD_TEMPLATE_VARIABLES (cantidad de {{n}} en Meta)."
+    );
+  }
+  if (code === 132001 || /132001|template name does not exist/i.test(raw)) {
+    return "WhatsApp (Meta): nombre de plantilla incorrecto (WHATSAPP_CLOUD_TEMPLATE_NAME).";
+  }
+  if (code === 131030 || /131030|not in allowed list/i.test(raw)) {
+    return (
+      "WhatsApp (Meta): este celular no está en la lista permitida del número de prueba. " +
+      "Agrégalo en Meta → API de WhatsApp → Paso 1 → destinatario / lista de números de prueba."
+    );
+  }
+  if (code === 131042 || /131042|payment method|método de pago|payment eligible/i.test(raw)) {
+    return (
+      "WhatsApp (Meta): falta método de pago en la cuenta de WhatsApp (facturación Meta). " +
+      "Agrégalo en WhatsApp Manager → Opciones de configuración de pagos."
+    );
   }
   return raw;
 }
@@ -110,11 +149,15 @@ function payloadPlantilla(to: string, body: string): Record<string, unknown> | n
   const extraVars = process.env.WHATSAPP_CLOUD_TEMPLATE_VARIABLES?.trim();
   if (extraVars) {
     try {
-      const vars = { ...(JSON.parse(extraVars) as Record<string, string>) };
-      vars[paramKey] = texto;
+      const vars = JSON.parse(extraVars) as Record<string, string>;
       const keys = Object.keys(vars).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-      for (const key of keys) {
-        parameters.push({ type: "text", text: vars[key] ?? "" });
+      if (keys.length === 1) {
+        parameters.push({ type: "text", text: texto });
+      } else {
+        const merged = { ...vars, [paramKey]: texto };
+        for (const key of keys) {
+          parameters.push({ type: "text", text: merged[key] ?? "" });
+        }
       }
     } catch {
       parameters.push({ type: "text", text: texto });
@@ -147,10 +190,11 @@ export async function enviarWhatsAppCloud(input: {
   /** Notificaciones: intentar plantilla antes que texto libre (fuera de ventana 24 h). */
   plantillaPrimero?: boolean;
 }): Promise<ResultadoEnvio> {
-  const to = telefonoWhatsAppCloud(input.telefono);
-  if (!to) {
+  const digits = telefonoWhatsAppCloud(input.telefono);
+  if (!digits) {
     return { ok: false, error: "Número de celular inválido" };
   }
+  const to = metaDestinoWhatsApp(digits);
 
   const forzarPlantilla = process.env.WHATSAPP_CLOUD_SOLO_PLANTILLA === "true";
   const plantilla = payloadPlantilla(to, input.body);
@@ -171,10 +215,9 @@ export async function enviarWhatsAppCloud(input: {
   if (tienePlantilla) {
     const texto = await metaPost(payloadTexto(to, input.body));
     if (texto.ok) return texto;
-    if (/24 h|131047|re-engagement/i.test(texto.error ?? "")) {
-      return metaPost(plantilla!);
-    }
-    return texto;
+    const rPlantilla = await metaPost(plantilla!);
+    if (rPlantilla.ok) return rPlantilla;
+    return texto.error ? texto : rPlantilla;
   }
 
   return metaPost(payloadTexto(to, input.body));

@@ -23,6 +23,7 @@ export type ResumenCanal = {
   enviados: number;
   fallidos: number;
   omitidos: number;
+  ultimoError?: string | null;
 };
 
 export type ResumenConvocatoriaEvento = {
@@ -45,7 +46,7 @@ export type OpcionesConvocatoriaEvento = {
 };
 
 function resumenCanalVacio(): ResumenCanal {
-  return { enviados: 0, fallidos: 0, omitidos: 0 };
+  return { enviados: 0, fallidos: 0, omitidos: 0, ultimoError: null };
 }
 
 async function registrarEnvio(input: {
@@ -81,7 +82,10 @@ async function enviarCanalTelefono(input: {
 }) {
   const resultado = await input.enviar();
   if (resultado.ok) input.resumen.enviados++;
-  else input.resumen.fallidos++;
+  else {
+    input.resumen.fallidos++;
+    input.resumen.ultimoError = resultado.error ?? "Error desconocido";
+  }
   await registrarEnvio({
     eventoId: input.eventoId,
     dirigenteId: input.dirigenteId,

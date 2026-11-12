@@ -1,13 +1,8 @@
 import { nombreCompleto } from "./dirigentes.js";
 import { prisma } from "./prisma.js";
 import { APP_BRAND } from "./brand.js";
-import {
-  obtenerConfigConvocatoria,
-  telefonoMexico10Digitos,
-  whatsAppProveedor,
-} from "./comunicacion/config.js";
+import { obtenerConfigConvocatoria, telefonoMexico10Digitos } from "./comunicacion/config.js";
 import { enviarWhatsApp } from "./comunicacion/telefono.js";
-import { enviarWhatsAppCloud } from "./comunicacion/whatsapp-cloud.js";
 
 export type ResumenWhatsApp = {
   enviados: number;
@@ -74,19 +69,8 @@ async function enviarWhatsAppNotificacionCanal(input: {
   bodyLargo: string;
   bodyPlantilla: string;
 }): Promise<{ ok: boolean; error?: string; proveedorId?: string }> {
-  if (whatsAppProveedor() === "meta") {
-    const plantilla = await enviarWhatsAppCloud({
-      telefono: input.telefono,
-      body: input.bodyPlantilla,
-      plantillaPrimero: true,
-    });
-    if (plantilla.ok) return plantilla;
-    return enviarWhatsAppCloud({
-      telefono: input.telefono,
-      body: input.bodyLargo,
-    });
-  }
-
+  const corto = await enviarWhatsApp({ telefono: input.telefono, body: input.bodyPlantilla });
+  if (corto.ok) return corto;
   return enviarWhatsApp({ telefono: input.telefono, body: input.bodyLargo });
 }
 

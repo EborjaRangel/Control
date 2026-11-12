@@ -7,6 +7,7 @@ import routes from "./routes/index.js";
 import { ensureUploadDir, uploadDiskInfo } from "./lib/upload-dir.js";
 import { hidratarCatalogosElectorales } from "./lib/catalogos-electorales.js";
 import {
+  avisoWhatsApp,
   faltantesWhatsApp,
   obtenerConfigConvocatoria,
   smtpUsaValoresEjemplo,
@@ -78,6 +79,7 @@ app.get("/health", async (_req, res) => {
       proveedor: whatsAppProveedor(),
       from: config.whatsapp.from,
       faltantes: faltantesWhatsApp(),
+      aviso: avisoWhatsApp(),
     },
     sms: {
       habilitado: config.sms.habilitado,

@@ -111,8 +111,15 @@ export function ConvocatoriaEventoPanel({ eventoId, totalElegibles }: Props) {
         <li className="panel-soft">SMS: {config?.sms ? "configurado" : "falta Twilio SMS"}</li>
         <li className="panel-soft font-medium">
           WhatsApp: {config?.whatsapp ? "configurado" : "falta Twilio WhatsApp (prioritario)"}
+          {config?.whatsappProveedor ? ` (${config.whatsappProveedor})` : null}
         </li>
       </ul>
+
+      {config?.whatsappAviso ? (
+        <div className="rounded-pin border border-warning-text/30 bg-warning-bg px-3 py-2 text-sm text-warning-text">
+          {config.whatsappAviso}
+        </div>
+      ) : null}
 
       <Formik
         initialValues={{ mensaje: "", telefonoPrueba: TELEFONO_PRUEBA_DEFAULT }}
@@ -235,6 +242,9 @@ export function ConvocatoriaEventoPanel({ eventoId, totalElegibles }: Props) {
             WhatsApp: {resultado.whatsapp.enviados} enviados, {resultado.whatsapp.fallidos}{" "}
             fallidos, {resultado.whatsapp.omitidos} omitidos
           </p>
+          {resultado.whatsapp.ultimoError ? (
+            <p className="text-warning-text">Último error WhatsApp: {resultado.whatsapp.ultimoError}</p>
+          ) : null}
         </div>
       ) : null}
 
