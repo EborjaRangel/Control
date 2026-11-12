@@ -42,6 +42,12 @@ export type NotificacionResumen = {
 };
 
 export const NOTIFICACIONES_RESUMEN_EVENT = "control:notificaciones-resumen";
+export const NOTIFICACIONES_NUEVO_MENSAJE_EVENT = "control:notificaciones-nuevo-mensaje";
+
+export function emitirNuevoMensajeWeb(detail?: { body?: string; url?: string }) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(NOTIFICACIONES_NUEVO_MENSAJE_EVENT, { detail }));
+}
 
 export function emitirResumenNotificaciones(noLeidas: number) {
   if (typeof window === "undefined") return;

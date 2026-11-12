@@ -53,7 +53,7 @@ export function WebPushActivation() {
       <div className="p-4 text-sm">
         <p className="font-semibold text-pin-dark">Avisos en tu celular</p>
         <p className="mt-1 text-ink-secondary">
-          Recibe en la pantalla del teléfono cada aviso web, sin WhatsApp ni SMS.
+          Te avisamos en el teléfono y dentro de Control AXIS cuando llegue un mensaje nuevo.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <button

@@ -49,8 +49,8 @@ export function WebPushAvisosEnCelular() {
       ) : (
         <>
           <p className="mt-1 text-ink-secondary">
-            Activa una vez y recibirás en el teléfono cada aviso que envíe Control a tu cuenta, sin
-            WhatsApp ni SMS. En iPhone, usa Safari y “Agregar a pantalla de inicio”.
+            Activa una vez en el teléfono donde usas Control con tu usuario (el mismo que está ligado
+            al dirigente y su celular en ficha). En iPhone, Safari → Agregar a pantalla de inicio.
           </p>
           <button
             type="button"

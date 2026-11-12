@@ -8,6 +8,7 @@ import { cn } from "@/lib/cn";
 import {
   contarNoLeidas,
   emitirResumenNotificaciones,
+  NOTIFICACIONES_NUEVO_MENSAJE_EVENT,
   formatFechaNotificacion,
   formatRelativaNotificacion,
   type NotificacionUsuarioDTO,
@@ -41,6 +42,13 @@ export default function NotificacionesPage() {
 
   useEffect(() => {
     if (user) void load();
+  }, [user, load]);
+
+  useEffect(() => {
+    if (!user) return;
+    const onNuevo = () => void load();
+    window.addEventListener(NOTIFICACIONES_NUEVO_MENSAJE_EVENT, onNuevo);
+    return () => window.removeEventListener(NOTIFICACIONES_NUEVO_MENSAJE_EVENT, onNuevo);
   }, [user, load]);
 
   async function marcarVista(id: string) {

@@ -5,6 +5,9 @@ export const APP_DESCRIPTION =
   "AXIS — plataforma web de control y administración de dirigentes en la alcaldía Coyoacán";
 export const BRAND_SIGNATURE = "AXIS";
 
+/** Marca en avisos push y bandeja de notificaciones */
+export const APP_BRAND_FULL = "Control AXIS";
+
 export function appMetadataBase(): URL {
   const vercelHost = (
     process.env.VERCEL_PROJECT_PRODUCTION_URL ??

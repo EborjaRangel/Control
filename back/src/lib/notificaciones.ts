@@ -12,11 +12,11 @@ import {
   TIPOS_SECCION_ELECTORAL_CERO,
 } from "./dirigentes.js";
 import {
-  dirigenteIdsDesdeUsuariosNotificacion,
   enviarWhatsAppNotificacionDirigentes,
   resumenWhatsAppVacio,
   type ResumenWhatsApp,
 } from "./notificacion-whatsapp.js";
+import { telefonoMexico10Digitos } from "./comunicacion/config.js";
 import { enviarPushWebAUsuarios, type PushWebResumen } from "./push-web.js";
 
 export type { ResumenWhatsApp, PushWebResumen };
@@ -127,7 +127,14 @@ export async function contarDestinatariosNotificacion(fields: NotificacionAlcanc
   if (ids.length === 0) return { dirigentes: 0, usuarios: 0 };
 
   const usuarios = await usuariosParaDirigentes(ids);
-  return { dirigentes: ids.length, usuarios: usuarios.length };
+  const idsConCelular = await dirigenteIdsAlcanceConCelular(ids);
+  const usuariosPush = await usuariosParaDirigentes(idsConCelular);
+  return {
+    dirigentes: ids.length,
+    usuarios: usuarios.length,
+    dirigentesConCelular: idsConCelular.length,
+    usuariosPush: usuariosPush.length,
+  };
 }
 
 const filtroUsuarioActivoParaDirigentes = (
@@ -151,6 +158,35 @@ export async function usuariosParaDirigentes(dirigenteIds: string[]): Promise<st
   });
 
   return [...new Set(usuarios.map((u) => u.id))];
+}
+
+/** Dirigentes del alcance con celular válido (misma regla que WhatsApp / push en teléfono). */
+export async function dirigenteIdsAlcanceConCelular(dirigenteIds: string[]): Promise<string[]> {
+  if (dirigenteIds.length === 0) return [];
+
+  const rows = await prisma.dirigente.findMany({
+    where: { id: { in: dirigenteIds }, activo: true },
+    select: { id: true, telefonoCelular: true },
+  });
+
+  const vistos = new Set<string>();
+  const ids: string[] = [];
+  for (const d of rows) {
+    const digits = telefonoMexico10Digitos(d.telefonoCelular?.trim() ?? "");
+    if (!digits) continue;
+    if (vistos.has(digits)) continue;
+    vistos.add(digits);
+    ids.push(d.id);
+  }
+  return ids;
+}
+
+/** Usuarios que reciben push: cuenta ligada a dirigente del alcance con celular en ficha. */
+export async function usuariosParaPushWebDirigentesAlcance(
+  dirigenteIds: string[],
+): Promise<string[]> {
+  const conCelular = await dirigenteIdsAlcanceConCelular(dirigenteIds);
+  return usuariosParaDirigentes(conCelular);
 }
 
 /** Dirigentes del alcance que tienen al menos un usuario activo en la plataforma (mismo criterio que el aviso web). */
@@ -213,8 +249,9 @@ export async function notificarUsuariosDirectos(input: {
     },
   });
 
+  const usuarioIdsPush = await usuariosParaPushWebDirigentesAlcance(input.dirigenteIds);
   void enviarPushWebAUsuarios({
-    usuarioIds,
+    usuarioIds: usuarioIdsPush,
     mensaje: normalizarMensajeNotificacion(input.mensaje),
     notificacionId: notificacion.id,
   }).catch((err) => console.error("[notificacion][push-web]", err));
@@ -275,13 +312,15 @@ export async function enviarNotificacion(input: EnviarNotificacionInput) {
     },
   });
 
+  const usuarioIdsPush = await usuariosParaPushWebDirigentesAlcance(dirigenteIds);
+
   const [whatsapp, pushWeb] = await Promise.all([
     enviarWhatsAppNotificacionDirigentes({
-      dirigenteIds: await dirigenteIdsDesdeUsuariosNotificacion(usuarioIds),
+      dirigenteIds,
       mensaje: notificacion.mensaje,
     }),
     enviarPushWebAUsuarios({
-      usuarioIds,
+      usuarioIds: usuarioIdsPush,
       mensaje: notificacion.mensaje,
       notificacionId: notificacion.id,
     }),

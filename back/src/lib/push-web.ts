@@ -1,4 +1,5 @@
 import webpush from "web-push";
+import { APP_BRAND } from "./brand.js";
 import { prisma } from "./prisma.js";
 
 export type PushWebResumen = {
@@ -88,10 +89,15 @@ export async function enviarPushWebAUsuarios(input: {
     ? `${appBaseUrl()}/notificaciones`
     : `${appBaseUrl()}/notificaciones`;
 
+  const preview = textoPush(input.mensaje);
   const payload = JSON.stringify({
-    title: input.titulo ?? "Nuevo aviso en Control",
-    body: textoPush(input.mensaje),
+    title: input.titulo ?? `${APP_BRAND}: tienes un nuevo mensaje en la web app`,
+    body:
+      preview.length > 0
+        ? preview
+        : "Entra a Control AXIS → Notificaciones para leer el aviso completo.",
     url,
+    notificacionId: input.notificacionId ?? null,
   });
 
   const usuariosConSub = new Set(subs.map((s) => s.usuarioId));

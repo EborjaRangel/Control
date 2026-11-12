@@ -153,7 +153,12 @@ function AlcanceCampos({ uts }: { uts: UnidadTerritorialResumen[] }) {
 
 export function NotificacionesAdminPanel() {
   const [uts, setUts] = useState<UnidadTerritorialResumen[]>([]);
-  const [preview, setPreview] = useState<{ dirigentes: number; usuarios: number } | null>(null);
+  const [preview, setPreview] = useState<{
+    dirigentes: number;
+    usuarios: number;
+    dirigentesConCelular?: number;
+    usuariosPush?: number;
+  } | null>(null);
   const [resultado, setResultado] = useState<NotificacionEnviarResultado | null>(null);
   const [historial, setHistorial] = useState<NotificacionHistorialItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -238,8 +243,14 @@ export function NotificacionesAdminPanel() {
 
             {preview ? (
               <p className="text-sm text-ink-secondary">
-                Vista previa: {preview.dirigentes} dirigente(s) · {preview.usuarios} usuario(s) con
-                acceso
+                Vista previa: {preview.dirigentes} dirigente(s) · {preview.usuarios} usuario(s) en
+                la web
+                {preview.dirigentesConCelular != null
+                  ? ` · ${preview.dirigentesConCelular} con celular (WhatsApp / push)`
+                  : ""}
+                {preview.usuariosPush != null
+                  ? ` · ${preview.usuariosPush} pueden recibir push (cuenta + avisos activados)`
+                  : ""}
               </p>
             ) : null}
 
@@ -272,7 +283,14 @@ export function NotificacionesAdminPanel() {
                       body: JSON.stringify(payload),
                     });
                     if (res.ok) {
-                      setPreview((await res.json()) as { dirigentes: number; usuarios: number });
+                      setPreview(
+                        (await res.json()) as {
+                          dirigentes: number;
+                          usuarios: number;
+                          dirigentesConCelular?: number;
+                          usuariosPush?: number;
+                        },
+                      );
                     }
                   })();
                 }}
@@ -318,8 +336,9 @@ export function NotificacionesAdminPanel() {
           ) : null}
           {resultado.pushWeb ? (
             <p className="text-ink-secondary">
-              Push en celular: {resultado.pushWeb.enviados} enviados, {resultado.pushWeb.fallidos} fallidos,{" "}
-              {resultado.pushWeb.omitidos} sin suscripción
+              Push en celular (dirigentes del alcance con celular en ficha): {resultado.pushWeb.enviados}{" "}
+              enviados, {resultado.pushWeb.fallidos} fallidos, {resultado.pushWeb.omitidos} omitidos
+              (sin cuenta, sin avisos activados en el teléfono, o sin celular)
               {resultado.pushWeb.configurado === false
                 ? " (falta VAPID en el servidor)"
                 : ""}

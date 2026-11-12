@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import { AuthProvider } from "@/components/AuthProvider";
+import { NuevoMensajeWebAviso } from "@/components/NuevoMensajeWebAviso";
 import { WebPushActivation } from "@/components/WebPushActivation";
 import { APP_DESCRIPTION, APP_TITLE, appMetadataBase } from "@/lib/site";
 import "./globals.css";
@@ -55,6 +56,7 @@ export default function RootLayout({
       <body className="flex min-h-dvh min-w-0 flex-col overflow-x-hidden font-sans has-navbar">
         <AuthProvider>
           <AppShell>{children}</AppShell>
+          <NuevoMensajeWebAviso />
           <WebPushActivation />
         </AuthProvider>
       </body>

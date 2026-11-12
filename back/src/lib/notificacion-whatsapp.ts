@@ -74,7 +74,7 @@ async function enviarWhatsAppNotificacionCanal(input: {
   return enviarWhatsApp({ telefono: input.telefono, body: input.bodyLargo });
 }
 
-/** WhatsApp a dirigentes ligados a los mismos usuarios que recibieron el aviso web. */
+/** WhatsApp al celular de cada dirigente del alcance (ficha telefonoCelular). */
 export async function enviarWhatsAppNotificacionDirigentes(input: {
   dirigenteIds: string[];
   mensaje: string;
