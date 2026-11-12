@@ -284,6 +284,9 @@ router.post("/asistencia/escanear", manejarEscaneoHttp);
 router.get("/material/entrega-estado", manejarEstadoEntregaMaterialHttp);
 router.post("/material/escanear", manejarEscaneoMaterialHttp);
 
+/** Clave pública VAPID (sin sesión); suscripción sigue en push-web con requireAuth. */
+router.use("/push-web", pushWebRouter);
+
 router.use(requireAuth);
 
 router.use("/asistencia", asistenciaRouter);
@@ -298,7 +301,6 @@ router.use("/transporte", transporteRouter);
 router.use("/rc", rcRouter);
 router.use("/rg", rgRouter);
 router.use("/notificaciones", notificacionesRouter);
-router.use("/push-web", pushWebRouter);
 router.use("/usuarios", usuariosRouter);
 router.use("/auditoria", auditoriaRouter);
 
