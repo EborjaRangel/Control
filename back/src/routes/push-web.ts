@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
-import { requireAuth } from "../lib/auth.js";
-import { pushWebConfigurado, pushWebPublicKey } from "../lib/push-web.js";
+import { requireAuth, requireStaff } from "../lib/auth.js";
+import { pushWebConfigurado, pushWebPublicKey, enviarPushWebAUsuarios } from "../lib/push-web.js";
 import { pushSubscribeSchema } from "../lib/validation-push-web.js";
 
 const router = Router();
@@ -15,6 +15,25 @@ router.get("/vapid-public-key", (_req, res) => {
 });
 
 router.use(requireAuth);
+
+/** Staff: envía push de prueba al usuario autenticado (requiere haber activado avisos en este dispositivo). */
+router.post("/probar", requireStaff, async (req, res) => {
+  try {
+    if (!pushWebConfigurado()) {
+      res.status(503).json({ error: "Push web no configurado en el servidor" });
+      return;
+    }
+    const usuarioId = req.user!.sub;
+    const resultado = await enviarPushWebAUsuarios({
+      usuarioIds: [usuarioId],
+      mensaje: `PRUEBA Control AXIS — ${new Date().toLocaleString("es-MX")}`,
+    });
+    res.json(resultado);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al enviar push de prueba" });
+  }
+});
 
 router.post("/subscribe", async (req, res) => {
   try {
