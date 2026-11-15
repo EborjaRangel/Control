@@ -11,7 +11,6 @@ import {
   nombreCompleto,
   TIPO_DIRIGENTE_LABEL,
   TIPOS_DIRIGENTE,
-  TIPOS_DIRIGENTE_ORGANIZACION,
 } from "./dirigentes.js";
 import { variantesColoniaParaBusqueda } from "./colonias.js";
 import {
@@ -456,7 +455,7 @@ export type DirigenteOrganizacionRecordEnEvento = {
   }[];
 };
 
-/** Transversal / administrativo / entidad / partido: estado en un evento (solo sus registros). */
+/** Cualquier tipo de dirigente (D1–D4, transversal, organización): registro en un solo evento. */
 export async function buscarRecordDirigentesOrganizacionEnEvento(
   evento: EventoConRelaciones,
   buscar: string,
@@ -470,7 +469,7 @@ export async function buscarRecordDirigentesOrganizacionEnEvento(
   const dirigentes = await prisma.dirigente.findMany({
     where: {
       ...filtroEstatusListado(false),
-      tipo: { in: [...TIPOS_DIRIGENTE_ORGANIZACION] },
+      tipo: { in: [...TIPOS_DIRIGENTE] },
       ...filtroBuscar,
     },
     select: {

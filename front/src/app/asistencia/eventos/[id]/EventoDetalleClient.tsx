@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { CerrarEventoAsistenciaModal } from "@/components/CerrarEventoAsistenciaModal";
 import { ConsultaDirigenteOrganizacionEvento } from "@/components/ConsultaDirigenteOrganizacionEvento";
 import { ConvocatoriaEventoPanel } from "@/components/ConvocatoriaEventoPanel";
 import { TableWrap } from "@/components/TableWrap";
@@ -38,6 +39,8 @@ export default function EventoDetalleClient() {
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [mensajeOk, setMensajeOk] = useState(false);
   const [accionando, setAccionando] = useState(false);
+  const [modalCerrar, setModalCerrar] = useState(false);
+  const [cerrarError, setCerrarError] = useState<string | null>(null);
   const [pestana, setPestana] = useState<"pase" | "recientes">("pase");
   const registrosPreviosRef = useRef(0);
 
@@ -119,26 +122,27 @@ export default function EventoDetalleClient() {
     }
   }
 
-  async function cerrarPase() {
-    if (
-      !confirm(
-        "¿Cerrar este evento? Ya no se podrán registrar más escaneos en él. Los usuarios de pase de lista solo se inhabilitan si no queda otro evento abierto.",
-      )
-    ) {
-      return;
-    }
+  async function confirmarCerrarPase(codigoCierre: string) {
     setAccionando(true);
     setMensaje(null);
     setMensajeOk(false);
+    setCerrarError(null);
     try {
-      const res = await apiFetch(`/api/asistencia/eventos/${id}/cerrar`, { method: "POST" });
+      const res = await apiFetch(`/api/asistencia/eventos/${id}/cerrar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigoCierre }),
+      });
       const body = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(body.error ?? "No se pudo cerrar");
+      setModalCerrar(false);
       setMensaje("Evento cerrado.");
       setMensajeOk(true);
       await load({ silent: true });
     } catch (err) {
-      setMensaje(err instanceof Error ? err.message : "Error");
+      const msg = err instanceof Error ? err.message : "Error";
+      setCerrarError(msg);
+      setMensaje(msg);
       setMensajeOk(false);
     } finally {
       setAccionando(false);
@@ -228,7 +232,10 @@ export default function EventoDetalleClient() {
               type="button"
               className="btn-danger btn-responsive"
               disabled={accionando}
-              onClick={() => void cerrarPase()}
+              onClick={() => {
+                setCerrarError(null);
+                setModalCerrar(true);
+              }}
             >
               Cerrar evento
             </button>
@@ -626,6 +633,19 @@ export default function EventoDetalleClient() {
           </>
         )}
       </section>
+
+      <CerrarEventoAsistenciaModal
+        open={modalCerrar}
+        tituloEvento={evento.titulo}
+        busy={accionando}
+        error={cerrarError}
+        onClose={() => {
+          if (accionando) return;
+          setModalCerrar(false);
+          setCerrarError(null);
+        }}
+        onConfirm={(codigo) => void confirmarCerrarPase(codigo)}
+      />
     </div>
   );
 }

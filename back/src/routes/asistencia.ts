@@ -20,6 +20,7 @@ import {
   obtenerEvento,
   resumenAsistenciaDirigentes,
 } from "../lib/eventos-asistencia.js";
+import { validarCodigoCierreEventoAsistencia } from "../lib/codigo-cierre-evento-asistencia.js";
 import { eventoCreateSchema } from "../lib/validation-asistencia.js";
 import {
   registrarAuditoria,
@@ -358,6 +359,16 @@ router.post("/eventos/:id/abrir", requireStaff, async (req, res) => {
 router.post("/eventos/:id/cerrar", requireStaff, async (req, res) => {
   try {
     const id = paramId(req.params.id);
+    const codigoCierre =
+      typeof req.body?.codigoCierre === "string" ? req.body.codigoCierre : "";
+    if (!validarCodigoCierreEventoAsistencia(codigoCierre)) {
+      res.status(403).json({
+        error:
+          "Solo el developer puede autorizar el cierre con el código. Código incorrecto o no configurado en el servidor.",
+      });
+      return;
+    }
+
     const evento = await obtenerEvento(id);
     if (!evento) {
       res.status(404).json({ error: "Evento no encontrado" });

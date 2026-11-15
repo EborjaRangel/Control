@@ -13,6 +13,7 @@ import {
   type EventoAsistenciaDTO,
   type FiltroEventosLista,
 } from "@/lib/asistencia";
+import { CerrarEventoAsistenciaModal } from "@/components/CerrarEventoAsistenciaModal";
 import { LIVE_PANEL_POLL_MS } from "@/lib/live-polling";
 
 const FILTRO_EVENTOS_LABEL: Record<FiltroEventosLista, string> = {
@@ -35,6 +36,8 @@ export default function AsistenciaPage() {
   const [error, setError] = useState<string | null>(null);
   const [accionandoId, setAccionandoId] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const [cerrarModal, setCerrarModal] = useState<{ id: string; titulo: string } | null>(null);
+  const [cerrarError, setCerrarError] = useState<string | null>(null);
 
   const load = useCallback(async (opts?: { silent?: boolean }) => {
     if (!canTakeAsistencia) return;
@@ -88,24 +91,32 @@ export default function AsistenciaPage() {
     }
   }
 
-  async function cerrarPase(eventoId: string) {
-    if (
-      !confirm(
-        "¿Cerrar este evento? Ya no se podrán registrar más escaneos en él. Los usuarios de pase de lista solo se inhabilitan si no queda ningún otro evento abierto.",
-      )
-    ) {
-      return;
-    }
+  function solicitarCerrarPase(ev: EventoAsistenciaDTO) {
+    setCerrarError(null);
+    setCerrarModal({ id: ev.id, titulo: ev.titulo });
+  }
+
+  async function confirmarCerrarPase(codigoCierre: string) {
+    if (!cerrarModal) return;
+    const eventoId = cerrarModal.id;
     setAccionandoId(eventoId);
+    setCerrarError(null);
     setMensaje(null);
     try {
-      const res = await apiFetch(`/api/asistencia/eventos/${eventoId}/cerrar`, { method: "POST" });
+      const res = await apiFetch(`/api/asistencia/eventos/${eventoId}/cerrar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigoCierre }),
+      });
       const body = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(body.error ?? "No se pudo cerrar el evento");
+      setCerrarModal(null);
       setMensaje("Evento cerrado.");
       await load();
     } catch (err) {
-      setMensaje(err instanceof Error ? err.message : "Error");
+      const msg = err instanceof Error ? err.message : "Error";
+      setCerrarError(msg);
+      setMensaje(msg);
     } finally {
       setAccionandoId(null);
     }
@@ -255,7 +266,7 @@ export default function AsistenciaPage() {
                   type="button"
                   className="btn-danger btn-sm btn-responsive"
                   disabled={accionandoId === ev.id}
-                  onClick={() => void cerrarPase(ev.id)}
+                  onClick={() => solicitarCerrarPase(ev)}
                 >
                   {accionandoId === ev.id ? "Cerrando…" : "Cerrar evento"}
                 </button>
@@ -274,6 +285,19 @@ export default function AsistenciaPage() {
           </article>
         ))}
       </div>
+
+      <CerrarEventoAsistenciaModal
+        open={cerrarModal != null}
+        tituloEvento={cerrarModal?.titulo}
+        busy={cerrarModal != null && accionandoId === cerrarModal.id}
+        error={cerrarError}
+        onClose={() => {
+          if (accionandoId) return;
+          setCerrarModal(null);
+          setCerrarError(null);
+        }}
+        onConfirm={(codigo) => void confirmarCerrarPase(codigo)}
+      />
     </div>
   );
 }

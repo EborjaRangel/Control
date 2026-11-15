@@ -83,17 +83,17 @@ export function ConsultaDirigenteOrganizacionEvento({
 
   return (
     <div className="card-section space-y-3">
-      <h2 className="section-title">Consulta transversal y organización</h2>
+      <h2 className="section-title">Consulta de dirigente en el evento</h2>
       <p className="text-sm text-ink-secondary">
-        Busca transversal, administrativo, entidad o partido político y revisa solo su registro en
-        este evento ({ESTADO_EVENTO_LABEL[estadoEvento].toLowerCase()}).
+        Busca cualquier dirigente (D1–D4, transversal, administrativo, entidad o partido político) y
+        revisa solo su registro en este evento ({ESTADO_EVENTO_LABEL[estadoEvento].toLowerCase()}).
       </p>
       <label className="block">
-        <span className="label">Buscar por nombre, ficha o colonia</span>
+        <span className="label">Buscar por nombre, ficha, sección o colonia</span>
         <input
           type="search"
           className="input input-search mt-1"
-          placeholder="Ej. García, transversal, 123…"
+          placeholder="Ej. García, D2, ficha 123, colonia…"
           value={buscar}
           onChange={(e) => setBuscar(e.target.value)}
           autoComplete="off"
@@ -107,7 +107,7 @@ export function ConsultaDirigenteOrganizacionEvento({
 
       {!loading && buscar.trim().length >= 2 && resultados.length === 0 && !error ? (
         <p className="text-sm text-ink-secondary">
-          Sin coincidencias entre transversales y perfiles de organización.
+          Sin coincidencias con dirigentes de alta activa.
         </p>
       ) : null}
 

@@ -27,7 +27,8 @@ param(
     "PUBLIC_APP_URL",
     "VAPID_PUBLIC_KEY",
     "VAPID_PRIVATE_KEY",
-    "VAPID_SUBJECT"
+    "VAPID_SUBJECT",
+    "EVENTO_ASISTENCIA_CIERRE_CODIGO"
   ),
   [switch]$SkipDeploys
 )
