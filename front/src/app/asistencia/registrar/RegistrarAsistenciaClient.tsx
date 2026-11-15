@@ -2,6 +2,7 @@
 
 import { AxisLogo } from "@/components/AxisLogo";
 import { TIPO_OPERACION_EVENTO_LABEL } from "@/lib/asistencia";
+import { publicApiUrl } from "@/lib/api-public";
 import { codigoQrDesdeTextoQr } from "@/lib/qr";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
@@ -142,11 +143,13 @@ export default function RegistrarAsistenciaClient() {
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([
-      fetch("/api/asistencia/pase-estado").then(async (res) => (await res.json()) as EstadoPase),
-      fetch("/api/material/entrega-estado").then(async (res) => (await res.json()) as EstadoPase),
-    ])
-      .then(([asistencia, material]) => {
+
+    void (async () => {
+      try {
+        const asistenciaRes = await fetch(publicApiUrl("asistencia/pase-estado"), {
+          cache: "no-store",
+        });
+        const asistencia = (await asistenciaRes.json()) as EstadoPase;
         if (cancelled) return;
 
         if (asistencia.abierto) {
@@ -160,6 +163,10 @@ export default function RegistrarAsistenciaClient() {
           return;
         }
 
+        const materialRes = await fetch(publicApiUrl("material/entrega-estado"), { cache: "no-store" });
+        const material = (await materialRes.json()) as EstadoPase;
+        if (cancelled) return;
+
         if (material.abierto) {
           setModo("material");
           setEventoTitulo(material.evento?.titulo?.trim() || null);
@@ -170,15 +177,16 @@ export default function RegistrarAsistenciaClient() {
 
         setModo("asistencia");
         setVisual("cerrado");
-        setMensaje(asistencia.mensaje ?? material.mensaje ?? "No hay pase de lista ni entrega de material abierta");
+        setMensaje(
+          asistencia.mensaje ?? material.mensaje ?? "No hay pase de lista ni entrega de material abierta",
+        );
         setEventoTitulo(asistencia.evento?.titulo ?? material.evento?.titulo ?? null);
         setTipoOperacionEvento(asistencia.evento?.tipoOperacion ?? null);
         if (codigoQr) solicitarCierreTrasMensaje();
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setVisual("formulario");
-      });
+      } catch {
+        if (!cancelled) setVisual("formulario");
+      }
+    })();
 
     return () => {
       cancelled = true;
@@ -191,7 +199,8 @@ export default function RegistrarAsistenciaClient() {
     setMensaje(null);
     setDetalle(null);
 
-    const endpoint = modo === "material" ? "/api/material/escanear" : "/api/asistencia/escanear";
+    const endpoint =
+      modo === "material" ? publicApiUrl("material/escanear") : publicApiUrl("asistencia/escanear");
 
     const rawQr = textoQrParaEnviar(codigoQr);
     if (!rawQr.trim()) {

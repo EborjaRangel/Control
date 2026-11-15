@@ -4,7 +4,7 @@ import { codigoQrDesdeTextoQr } from "./codigo-qr.js";
 import { nombreCompleto } from "./dirigentes.js";
 import { dirigenteEsElegible } from "./eventos-asistencia.js";
 import { registrarAuditoria } from "./audit.js";
-import { verifyPassword } from "./auth.js";
+import { usuarioPaseListaPorClave } from "./usuario-pase-lista.js";
 import type { Request, Response } from "express";
 
 export const MENSAJE_QR_INVALIDO = "El QR es inválido";
@@ -272,7 +272,7 @@ export async function procesarEscaneoAsistencia(input: {
       totalMovilizados = sum._sum.cantidad ?? cantidadRegistro;
     }
 
-    await registrarAuditoria(input.req, {
+    void registrarAuditoria(input.req, {
       accion: "CREATE",
       entidad: "RegistroAsistencia",
       entidadId: registro.id,
@@ -290,7 +290,7 @@ export async function procesarEscaneoAsistencia(input: {
         registradoPorUsername: registro.registradoPor?.username ?? null,
         origen: input.eventoId ? "panel_asistencia" : "camara_qr",
       },
-    });
+    }).catch((err) => console.error("[audit][asistencia-escaneo]", err));
 
     if (evento.tipoOperacion === "MOVILIZACION") {
       return {
@@ -439,19 +439,6 @@ export async function inhabilitarUsuariosPaseListaSiSinEventosAbiertos() {
   if (abiertos === 0) {
     await inhabilitarUsuariosPaseLista();
   }
-}
-
-async function usuarioPaseListaPorClave(clave: string) {
-  if (!clave) return null;
-  const usuarios = await prisma.usuario.findMany({
-    where: { rol: "PASE_LISTA", activo: true },
-    select: { id: true, passwordHash: true, passwordPlano: true },
-  });
-  for (const usuario of usuarios) {
-    if (usuario.passwordPlano && usuario.passwordPlano === clave) return usuario;
-    if (await verifyPassword(clave, usuario.passwordHash)) return usuario;
-  }
-  return null;
 }
 
 export async function manejarEstadoPaseHttp(_req: Request, res: Response) {

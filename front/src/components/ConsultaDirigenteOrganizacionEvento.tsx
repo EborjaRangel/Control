@@ -75,7 +75,7 @@ export function ConsultaDirigenteOrganizacionEvento({
   );
 
   useEffect(() => {
-    const t = window.setTimeout(() => void ejecutarBusqueda(buscar), 320);
+    const t = window.setTimeout(() => void ejecutarBusqueda(buscar), 280);
     return () => window.clearTimeout(t);
   }, [buscar, ejecutarBusqueda]);
 

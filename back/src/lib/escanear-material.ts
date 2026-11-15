@@ -4,7 +4,7 @@ import { prisma } from "./prisma.js";
 import { codigoQrDesdeTextoQr } from "./codigo-qr.js";
 import { nombreCompleto } from "./dirigentes.js";
 import { registrarAuditoria } from "./audit.js";
-import { verifyPassword } from "./auth.js";
+import { usuarioPaseListaPorClave } from "./usuario-pase-lista.js";
 import {
   claveDesdeEscaneo,
   rawCodigoDesdeEscaneo,
@@ -92,19 +92,6 @@ export async function estadoEntregaMaterial(): Promise<EstadoEntregaMaterial> {
   }
 
   return { abierto: false, evento: null, mensaje: MENSAJE_SIN_ENTREGA_ABIERTA };
-}
-
-async function usuarioPaseListaPorClave(clave: string) {
-  if (!clave) return null;
-  const usuarios = await prisma.usuario.findMany({
-    where: { rol: "PASE_LISTA", activo: true },
-    select: { id: true, passwordHash: true, passwordPlano: true },
-  });
-  for (const usuario of usuarios) {
-    if (usuario.passwordPlano && usuario.passwordPlano === clave) return usuario;
-    if (await verifyPassword(clave, usuario.passwordHash)) return usuario;
-  }
-  return null;
 }
 
 export async function procesarEscaneoMaterial(input: {
@@ -260,7 +247,7 @@ export async function procesarEscaneoMaterial(input: {
       },
     });
 
-    await registrarAuditoria(input.req, {
+    void registrarAuditoria(input.req, {
       accion: "CREATE",
       entidad: "RegistroEntregaMaterial",
       entidadId: registro.id,
@@ -272,7 +259,7 @@ export async function procesarEscaneoMaterial(input: {
         lineas: asignaciones.length,
         origen: input.eventoId ? "pase_lista" : "camara_qr",
       },
-    });
+    }).catch((err) => console.error("[audit][material-escaneo]", err));
 
     return {
       ok: true,
