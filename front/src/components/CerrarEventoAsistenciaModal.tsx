@@ -7,6 +7,8 @@ type Props = {
   tituloEvento?: string;
   busy?: boolean;
   error?: string | null;
+  /** vaciar: borra escaneos de prueba; el evento sigue abierto */
+  variant?: "cerrar" | "vaciar";
   onClose: () => void;
   onConfirm: (codigoCierre: string) => void | Promise<void>;
 };
@@ -16,9 +18,11 @@ export function CerrarEventoAsistenciaModal({
   tituloEvento,
   busy = false,
   error,
+  variant = "cerrar",
   onClose,
   onConfirm,
 }: Props) {
+  const esVaciar = variant === "vaciar";
   const [codigo, setCodigo] = useState("");
 
   useEffect(() => {
@@ -36,17 +40,18 @@ export function CerrarEventoAsistenciaModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id="cerrar-evento-title" className="section-title text-danger">
-          Cerrar evento
+          {esVaciar ? "Dejar registros en cero" : "Cerrar evento"}
         </h3>
         {tituloEvento ? (
           <p className="mt-1 text-sm font-medium text-ink">{tituloEvento}</p>
         ) : null}
         <p className="mt-3 text-sm text-ink-secondary">
-          Solo el developer puede autorizar el cierre con el código. Ingresa el código en el campo
-          para cerrar definitivamente este evento; ya no se podrán registrar más escaneos.
+          {esVaciar
+            ? "Solo el developer puede autorizar con el código. Se borrarán todos los escaneos de este evento (incluidas pruebas); el pase seguirá abierto para el día del evento."
+            : "Solo el developer puede autorizar el cierre con el código. Ingresa el código en el campo para cerrar definitivamente este evento; ya no se podrán registrar más escaneos."}
         </p>
         <label className="label mt-4 block">
-          Código de cierre
+          {esVaciar ? "Código de autorización" : "Código de cierre"}
           <input
             type="password"
             className="input mt-1"
@@ -74,7 +79,7 @@ export function CerrarEventoAsistenciaModal({
             disabled={busy || !codigo.trim()}
             onClick={() => void onConfirm(codigo.trim())}
           >
-            {busy ? "Cerrando…" : "Cerrar evento"}
+            {busy ? (esVaciar ? "Vaciando…" : "Cerrando…") : esVaciar ? "Vaciar registros" : "Cerrar evento"}
           </button>
         </div>
       </div>

@@ -436,6 +436,30 @@ export async function faltasAsistenciaPorFecha(fechaIso: string) {
   };
 }
 
+/** Borra todos los escaneos del evento (solo si sigue ABIERTO). No cierra el evento. */
+export async function vaciarRegistrosEventoAsistencia(eventoId: string) {
+  const evento = await obtenerEvento(eventoId);
+  if (!evento) {
+    return { ok: false as const, status: 404, error: "Evento no encontrado" };
+  }
+  if (evento.estado !== "ABIERTO") {
+    return {
+      ok: false as const,
+      status: 400,
+      error: "Solo se pueden vaciar registros de un evento con pase abierto",
+    };
+  }
+  const antes = await prisma.registroAsistencia.count({ where: { eventoId } });
+  const deleted = await prisma.registroAsistencia.deleteMany({ where: { eventoId } });
+  return {
+    ok: true as const,
+    status: 200,
+    eliminados: deleted.count,
+    registrosAntes: antes,
+    evento,
+  };
+}
+
 export type DirigenteOrganizacionRecordEnEvento = {
   id: string;
   nombreCompleto: string;

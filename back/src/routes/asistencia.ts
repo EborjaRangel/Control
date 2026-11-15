@@ -19,6 +19,7 @@ import {
   filtroDirigentesElegibles,
   obtenerEvento,
   resumenAsistenciaDirigentes,
+  vaciarRegistrosEventoAsistencia,
 } from "../lib/eventos-asistencia.js";
 import { validarCodigoCierreEventoAsistencia } from "../lib/codigo-cierre-evento-asistencia.js";
 import { eventoCreateSchema } from "../lib/validation-asistencia.js";
@@ -353,6 +354,57 @@ router.post("/eventos/:id/abrir", requireStaff, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al abrir pase de lista" });
+  }
+});
+
+router.post("/eventos/:id/vaciar-registros", requireStaff, async (req, res) => {
+  try {
+    const id = paramId(req.params.id);
+    const codigoCierre =
+      typeof req.body?.codigoCierre === "string" ? req.body.codigoCierre : "";
+    if (!validarCodigoCierreEventoAsistencia(codigoCierre)) {
+      res.status(403).json({
+        error:
+          "Solo el developer puede autorizar esta acción con el código. Código incorrecto o no configurado en el servidor.",
+      });
+      return;
+    }
+
+    const resultado = await vaciarRegistrosEventoAsistencia(id);
+    if (!resultado.ok) {
+      res.status(resultado.status).json({ error: resultado.error });
+      return;
+    }
+
+    await registrarAuditoria(req, {
+      accion: "DELETE",
+      entidad: "RegistroAsistencia",
+      entidadId: id,
+      entidadLabel: resultado.evento.titulo,
+      metadata: {
+        accion: "vaciar_registros_evento",
+        eliminados: resultado.eliminados,
+        registrosAntes: resultado.registrosAntes,
+        eventoEstado: resultado.evento.estado,
+      },
+    });
+
+    const evento = await enriquecerEvento(
+      await prisma.eventoAsistencia.findUniqueOrThrow({
+        where: { id },
+        include: { unidadTerritorial: true, _count: { select: { asistencias: true } } },
+      }),
+    );
+
+    res.json({
+      ok: true,
+      eliminados: resultado.eliminados,
+      registrosAntes: resultado.registrosAntes,
+      evento,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al vaciar registros del evento" });
   }
 });
 

@@ -39,8 +39,8 @@ export default function EventoDetalleClient() {
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [mensajeOk, setMensajeOk] = useState(false);
   const [accionando, setAccionando] = useState(false);
-  const [modalCerrar, setModalCerrar] = useState(false);
-  const [cerrarError, setCerrarError] = useState<string | null>(null);
+  const [modalCodigoDev, setModalCodigoDev] = useState<"cerrar" | "vaciar" | null>(null);
+  const [codigoDevError, setCodigoDevError] = useState<string | null>(null);
   const [pestana, setPestana] = useState<"pase" | "recientes">("pase");
   const registrosPreviosRef = useRef(0);
 
@@ -126,7 +126,7 @@ export default function EventoDetalleClient() {
     setAccionando(true);
     setMensaje(null);
     setMensajeOk(false);
-    setCerrarError(null);
+    setCodigoDevError(null);
     try {
       const res = await apiFetch(`/api/asistencia/eventos/${id}/cerrar`, {
         method: "POST",
@@ -135,13 +135,46 @@ export default function EventoDetalleClient() {
       });
       const body = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(body.error ?? "No se pudo cerrar");
-      setModalCerrar(false);
+      setModalCodigoDev(null);
       setMensaje("Evento cerrado.");
       setMensajeOk(true);
       await load({ silent: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error";
-      setCerrarError(msg);
+      setCodigoDevError(msg);
+      setMensaje(msg);
+      setMensajeOk(false);
+    } finally {
+      setAccionando(false);
+    }
+  }
+
+  async function confirmarVaciarRegistros(codigoCierre: string) {
+    setAccionando(true);
+    setMensaje(null);
+    setMensajeOk(false);
+    setCodigoDevError(null);
+    try {
+      const res = await apiFetch(`/api/asistencia/eventos/${id}/vaciar-registros`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigoCierre }),
+      });
+      const body = (await res.json()) as { error?: string; eliminados?: number };
+      if (!res.ok) throw new Error(body.error ?? "No se pudieron vaciar los registros");
+      setModalCodigoDev(null);
+      registrosPreviosRef.current = 0;
+      const n = body.eliminados ?? 0;
+      setMensaje(
+        n > 0
+          ? `Registros en cero: se eliminaron ${n} escaneo(s) de prueba. El evento sigue abierto para mañana.`
+          : "El evento ya estaba en cero (sin escaneos).",
+      );
+      setMensajeOk(true);
+      await load({ silent: true });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error";
+      setCodigoDevError(msg);
       setMensaje(msg);
       setMensajeOk(false);
     } finally {
@@ -228,17 +261,30 @@ export default function EventoDetalleClient() {
             </button>
           ) : null}
           {isStaff && evento.estado === "ABIERTO" ? (
-            <button
-              type="button"
-              className="btn-danger btn-responsive"
-              disabled={accionando}
-              onClick={() => {
-                setCerrarError(null);
-                setModalCerrar(true);
-              }}
-            >
-              Cerrar evento
-            </button>
+            <>
+              <button
+                type="button"
+                className="btn-secondary btn-responsive"
+                disabled={accionando}
+                onClick={() => {
+                  setCodigoDevError(null);
+                  setModalCodigoDev("vaciar");
+                }}
+              >
+                Dejar registros en cero
+              </button>
+              <button
+                type="button"
+                className="btn-danger btn-responsive"
+                disabled={accionando}
+                onClick={() => {
+                  setCodigoDevError(null);
+                  setModalCodigoDev("cerrar");
+                }}
+              >
+                Cerrar evento
+              </button>
+            </>
           ) : null}
           {isStaff && !esMovilizacion ? (
             <button
@@ -635,16 +681,21 @@ export default function EventoDetalleClient() {
       </section>
 
       <CerrarEventoAsistenciaModal
-        open={modalCerrar}
+        open={modalCodigoDev != null}
+        variant={modalCodigoDev === "vaciar" ? "vaciar" : "cerrar"}
         tituloEvento={evento.titulo}
         busy={accionando}
-        error={cerrarError}
+        error={codigoDevError}
         onClose={() => {
           if (accionando) return;
-          setModalCerrar(false);
-          setCerrarError(null);
+          setModalCodigoDev(null);
+          setCodigoDevError(null);
         }}
-        onConfirm={(codigo) => void confirmarCerrarPase(codigo)}
+        onConfirm={(codigo) =>
+          void (modalCodigoDev === "vaciar"
+            ? confirmarVaciarRegistros(codigo)
+            : confirmarCerrarPase(codigo))
+        }
       />
     </div>
   );
