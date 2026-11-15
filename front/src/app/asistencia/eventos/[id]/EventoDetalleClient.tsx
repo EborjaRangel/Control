@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { ConsultaDirigenteOrganizacionEvento } from "@/components/ConsultaDirigenteOrganizacionEvento";
 import { ConvocatoriaEventoPanel } from "@/components/ConvocatoriaEventoPanel";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
@@ -307,6 +308,12 @@ export default function EventoDetalleClient() {
           </>
         )}
       </div>
+
+      <ConsultaDirigenteOrganizacionEvento
+        eventoId={evento.id}
+        estadoEvento={evento.estado}
+        tipoOperacion={evento.tipoOperacion}
+      />
 
       {esMovilizacion && top10Movilizacion.length > 0 ? (
         <div className="card-section space-y-3">

@@ -11,6 +11,7 @@ import {
   rawCodigoDesdeEscaneo,
 } from "../lib/escanear-asistencia.js";
 import {
+  buscarRecordDirigentesOrganizacionEnEvento,
   detalleAsistenciaDirigente,
   enriquecerEvento,
   esFechaIso,
@@ -169,6 +170,23 @@ router.get("/eventos/:id", requireEventosAsistenciaRead, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al cargar evento" });
+  }
+});
+
+router.get("/eventos/:id/consulta-organizacion", requireAsistenciaOrStaff, async (req, res) => {
+  try {
+    const id = paramId(req.params.id);
+    const buscar = typeof req.query.buscar === "string" ? req.query.buscar.trim() : "";
+    const evento = await obtenerEvento(id);
+    if (!evento) {
+      res.status(404).json({ error: "Evento no encontrado" });
+      return;
+    }
+    const resultados = await buscarRecordDirigentesOrganizacionEnEvento(evento, buscar);
+    res.json({ resultados });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al consultar dirigente" });
   }
 });
 

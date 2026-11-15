@@ -11,9 +11,14 @@ import {
   nombreCompleto,
   TIPO_DIRIGENTE_LABEL,
   TIPOS_DIRIGENTE,
+  TIPOS_DIRIGENTE_ORGANIZACION,
 } from "./dirigentes.js";
 import { variantesColoniaParaBusqueda } from "./colonias.js";
-import { filtroColoniaDirigente, filtroEstatusListado } from "./filtro-dirigentes.js";
+import {
+  buildFiltroBuscarDirigentes,
+  filtroColoniaDirigente,
+  filtroEstatusListado,
+} from "./filtro-dirigentes.js";
 import { distritoLocalDeSeccion, seccionesDeDistritoLocal } from "./secciones-electorales.js";
 import { etiquetaUnidadTerritorial } from "./unidades-territoriales.js";
 
@@ -430,4 +435,109 @@ export async function faltasAsistenciaPorFecha(fechaIso: string) {
     })),
     faltas,
   };
+}
+
+export type DirigenteOrganizacionRecordEnEvento = {
+  id: string;
+  nombreCompleto: string;
+  tipo: string;
+  colonia: string;
+  seccionElectoral: string;
+  elegibleEnEvento: boolean;
+  asistio: boolean;
+  totalMovilizados: number | null;
+  registradoAt: string | null;
+  registradoPor: { username: string } | null;
+  registros: {
+    id: string;
+    cantidad: number;
+    registradoAt: string;
+    registradoPor: { username: string } | null;
+  }[];
+};
+
+/** Transversal / administrativo / entidad / partido: estado en un evento (solo sus registros). */
+export async function buscarRecordDirigentesOrganizacionEnEvento(
+  evento: EventoConRelaciones,
+  buscar: string,
+): Promise<DirigenteOrganizacionRecordEnEvento[]> {
+  const texto = buscar.trim();
+  if (texto.length < 2) return [];
+
+  const filtroBuscar = await buildFiltroBuscarDirigentes(texto);
+  if (!filtroBuscar) return [];
+
+  const dirigentes = await prisma.dirigente.findMany({
+    where: {
+      ...filtroEstatusListado(false),
+      tipo: { in: [...TIPOS_DIRIGENTE_ORGANIZACION] },
+      ...filtroBuscar,
+    },
+    select: {
+      id: true,
+      nombre: true,
+      primerApellido: true,
+      segundoApellido: true,
+      tipo: true,
+      colonia: true,
+      seccionElectoral: true,
+      activo: true,
+      status: true,
+      unidadTerritorialId: true,
+    },
+    take: 12,
+    orderBy: [{ primerApellido: "asc" }, { segundoApellido: "asc" }, { nombre: "asc" }],
+  });
+
+  if (dirigentes.length === 0) return [];
+
+  const ids = dirigentes.map((d) => d.id);
+  const registros = await prisma.registroAsistencia.findMany({
+    where: { eventoId: evento.id, dirigenteId: { in: ids } },
+    include: {
+      registradoPor: { select: { username: true } },
+    },
+    orderBy: { registradoAt: "desc" },
+  });
+
+  const porDirigente = new Map<string, typeof registros>();
+  for (const r of registros) {
+    const list = porDirigente.get(r.dirigenteId) ?? [];
+    list.push(r);
+    porDirigente.set(r.dirigenteId, list);
+  }
+
+  const esMovilizacion = evento.tipoOperacion === "MOVILIZACION";
+
+  return dirigentes.map((d) => {
+    const regs = porDirigente.get(d.id) ?? [];
+    let totalMov = 0;
+    let ultimo: (typeof registros)[number] | null = null;
+    for (const r of regs) {
+      totalMov += r.cantidad ?? 1;
+      if (!ultimo || r.registradoAt >= ultimo.registradoAt) ultimo = r;
+    }
+    const asistio = esMovilizacion ? totalMov > 0 : Boolean(ultimo);
+
+    return {
+      id: d.id,
+      nombreCompleto: nombreCompleto(d),
+      tipo: d.tipo,
+      colonia: d.colonia,
+      seccionElectoral: d.seccionElectoral,
+      elegibleEnEvento: dirigenteEsElegible(d, evento),
+      asistio,
+      totalMovilizados: esMovilizacion ? totalMov : null,
+      registradoAt: ultimo?.registradoAt.toISOString() ?? null,
+      registradoPor: ultimo?.registradoPor
+        ? { username: ultimo.registradoPor.username }
+        : null,
+      registros: regs.map((r) => ({
+        id: r.id,
+        cantidad: r.cantidad,
+        registradoAt: r.registradoAt.toISOString(),
+        registradoPor: r.registradoPor ? { username: r.registradoPor.username } : null,
+      })),
+    };
+  });
 }

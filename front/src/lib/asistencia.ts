@@ -50,6 +50,25 @@ export type DirigenteAsistenciaResumen = {
   faltas: number;
 };
 
+export type DirigenteOrganizacionRecordEnEvento = {
+  id: string;
+  nombreCompleto: string;
+  tipo: string;
+  colonia: string;
+  seccionElectoral: string;
+  elegibleEnEvento: boolean;
+  asistio: boolean;
+  totalMovilizados: number | null;
+  registradoAt: string | null;
+  registradoPor: { username: string } | null;
+  registros: {
+    id: string;
+    cantidad: number;
+    registradoAt: string;
+    registradoPor: { username: string } | null;
+  }[];
+};
+
 export type PaseListaResponse = {
   evento: EventoAsistenciaDTO;
   lista: {
