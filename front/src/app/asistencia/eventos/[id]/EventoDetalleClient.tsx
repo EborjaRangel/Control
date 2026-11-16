@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { CerrarEventoAsistenciaModal } from "@/components/CerrarEventoAsistenciaModal";
 import { ConsultaDirigenteOrganizacionEvento } from "@/components/ConsultaDirigenteOrganizacionEvento";
 import { ConvocatoriaEventoPanel } from "@/components/ConvocatoriaEventoPanel";
+import { RegistroAsistenciaAdminAcciones } from "@/components/RegistroAsistenciaAdminAcciones";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -31,7 +32,7 @@ function formatearFechaHoraRegistro(iso: string) {
 export default function EventoDetalleClient() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { canTakeAsistencia, isStaff } = useAuth();
+  const { canTakeAsistencia, isStaff, isAdmin } = useAuth();
   const [data, setData] = useState<PaseListaResponse | null>(null);
   const [eventosActivos, setEventosActivos] = useState<EventoAsistenciaDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -366,6 +367,8 @@ export default function EventoDetalleClient() {
         eventoId={evento.id}
         estadoEvento={evento.estado}
         tipoOperacion={evento.tipoOperacion}
+        isAdmin={isAdmin}
+        onDatosActualizados={() => void load({ silent: true })}
       />
 
       {esMovilizacion && top10Movilizacion.length > 0 ? (
@@ -639,6 +642,15 @@ export default function EventoDetalleClient() {
                           <>Escaneó: {r.registradoPor?.username ?? "—"}</>
                         )}
                       </p>
+                      {isAdmin ? (
+                        <RegistroAsistenciaAdminAcciones
+                          registroId={r.id}
+                          cantidadInicial={r.cantidad}
+                          esMovilizacion={esMovilizacion}
+                          compact
+                          onHecho={() => void load({ silent: true })}
+                        />
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -652,7 +664,8 @@ export default function EventoDetalleClient() {
                           {esMovilizacion ? (
                             <th className="py-2 pr-3 text-right">Personas (este escaneo)</th>
                           ) : null}
-                          <th className="py-2">Escaneó (usuario)</th>
+                          <th className="py-2 pr-3">Escaneó (usuario)</th>
+                          {isAdmin ? <th className="py-2">Admin</th> : null}
                         </tr>
                       </thead>
                       <tbody>
@@ -667,7 +680,20 @@ export default function EventoDetalleClient() {
                                 {r.cantidad}
                               </td>
                             ) : null}
-                            <td className="py-2.5 text-ink-secondary">{r.registradoPor?.username ?? "—"}</td>
+                            <td className="py-2.5 pr-3 text-ink-secondary">
+                              {r.registradoPor?.username ?? "—"}
+                            </td>
+                            {isAdmin ? (
+                              <td className="py-2.5">
+                                <RegistroAsistenciaAdminAcciones
+                                  registroId={r.id}
+                                  cantidadInicial={r.cantidad}
+                                  esMovilizacion={esMovilizacion}
+                                  compact
+                                  onHecho={() => void load({ silent: true })}
+                                />
+                              </td>
+                            ) : null}
                           </tr>
                         ))}
                       </tbody>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { TableWrap } from "@/components/TableWrap";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -10,6 +10,7 @@ import {
   type EstadoEvento,
   type TipoOperacionEventoAsistencia,
 } from "@/lib/asistencia";
+import { RegistroAsistenciaAdminAcciones } from "@/components/RegistroAsistenciaAdminAcciones";
 import { TIPO_DIRIGENTE_LABEL, type TipoDirigente } from "@/lib/dirigentes";
 
 function formatearFechaHoraRegistro(iso: string) {
@@ -23,12 +24,16 @@ type Props = {
   eventoId: string;
   estadoEvento: EstadoEvento;
   tipoOperacion: TipoOperacionEventoAsistencia;
+  isAdmin?: boolean;
+  onDatosActualizados?: () => void;
 };
 
 export function ConsultaDirigenteOrganizacionEvento({
   eventoId,
   estadoEvento,
   tipoOperacion,
+  isAdmin = false,
+  onDatosActualizados,
 }: Props) {
   const [buscar, setBuscar] = useState("");
   const [resultados, setResultados] = useState<DirigenteOrganizacionRecordEnEvento[]>([]);
@@ -81,6 +86,34 @@ export function ConsultaDirigenteOrganizacionEvento({
 
   const seleccionado = seleccionId ? resultados.find((r) => r.id === seleccionId) : null;
 
+  /** Escaneos en orden cronológico con total acumulado (movilización). */
+  const registrosDetalle = useMemo(() => {
+    if (!seleccionado?.registros.length) return [];
+    const ordenados = [...seleccionado.registros].sort((a, b) =>
+      a.registradoAt.localeCompare(b.registradoAt),
+    );
+    let acumulado = 0;
+    return ordenados.map((reg, index) => {
+      acumulado += reg.cantidad;
+      return { ...reg, escaneoNum: index + 1, acumulado };
+    });
+  }, [seleccionado]);
+
+  const refrescar = useCallback(() => {
+    void ejecutarBusqueda(buscar);
+    onDatosActualizados?.();
+  }, [buscar, ejecutarBusqueda, onDatosActualizados]);
+
+  const resumenEscaneosMovilizacion = useMemo(() => {
+    if (!seleccionado || !esMovilizacion || !seleccionado.asistio) return null;
+    const n = seleccionado.registros.length;
+    const total = seleccionado.totalMovilizados ?? 0;
+    if (n <= 1) {
+      return `1 escaneo · ${total} persona${total === 1 ? "" : "s"} en ese registro`;
+    }
+    return `${n} escaneos · ${total} personas en total (cada fila es un QR distinto)`;
+  }, [esMovilizacion, seleccionado]);
+
   return (
     <div className="card-section space-y-3">
       <h2 className="section-title">Consulta de dirigente en el evento</h2>
@@ -131,7 +164,7 @@ export function ConsultaDirigenteOrganizacionEvento({
                   · {TIPO_DIRIGENTE_LABEL[r.tipo as TipoDirigente] ?? r.tipo}
                   {r.asistio
                     ? esMovilizacion
-                      ? ` · Movilizó (${r.totalMovilizados ?? 0})`
+                      ? ` · ${r.registros.length} escaneo${r.registros.length === 1 ? "" : "s"} · ${r.totalMovilizados ?? 0} pers.`
                       : " · Pasó lista"
                     : " · Sin registro"}
                 </span>
@@ -177,9 +210,14 @@ export function ConsultaDirigenteOrganizacionEvento({
           ) : null}
 
           {esMovilizacion ? (
-            <p className="font-medium text-pin tabular-nums">
-              Total movilizado en este evento: {seleccionado.totalMovilizados ?? 0}
-            </p>
+            <div className="space-y-1">
+              <p className="font-medium text-pin tabular-nums">
+                Total movilizado en este evento: {seleccionado.totalMovilizados ?? 0}
+              </p>
+              {resumenEscaneosMovilizacion ? (
+                <p className="text-xs text-ink-secondary">{resumenEscaneosMovilizacion}</p>
+              ) : null}
+            </div>
           ) : (
             <p className="text-ink-secondary">
               {seleccionado.asistio ? (
@@ -198,56 +236,91 @@ export function ConsultaDirigenteOrganizacionEvento({
             </p>
           )}
 
-          {seleccionado.registros.length > 0 ? (
+          {registrosDetalle.length > 0 ? (
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-ink-secondary">
-                Registros en este evento ({seleccionado.registros.length})
+                Escaneos en este evento ({registrosDetalle.length})
               </p>
               <ul className="mobile-only-list space-y-2">
-                {seleccionado.registros.map((reg) => (
+                {registrosDetalle.map((reg) => (
                   <li key={reg.id} className="rounded-pin border border-line/60 bg-panel px-3 py-2">
+                    <p className="text-xs font-medium text-ink-secondary">
+                      Escaneo #{reg.escaneoNum}
+                      {esMovilizacion ? ` · acumulado ${reg.acumulado}` : ""}
+                    </p>
                     <p className="text-xs text-ink-secondary">
                       {formatearFechaHoraRegistro(reg.registradoAt)}
                     </p>
                     <p className="text-ink-secondary">
                       {esMovilizacion ? (
                         <>
-                          {reg.cantidad} persona{reg.cantidad === 1 ? "" : "s"} · Escaneó:{" "}
-                          {reg.registradoPor?.username ?? "—"}
+                          {reg.cantidad} persona{reg.cantidad === 1 ? "" : "s"} en este escaneo ·
+                          Operó: {reg.registradoPor?.username ?? "—"}
                         </>
                       ) : (
                         <>Escaneó: {reg.registradoPor?.username ?? "—"}</>
                       )}
                     </p>
+                    {isAdmin ? (
+                      <RegistroAsistenciaAdminAcciones
+                        registroId={reg.id}
+                        cantidadInicial={reg.cantidad}
+                        esMovilizacion={esMovilizacion}
+                        compact
+                        onHecho={refrescar}
+                      />
+                    ) : null}
                   </li>
                 ))}
               </ul>
               <div className="desktop-only-table">
                 <TableWrap>
-                  <table className="w-full min-w-[480px] text-left text-sm">
+                  <table className="w-full min-w-[560px] text-left text-sm">
                     <thead>
                       <tr className="border-b border-line text-xs text-ink-secondary">
+                        <th className="py-2 pr-3">#</th>
                         <th className="py-2 pr-3">Fecha y hora</th>
                         {esMovilizacion ? (
-                          <th className="py-2 pr-3 text-right">Personas</th>
+                          <>
+                            <th className="py-2 pr-3 text-right">En escaneo</th>
+                            <th className="py-2 pr-3 text-right">Acumulado</th>
+                          </>
                         ) : null}
-                        <th className="py-2">Usuario</th>
+                        <th className="py-2 pr-3">Usuario</th>
+                        {isAdmin ? <th className="py-2">Admin</th> : null}
                       </tr>
                     </thead>
                     <tbody>
-                      {seleccionado.registros.map((reg) => (
+                      {registrosDetalle.map((reg) => (
                         <tr key={reg.id} className="border-b border-line/60">
+                          <td className="py-2 pr-3 text-ink-secondary">{reg.escaneoNum}</td>
                           <td className="py-2 pr-3 text-xs text-ink-secondary whitespace-nowrap">
                             {formatearFechaHoraRegistro(reg.registradoAt)}
                           </td>
                           {esMovilizacion ? (
-                            <td className="py-2 pr-3 text-right tabular-nums font-medium">
-                              {reg.cantidad}
-                            </td>
+                            <>
+                              <td className="py-2 pr-3 text-right tabular-nums font-medium">
+                                {reg.cantidad}
+                              </td>
+                              <td className="py-2 pr-3 text-right tabular-nums text-pin font-semibold">
+                                {reg.acumulado}
+                              </td>
+                            </>
                           ) : null}
-                          <td className="py-2 text-ink-secondary">
+                          <td className="py-2 pr-3 text-ink-secondary">
                             {reg.registradoPor?.username ?? "—"}
                           </td>
+                          {isAdmin ? (
+                            <td className="py-2">
+                              <RegistroAsistenciaAdminAcciones
+                                registroId={reg.id}
+                                cantidadInicial={reg.cantidad}
+                                esMovilizacion={esMovilizacion}
+                                compact
+                                onHecho={refrescar}
+                              />
+                            </td>
+                          ) : null}
                         </tr>
                       ))}
                     </tbody>

@@ -1,7 +1,15 @@
 import { Router } from "express";
 import { ValidationError } from "yup";
 import { prisma } from "../lib/prisma.js";
-import { isAsistenciaRol, isConvocatoriaRol, requireAsistenciaOrStaff, requireAuth, requireEventosAsistenciaRead, requireStaff } from "../lib/auth.js";
+import {
+  isAsistenciaRol,
+  isConvocatoriaRol,
+  requireAdmin,
+  requireAsistenciaOrStaff,
+  requireAuth,
+  requireEventosAsistenciaRead,
+  requireStaff,
+} from "../lib/auth.js";
 import { compararDirigentePorApellidosNombre, nombreCompleto } from "../lib/dirigentes.js";
 import {
   cantidadMovilizacionDesdeCuerpo,
@@ -22,6 +30,11 @@ import {
   vaciarRegistrosEventoAsistencia,
 } from "../lib/eventos-asistencia.js";
 import { validarCodigoCierreEventoAsistencia } from "../lib/codigo-cierre-evento-asistencia.js";
+import {
+  actualizarCantidadRegistroAsistencia,
+  eliminarRegistroAsistencia,
+  validarCantidadMovilizacion,
+} from "../lib/registro-asistencia-admin.js";
 import { eventoCreateSchema } from "../lib/validation-asistencia.js";
 import {
   registrarAuditoria,
@@ -460,6 +473,52 @@ router.post("/eventos/:id/cerrar", requireStaff, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al cerrar pase de lista" });
+  }
+});
+
+router.patch("/registros/:registroId", requireAdmin, async (req, res) => {
+  try {
+    const registroId = paramId(req.params.registroId);
+    const cantidad = validarCantidadMovilizacion(
+      (req.body as { cantidad?: unknown })?.cantidad,
+    );
+    if (cantidad == null) {
+      res.status(400).json({
+        error: "Cantidad inválida (entero entre 1 y 100000)",
+      });
+      return;
+    }
+
+    const resultado = await actualizarCantidadRegistroAsistencia(registroId, cantidad, req);
+    if (!resultado.ok) {
+      res.status(resultado.status).json({ error: resultado.error });
+      return;
+    }
+
+    res.json({
+      id: resultado.registro.id,
+      cantidad: resultado.registro.cantidad,
+      registradoAt: resultado.registro.registradoAt.toISOString(),
+      totalMovilizadosDirigente: resultado.totalMovilizadosDirigente,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al actualizar registro" });
+  }
+});
+
+router.delete("/registros/:registroId", requireAdmin, async (req, res) => {
+  try {
+    const registroId = paramId(req.params.registroId);
+    const resultado = await eliminarRegistroAsistencia(registroId, req);
+    if (!resultado.ok) {
+      res.status(resultado.status).json({ error: resultado.error });
+      return;
+    }
+    res.json({ ok: true, eventoId: resultado.eventoId });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al eliminar registro" });
   }
 });
 
